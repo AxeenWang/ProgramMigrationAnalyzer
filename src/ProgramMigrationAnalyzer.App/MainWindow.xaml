@@ -1,0 +1,290 @@
+<Window x:Class="ProgramMigrationAnalyzer.App.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:avalonEdit="http://icsharpcode.net/sharpdevelop/avalonedit"
+        xmlns:behaviors="clr-namespace:ProgramMigrationAnalyzer.App.Behaviors"
+        xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+        mc:Ignorable="d"
+        Title="程式移植分析儀 - C#、4GL"
+        Width="1440"
+        Height="920"
+        MinWidth="1100"
+        MinHeight="720"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource CanvasBrush}">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="150" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Border Grid.Row="0" Background="#17365D" Padding="18,13">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="22" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="12" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="24" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="12" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                    <TextBlock Text="程式移植分析儀" FontSize="20" FontWeight="SemiBold" Foreground="White" />
+                    <TextBlock Text="C# / Informix 4GL Migration Workbench" FontSize="11" Foreground="#BDD3EC" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Content="開啟檔案" Command="{Binding OpenFileCommand}" />
+                    <Button Content="開啟資料夾" Command="{Binding OpenFolderCommand}" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="4" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Language" Foreground="White" VerticalAlignment="Center" Margin="0,0,7,0" />
+                    <ComboBox Width="95" ItemsSource="{Binding LanguageOptions}" SelectedItem="{Binding SelectedLanguageOption}" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="6" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Target" Foreground="White" VerticalAlignment="Center" Margin="0,0,7,0" />
+                    <ComboBox Width="105" ItemsSource="{Binding TargetOptions}" SelectedItem="{Binding SelectedTargetOption}" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="8" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Content="開始分析" Command="{Binding AnalyzeCommand}" Background="#DBEAFE" />
+                    <Button Content="開始轉譯" Command="{Binding TranslateCommand}" Background="#DCFCE7" />
+                    <Button Content="儲存報告" Command="{Binding SaveMarkdownCommand}" />
+                    <Button Content="開啟 Output" Command="{Binding OpenOutputFolderCommand}" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="10" Width="170" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding StatusMessage}" Foreground="White" TextAlignment="Right" />
+                    <ProgressBar Height="3" Margin="0,6,0,0" IsIndeterminate="{Binding IsBusy}" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1" Margin="14,14,14,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="280" />
+                <ColumnDefinition Width="10" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="6">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <TextBlock Grid.Row="0" Text="檔案 / 專案" FontWeight="SemiBold" FontSize="15" Margin="14,12" />
+                    <ListBox Grid.Row="1" BorderThickness="0" ItemsSource="{Binding Documents}" SelectedItem="{Binding SelectedDocument}">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="6,5" Width="235">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding FileName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Text="{Binding FilePath}" FontSize="10" Foreground="{StaticResource MutedTextBrush}" TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                                        <Border Background="#E8F0FB" CornerRadius="3" Padding="5,2">
+                                            <TextBlock Text="{Binding LanguageName}" FontSize="10" Foreground="#17365D" />
+                                        </Border>
+                                        <TextBlock Text="{Binding StatusText}" FontSize="10" Foreground="{StaticResource MutedTextBrush}" TextAlignment="Center" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <StackPanel Grid.Row="2" Margin="14,10,14,14">
+                        <TextBlock Text="Tags" FontWeight="SemiBold" Margin="0,0,0,6" />
+                        <ItemsControl ItemsSource="{Binding SelectedDocument.AnalysisView.Tags}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="#EEF2F7" CornerRadius="8" Padding="7,3" Margin="0,0,5,5">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="{Binding Category}" FontSize="10" Foreground="#64748B" />
+                                            <TextBlock Text=" / " FontSize="10" Foreground="#94A3B8" />
+                                            <TextBlock Text="{Binding Name}" FontSize="10" FontWeight="SemiBold" />
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <Border Grid.Column="2" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="6">
+                <TabControl BorderThickness="0" Margin="5">
+                    <TabItem Header="原始碼">
+                        <avalonEdit:TextEditor IsReadOnly="True" ShowLineNumbers="True"
+                                               FontFamily="Cascadia Mono, Consolas" FontSize="13"
+                                               HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
+                                               behaviors:AvalonEditTextBinding.Text="{Binding SelectedDocument.SourceText}" />
+                    </TabItem>
+
+                    <TabItem Header="分析結果">
+                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                            <StackPanel Margin="18">
+                                <TextBlock Text="Program Summary" FontSize="18" FontWeight="SemiBold" Foreground="#17365D" />
+                                <TextBlock Text="{Binding SelectedDocument.AnalysisView.Summary}" Margin="0,6,0,18" TextWrapping="Wrap" />
+
+                                <TextBlock Text="Architecture" FontSize="15" FontWeight="SemiBold" />
+                                <ItemsControl ItemsSource="{Binding SelectedDocument.AnalysisView.ProgramUnits}" Margin="0,5,0,18">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border BorderBrush="#E2E8F0" BorderThickness="0,0,0,1" Padding="6">
+                                                <TextBlock>
+                                                    <Run Text="{Binding Kind}" FontWeight="SemiBold" />
+                                                    <Run Text="  " />
+                                                    <Run Text="{Binding Name}" />
+                                                    <Run Text="  Lines " Foreground="#64748B" />
+                                                    <Run Text="{Binding StartLine}" Foreground="#64748B" />
+                                                    <Run Text="-" Foreground="#64748B" />
+                                                    <Run Text="{Binding EndLine}" Foreground="#64748B" />
+                                                </TextBlock>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <TextBlock Text="Functions" FontSize="15" FontWeight="SemiBold" />
+                                <ItemsControl ItemsSource="{Binding SelectedDocument.AnalysisView.Functions}" Margin="0,5,0,18">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,6">
+                                                <StackPanel>
+                                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                                                    <TextBlock Text="{Binding Summary}" Foreground="{StaticResource MutedTextBrush}" TextWrapping="Wrap" />
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <TextBlock Text="SQL" FontSize="15" FontWeight="SemiBold" />
+                                <ItemsControl ItemsSource="{Binding SelectedDocument.AnalysisView.SqlStatements}" Margin="0,5,0,18">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border BorderBrush="#E2E8F0" BorderThickness="0,0,0,1" Padding="6">
+                                                <StackPanel>
+                                                    <TextBlock Text="{Binding CommandType}" FontWeight="SemiBold" Foreground="#1D4ED8" />
+                                                    <TextBlock Text="{Binding RawSql}" FontFamily="Consolas" TextWrapping="Wrap" />
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <TextBlock Text="Dependencies" FontSize="15" FontWeight="SemiBold" />
+                                <ItemsControl ItemsSource="{Binding SelectedDocument.AnalysisView.Dependencies}" Margin="0,5,0,18">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Margin="4"><Run Text="{Binding Name}" FontWeight="SemiBold" /><Run Text=" — " /><Run Text="{Binding Description}" /></TextBlock>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+
+                                <TextBlock Text="Migration Issues" FontSize="15" FontWeight="SemiBold" />
+                                <ItemsControl ItemsSource="{Binding SelectedDocument.AnalysisView.MigrationIssues}" Margin="0,5,0,10">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Background="#FFF7ED" BorderBrush="#FED7AA" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,6">
+                                                <StackPanel>
+                                                    <TextBlock><Run Text="[" /><Run Text="{Binding Severity}" FontWeight="Bold" /><Run Text="] " /><Run Text="{Binding Title}" FontWeight="SemiBold" /></TextBlock>
+                                                    <TextBlock Text="{Binding Description}" TextWrapping="Wrap" Margin="0,3,0,0" />
+                                                    <TextBlock Text="{Binding SuggestedAction}" TextWrapping="Wrap" Foreground="#9A3412" Margin="0,3,0,0" />
+                                                </StackPanel>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </TabItem>
+
+                    <TabItem Header="Markdown">
+                        <Grid>
+                            <wv2:WebView2 x:Name="MarkdownWebView" />
+                            <TextBox x:Name="MarkdownFallback" Text="{Binding SelectedDocument.Markdown}" Visibility="Collapsed"
+                                     IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap"
+                                     FontFamily="Cascadia Mono, Consolas"
+                                     HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" />
+                        </Grid>
+                    </TabItem>
+
+                    <TabItem Header="轉譯程式">
+                        <avalonEdit:TextEditor IsReadOnly="True" ShowLineNumbers="True"
+                                               FontFamily="Cascadia Mono, Consolas" FontSize="13"
+                                               HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
+                                               behaviors:AvalonEditTextBinding.Text="{Binding SelectedDocument.TranslationCode}" />
+                    </TabItem>
+
+                    <TabItem Header="Diff">
+                        <Grid>
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="5" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                            <TextBlock Grid.Column="0" Text="Original" FontWeight="SemiBold" Padding="8" />
+                            <TextBlock Grid.Column="2" Text="Translated" FontWeight="SemiBold" Padding="8" />
+                            <avalonEdit:TextEditor Grid.Row="1" Grid.Column="0" IsReadOnly="True" ShowLineNumbers="True"
+                                                   FontFamily="Cascadia Mono, Consolas" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
+                                                   behaviors:AvalonEditTextBinding.Text="{Binding SelectedDocument.SourceText}" />
+                            <GridSplitter Grid.RowSpan="2" Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="#D9E1EA" />
+                            <avalonEdit:TextEditor Grid.Row="1" Grid.Column="2" IsReadOnly="True" ShowLineNumbers="True"
+                                                   FontFamily="Cascadia Mono, Consolas" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
+                                                   behaviors:AvalonEditTextBinding.Text="{Binding SelectedDocument.TranslationCode}" />
+                        </Grid>
+                    </TabItem>
+                </TabControl>
+            </Border>
+        </Grid>
+
+        <Border Grid.Row="2" Margin="14,0,14,8" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="6" Padding="14,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="Migration Assessment" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,20,0" />
+                <StackPanel Grid.Column="1"><TextBlock Text="Functions" Foreground="{StaticResource MutedTextBrush}" /><TextBlock Text="{Binding SelectedDocument.AnalysisView.Assessment.FunctionCount}" FontSize="18" FontWeight="SemiBold" /></StackPanel>
+                <StackPanel Grid.Column="2"><TextBlock Text="SQL" Foreground="{StaticResource MutedTextBrush}" /><TextBlock Text="{Binding SelectedDocument.AnalysisView.Assessment.SqlStatementCount}" FontSize="18" FontWeight="SemiBold" /></StackPanel>
+                <StackPanel Grid.Column="3"><TextBlock Text="Dependencies" Foreground="{StaticResource MutedTextBrush}" /><TextBlock Text="{Binding SelectedDocument.AnalysisView.Assessment.DependencyCount}" FontSize="18" FontWeight="SemiBold" /></StackPanel>
+                <StackPanel Grid.Column="4"><TextBlock Text="Deprecated" Foreground="{StaticResource MutedTextBrush}" /><TextBlock Text="{Binding SelectedDocument.AnalysisView.Assessment.DeprecatedApiCount}" FontSize="18" FontWeight="SemiBold" /></StackPanel>
+                <StackPanel Grid.Column="5"><TextBlock Text="Manual Review" Foreground="{StaticResource MutedTextBrush}" /><TextBlock Text="{Binding SelectedDocument.AnalysisView.Assessment.ManualReviewCount}" FontSize="18" FontWeight="SemiBold" /></StackPanel>
+                <StackPanel Grid.Column="6"><TextBlock Text="規則式 POC Score" Foreground="{StaticResource MutedTextBrush}" /><TextBlock FontSize="18" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}"><Run Text="{Binding SelectedDocument.AnalysisView.Assessment.MigrationScore}" /><Run Text=" / 100  " /><Run Text="{Binding SelectedDocument.AnalysisView.Assessment.RiskLevel}" /></TextBlock></StackPanel>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="3" Margin="14,0,14,8" Background="#101827" BorderBrush="#26364D" BorderThickness="1" CornerRadius="6">
+            <Grid>
+                <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                <TextBlock Text="Progress / Status / Log" Foreground="#DCE7F5" FontWeight="SemiBold" Margin="12,8" />
+                <ListBox Grid.Row="1" ItemsSource="{Binding Logs}" Background="#101827" Foreground="#C7D3E3" BorderThickness="0" FontFamily="Cascadia Mono, Consolas" FontSize="11" Padding="8" />
+            </Grid>
+        </Border>
+
+        <StatusBar Grid.Row="4" Background="#E7ECF2">
+            <StatusBarItem Content="{Binding StatusMessage}" />
+            <Separator />
+            <StatusBarItem Content="{Binding OutputDirectory}" />
+        </StatusBar>
+    </Grid>
+</Window>
