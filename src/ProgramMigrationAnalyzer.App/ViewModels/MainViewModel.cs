@@ -346,7 +346,8 @@ public partial class MainViewModel : ObservableObject
                  <head>
                    <meta charset="utf-8">
                    <style>
-                     body { font-family: "Segoe UI", "Microsoft JhengHei", sans-serif; color: #1f2937; margin: 24px 32px; line-height: 1.65; }
+                     :root { color-scheme: light; background: #ffffff; }
+                     body { font-family: "Segoe UI", "Microsoft JhengHei", sans-serif; background: #ffffff; color: #1f2937; margin: 24px 32px; line-height: 1.65; }
                      h1, h2, h3 { color: #17365d; }
                      h1 { border-bottom: 2px solid #dbeafe; padding-bottom: 10px; }
                      h2 { margin-top: 28px; border-bottom: 1px solid #e5e7eb; padding-bottom: 6px; }
@@ -354,6 +355,8 @@ public partial class MainViewModel : ObservableObject
                      table { border-collapse: collapse; width: 100%; }
                      th, td { border: 1px solid #d1d5db; padding: 7px 10px; text-align: left; }
                      th { background: #eff6ff; }
+                     pre { background: #f3f4f6; color: #1f2937; padding: 12px; overflow-x: auto; }
+                     a { color: #1d4ed8; }
                      blockquote { border-left: 4px solid #f59e0b; margin-left: 0; padding: 8px 14px; background: #fffbeb; }
                      .empty { color: #6b7280; }
                    </style>

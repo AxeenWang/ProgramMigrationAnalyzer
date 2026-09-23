@@ -45,8 +45,8 @@
                 </StackPanel>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Button Content="開啟檔案" Command="{Binding OpenFileCommand}" />
-                    <Button Content="開啟資料夾" Command="{Binding OpenFolderCommand}" />
+                    <Button Content="開啟檔案" Command="{Binding OpenFileCommand}" Style="{StaticResource ToolbarButtonStyle}" />
+                    <Button Content="開啟資料夾" Command="{Binding OpenFolderCommand}" Style="{StaticResource ToolbarButtonStyle}" />
                 </StackPanel>
 
                 <StackPanel Grid.Column="4" Orientation="Horizontal" VerticalAlignment="Center">
@@ -60,10 +60,10 @@
                 </StackPanel>
 
                 <StackPanel Grid.Column="8" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Button Content="開始分析" Command="{Binding AnalyzeCommand}" Background="#DBEAFE" />
-                    <Button Content="開始轉譯" Command="{Binding TranslateCommand}" Background="#DCFCE7" />
-                    <Button Content="儲存報告" Command="{Binding SaveMarkdownCommand}" />
-                    <Button Content="開啟 Output" Command="{Binding OpenOutputFolderCommand}" />
+                    <Button Content="開始分析" Command="{Binding AnalyzeCommand}" Style="{StaticResource PrimaryToolbarButtonStyle}" />
+                    <Button Content="開始轉譯" Command="{Binding TranslateCommand}" Style="{StaticResource TranslateToolbarButtonStyle}" />
+                    <Button Content="儲存報告" Command="{Binding SaveMarkdownCommand}" Style="{StaticResource ToolbarButtonStyle}" />
+                    <Button Content="開啟 Output" Command="{Binding OpenOutputFolderCommand}" Style="{StaticResource ToolbarButtonStyle}" />
                 </StackPanel>
 
                 <StackPanel Grid.Column="10" Width="170" VerticalAlignment="Center">
@@ -133,15 +133,15 @@
             </Border>
 
             <Border Grid.Column="2" Background="{StaticResource PanelBrush}" BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" CornerRadius="6">
-                <TabControl BorderThickness="0" Margin="5">
-                    <TabItem Header="原始碼">
+                <TabControl x:Name="PreviewTabs" BorderThickness="0" Margin="5">
+                    <TabItem Header="原始碼" Style="{StaticResource PreviewTabStyle}">
                         <avalonEdit:TextEditor IsReadOnly="True" ShowLineNumbers="True"
                                                FontFamily="Cascadia Mono, Consolas" FontSize="13"
                                                HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
                                                behaviors:AvalonEditTextBinding.Text="{Binding SelectedDocument.SourceText}" />
                     </TabItem>
 
-                    <TabItem Header="分析結果">
+                    <TabItem Header="分析結果" Style="{StaticResource PreviewTabStyle}">
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
                             <StackPanel Margin="18">
                                 <TextBlock Text="Program Summary" FontSize="18" FontWeight="SemiBold" Foreground="#17365D" />
@@ -153,13 +153,13 @@
                                         <DataTemplate>
                                             <Border BorderBrush="#E2E8F0" BorderThickness="0,0,0,1" Padding="6">
                                                 <TextBlock>
-                                                    <Run Text="{Binding Kind}" FontWeight="SemiBold" />
+                                                    <Run Text="{Binding Kind, Mode=OneWay}" FontWeight="SemiBold" />
                                                     <Run Text="  " />
-                                                    <Run Text="{Binding Name}" />
+                                                    <Run Text="{Binding Name, Mode=OneWay}" />
                                                     <Run Text="  Lines " Foreground="#64748B" />
-                                                    <Run Text="{Binding StartLine}" Foreground="#64748B" />
+                                                    <Run Text="{Binding StartLine, Mode=OneWay}" Foreground="#64748B" />
                                                     <Run Text="-" Foreground="#64748B" />
-                                                    <Run Text="{Binding EndLine}" Foreground="#64748B" />
+                                                    <Run Text="{Binding EndLine, Mode=OneWay}" Foreground="#64748B" />
                                                 </TextBlock>
                                             </Border>
                                         </DataTemplate>
@@ -198,7 +198,7 @@
                                 <ItemsControl ItemsSource="{Binding SelectedDocument.AnalysisView.Dependencies}" Margin="0,5,0,18">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <TextBlock Margin="4"><Run Text="{Binding Name}" FontWeight="SemiBold" /><Run Text=" — " /><Run Text="{Binding Description}" /></TextBlock>
+                                            <TextBlock Margin="4"><Run Text="{Binding Name, Mode=OneWay}" FontWeight="SemiBold" /><Run Text=" — " /><Run Text="{Binding Description, Mode=OneWay}" /></TextBlock>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
@@ -209,7 +209,7 @@
                                         <DataTemplate>
                                             <Border Background="#FFF7ED" BorderBrush="#FED7AA" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,0,0,6">
                                                 <StackPanel>
-                                                    <TextBlock><Run Text="[" /><Run Text="{Binding Severity}" FontWeight="Bold" /><Run Text="] " /><Run Text="{Binding Title}" FontWeight="SemiBold" /></TextBlock>
+                                                    <TextBlock><Run Text="[" /><Run Text="{Binding Severity, Mode=OneWay}" FontWeight="Bold" /><Run Text="] " /><Run Text="{Binding Title, Mode=OneWay}" FontWeight="SemiBold" /></TextBlock>
                                                     <TextBlock Text="{Binding Description}" TextWrapping="Wrap" Margin="0,3,0,0" />
                                                     <TextBlock Text="{Binding SuggestedAction}" TextWrapping="Wrap" Foreground="#9A3412" Margin="0,3,0,0" />
                                                 </StackPanel>
@@ -221,24 +221,25 @@
                         </ScrollViewer>
                     </TabItem>
 
-                    <TabItem Header="Markdown">
+                    <TabItem Header="Markdown" Style="{StaticResource PreviewTabStyle}">
                         <Grid>
                             <wv2:WebView2 x:Name="MarkdownWebView" />
                             <TextBox x:Name="MarkdownFallback" Text="{Binding SelectedDocument.Markdown}" Visibility="Collapsed"
                                      IsReadOnly="True" AcceptsReturn="True" TextWrapping="NoWrap"
+                                     Background="White" Foreground="#1F2937" CaretBrush="#1F2937"
                                      FontFamily="Cascadia Mono, Consolas"
                                      HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" />
                         </Grid>
                     </TabItem>
 
-                    <TabItem Header="轉譯程式">
+                    <TabItem Header="轉譯程式" Style="{StaticResource PreviewTabStyle}">
                         <avalonEdit:TextEditor IsReadOnly="True" ShowLineNumbers="True"
                                                FontFamily="Cascadia Mono, Consolas" FontSize="13"
                                                HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto"
                                                behaviors:AvalonEditTextBinding.Text="{Binding SelectedDocument.TranslationCode}" />
                     </TabItem>
 
-                    <TabItem Header="Diff">
+                    <TabItem Header="Diff" Style="{StaticResource PreviewTabStyle}">
                         <Grid>
                             <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="5" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
                             <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
@@ -269,7 +270,7 @@
                 <StackPanel Grid.Column="3"><TextBlock Text="Dependencies" Foreground="{StaticResource MutedTextBrush}" /><TextBlock Text="{Binding SelectedDocument.AnalysisView.Assessment.DependencyCount}" FontSize="18" FontWeight="SemiBold" /></StackPanel>
                 <StackPanel Grid.Column="4"><TextBlock Text="Deprecated" Foreground="{StaticResource MutedTextBrush}" /><TextBlock Text="{Binding SelectedDocument.AnalysisView.Assessment.DeprecatedApiCount}" FontSize="18" FontWeight="SemiBold" /></StackPanel>
                 <StackPanel Grid.Column="5"><TextBlock Text="Manual Review" Foreground="{StaticResource MutedTextBrush}" /><TextBlock Text="{Binding SelectedDocument.AnalysisView.Assessment.ManualReviewCount}" FontSize="18" FontWeight="SemiBold" /></StackPanel>
-                <StackPanel Grid.Column="6"><TextBlock Text="規則式 POC Score" Foreground="{StaticResource MutedTextBrush}" /><TextBlock FontSize="18" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}"><Run Text="{Binding SelectedDocument.AnalysisView.Assessment.MigrationScore}" /><Run Text=" / 100  " /><Run Text="{Binding SelectedDocument.AnalysisView.Assessment.RiskLevel}" /></TextBlock></StackPanel>
+                <StackPanel Grid.Column="6"><TextBlock Text="規則式 POC Score" Foreground="{StaticResource MutedTextBrush}" /><TextBlock FontSize="18" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}"><Run Text="{Binding SelectedDocument.AnalysisView.Assessment.MigrationScore, Mode=OneWay}" /><Run Text=" / 100  " /><Run Text="{Binding SelectedDocument.AnalysisView.Assessment.RiskLevel, Mode=OneWay}" /></TextBlock></StackPanel>
             </Grid>
         </Border>
 

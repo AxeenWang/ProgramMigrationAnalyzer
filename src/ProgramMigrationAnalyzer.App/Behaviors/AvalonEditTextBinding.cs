@@ -9,7 +9,7 @@ public static class AvalonEditTextBinding
         "Text",
         typeof(string),
         typeof(AvalonEditTextBinding),
-        new FrameworkPropertyMetadata(string.Empty, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, OnTextChanged));
+        new FrameworkPropertyMetadata(string.Empty, OnTextChanged));
 
     public static string GetText(DependencyObject element) => (string)element.GetValue(TextProperty);
 
