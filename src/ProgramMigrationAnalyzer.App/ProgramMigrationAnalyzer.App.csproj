@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\ProgramMigrationAnalyzer.Core\ProgramMigrationAnalyzer.Core.csproj" />
+    <ProjectReference Include="..\ProgramMigrationAnalyzer.Analysis\ProgramMigrationAnalyzer.Analysis.csproj" />
+    <ProjectReference Include="..\ProgramMigrationAnalyzer.Parsers\ProgramMigrationAnalyzer.Parsers.csproj" />
+    <ProjectReference Include="..\ProgramMigrationAnalyzer.Translation\ProgramMigrationAnalyzer.Translation.csproj" />
+    <ProjectReference Include="..\ProgramMigrationAnalyzer.Infrastructure\ProgramMigrationAnalyzer.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AvalonEdit" Version="6.3.1.120" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="Markdig" Version="1.4.0" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4191.47" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+
+</Project>

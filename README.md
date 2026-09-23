@@ -2,9 +2,9 @@
 
 程式移植分析儀是一套 Windows WPF 概念驗證工具，目標是分析舊版 .NET Framework C# 與 Informix 4GL 原始碼，產生結構化分析、Markdown 報告與現代化 C# 程式碼草稿。
 
-> 目前狀態：專案初始化與規格準備階段。Solution、應用程式與範例資料尚待實作。
+> 目前狀態：第一階段 POC 已完成，可 Restore、Build、啟動，並已使用 10 份 samples 驗證分析與轉譯流程。
 
-## Planned Features
+## Features
 
 - 開啟單一原始碼檔案或包含多個檔案的資料夾
 - 自動辨識 C#、`.4gl` 與 `.per` 檔案
@@ -18,7 +18,7 @@
 
 ## Architecture
 
-核心流程規劃如下：
+核心流程如下：
 
 ```text
 Source
@@ -32,7 +32,7 @@ Source
 
 C# 與 4GL parser 會先轉換為共用的 Intermediate Analysis Model，再由分析、報告及轉譯元件使用，避免將語言解析邏輯綁定在 UI。
 
-## Planned Solution Structure
+## Solution Structure
 
 ```text
 ProgramMigrationAnalyzer/
@@ -60,7 +60,6 @@ ProgramMigrationAnalyzer/
 - AvalonEdit
 - Markdig
 - Microsoft WebView2
-- System.Text.Json
 
 ## Requirements
 
@@ -71,10 +70,10 @@ ProgramMigrationAnalyzer/
 
 ## Build
 
-Solution 建立後可使用下列命令還原與建置：
+使用下列命令還原與建置：
 
 ```powershell
-dotnet restore
+dotnet restore ProgramMigrationAnalyzer.sln
 dotnet build ProgramMigrationAnalyzer.sln
 ```
 
@@ -86,14 +85,14 @@ dotnet run --project .\src\ProgramMigrationAnalyzer.App\ProgramMigrationAnalyzer
 
 ## Sample Data
 
-規劃提供 10 份可分析的範例：
+提供 10 份可分析的範例：
 
 - `samples/4gl/`：5 份 Informix 4GL 風格原始碼
 - `samples/csharp-framework/`：5 份舊版 .NET Framework C# 原始碼
 
 ## Supported C# Analysis
 
-規劃分析 namespace、型別、繼承、欄位、屬性、方法、參數、方法呼叫、物件建立、SQL 字串，以及 `ConfigurationManager`、`WebRequest`、`BinaryFormatter`、`System.Web`、ADO.NET、File I/O 與 COM 等相依性。
+目前可分析 namespace、型別、繼承、欄位、屬性、方法、參數、方法呼叫、物件建立、SQL 字串，以及 `ConfigurationManager`、`WebRequest`、`BinaryFormatter`、`System.Web`、ADO.NET、File I/O 與 COM 等相依性。
 
 ## Supported 4GL Syntax
 
@@ -112,13 +111,25 @@ dotnet run --project .\src\ProgramMigrationAnalyzer.App\ProgramMigrationAnalyzer
 
 分析報告與轉譯草稿會寫入 `output/`。此目錄中的執行產物預設不納入版本控制。
 
+## Validation
+
+目前已驗證：
+
+- `dotnet restore ProgramMigrationAnalyzer.sln` 成功
+- `dotnet build ProgramMigrationAnalyzer.sln` 成功，0 warning、0 error
+- 5 份 4GL 與 5 份 legacy C# samples 均可完成 parser 與 analyzer 流程
+- `CustomerQuery.4gl` 可產生 Markdown 與 `.NET 10` C# scaffold
+- `LegacyApiClient.cs` 可偵測 WebRequest 與 XML 相依性
+- 產生的 `CustomerQuery.4gl.net10.cs` 可獨立編譯
+- WPF 應用程式程序可啟動並保持正常回應
+
 ## Known Limitations
 
 - 不提供完整 4GL compiler 或 production-grade source-to-source compiler。
 - 不保證自動轉譯後的程式與來源程式完全語意等價。
 - Migration Score 是規則式 POC 指標，不代表實際移植工時或成功率。
 - SQL 與 legacy API 偵測結果仍需人工審查。
-- WebView2 無法初始化時，Markdown 預覽需降級為純文字顯示。
+- WebView2 無法初始化時會降級為純 Markdown 文字預覽。
 
 ## Future Work
 
