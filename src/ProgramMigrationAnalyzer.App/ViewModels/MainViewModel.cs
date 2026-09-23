@@ -21,6 +21,7 @@ public partial class MainViewModel : ObservableObject
     private readonly IOutputWriter _outputWriter;
     private readonly IFileDialogService _dialogs;
     private readonly MarkdownPipeline _markdownPipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
+    private readonly string _emptyMarkdownHtml;
 
     public MainViewModel(
         ISourceFileService fileService,
@@ -38,6 +39,7 @@ public partial class MainViewModel : ObservableObject
         _translator = translator;
         _outputWriter = outputWriter;
         _dialogs = dialogs;
+        _emptyMarkdownHtml = BuildHtml(string.Empty);
 
         LanguageOptions =
         [
@@ -76,19 +78,25 @@ public partial class MainViewModel : ObservableObject
     [NotifyCanExecuteChangedFor(nameof(AnalyzeCommand))]
     [NotifyCanExecuteChangedFor(nameof(TranslateCommand))]
     [NotifyCanExecuteChangedFor(nameof(SaveMarkdownCommand))]
+    [NotifyCanExecuteChangedFor(nameof(OpenFileCommand))]
+    [NotifyCanExecuteChangedFor(nameof(OpenFolderCommand))]
     private bool isBusy;
 
     [ObservableProperty]
     private string statusMessage = "準備就緒";
 
-    public string MarkdownHtml => BuildHtml(SelectedDocument?.Markdown ?? string.Empty);
+    public string MarkdownHtml => string.IsNullOrEmpty(SelectedDocument?.RenderedMarkdownHtml)
+        ? _emptyMarkdownHtml
+        : SelectedDocument.RenderedMarkdownHtml;
 
     partial void OnSelectedDocumentChanged(SourceDocumentViewModel? value)
     {
         OnPropertyChanged(nameof(MarkdownHtml));
     }
 
-    [RelayCommand]
+    private bool CanOpen() => !IsBusy;
+
+    [RelayCommand(CanExecute = nameof(CanOpen))]
     private async Task OpenFileAsync()
     {
         var path = _dialogs.SelectSourceFile();
@@ -106,7 +114,7 @@ public partial class MainViewModel : ObservableObject
         });
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanOpen))]
     private async Task OpenFolderAsync()
     {
         var path = _dialogs.SelectSourceFolder();
@@ -138,17 +146,19 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanAnalyze))]
     private async Task AnalyzeAsync()
     {
-        if (SelectedDocument is null)
+        var viewModel = SelectedDocument;
+        if (viewModel is null)
         {
             return;
         }
 
         await RunGuardedAsync("分析", async () =>
         {
-            var viewModel = SelectedDocument;
-            viewModel.Status = AnalysisStatus.Analyzing;
+            viewModel.BeginAnalysis();
+            RefreshDocumentCommands(viewModel);
             AddLog("Detecting language...");
             var source = ApplyLanguageOverride(viewModel.Model);
+            var target = SelectedTargetOption.Framework;
             var parser = _parsers.FirstOrDefault(candidate => candidate.CanParse(source));
             if (parser is null)
             {
@@ -156,18 +166,24 @@ public partial class MainViewModel : ObservableObject
             }
 
             AddLog("Parsing...");
-            var result = await parser.ParseAsync(source);
+            var result = await Task.Run(() => parser.ParseAsync(source));
             AddLog("Analyzing SQL...");
             AddLog("Checking legacy APIs...");
-            result = await _analyzer.AnalyzeAsync(result);
+            result = await Task.Run(() => _analyzer.AnalyzeAsync(result));
             AddLog("Generating Markdown...");
-            var markdown = _reportGenerator.Generate(result, SelectedTargetOption.Framework);
+            var (markdown, html) = await Task.Run(() =>
+            {
+                var report = _reportGenerator.Generate(result, target);
+                return (report, BuildHtml(report));
+            });
             var outputPath = await _outputWriter.WriteAnalysisAsync(source, markdown);
-            viewModel.ApplyAnalysis(result, markdown, outputPath);
-            OnPropertyChanged(nameof(MarkdownHtml));
-            TranslateCommand.NotifyCanExecuteChanged();
-            SaveMarkdownCommand.NotifyCanExecuteChanged();
+            viewModel.ApplyAnalysis(result, markdown, html, outputPath);
+            RefreshDocumentCommands(viewModel);
             AddLog($"Completed. Report: {outputPath}");
+        }, () =>
+        {
+            viewModel.FailAnalysis();
+            RefreshDocumentCommands(viewModel);
         });
     }
 
@@ -176,19 +192,23 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanTranslate))]
     private async Task TranslateAsync()
     {
-        if (SelectedDocument?.Analysis is null)
+        var viewModel = SelectedDocument;
+        var analysis = viewModel?.Analysis;
+        if (viewModel is null || analysis is null)
         {
             return;
         }
 
         await RunGuardedAsync("轉譯", async () =>
         {
-            AddLog($"Translating to {SelectedTargetOption.Name}...");
-            var result = await _translator.TranslateAsync(SelectedDocument.Analysis, SelectedTargetOption.Framework);
+            viewModel.BeginTranslation();
+            var target = SelectedTargetOption;
+            AddLog($"Translating to {target.Name}...");
+            var result = await Task.Run(() => _translator.TranslateAsync(analysis, target.Framework));
             var outputPath = await _outputWriter.WriteTranslationAsync(result);
-            SelectedDocument.ApplyTranslation(result, outputPath);
+            viewModel.ApplyTranslation(result, outputPath);
             AddLog($"Translation completed. Output: {outputPath}");
-        });
+        }, viewModel.MarkFailed);
     }
 
     private bool CanSaveMarkdown() => !IsBusy && !string.IsNullOrWhiteSpace(SelectedDocument?.Markdown);
@@ -229,7 +249,7 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
-    private async Task RunGuardedAsync(string operation, Func<Task> action)
+    private async Task RunGuardedAsync(string operation, Func<Task> action, Action? onFailure = null)
     {
         IsBusy = true;
         StatusMessage = $"{operation}中...";
@@ -240,11 +260,7 @@ public partial class MainViewModel : ObservableObject
         }
         catch (Exception exception)
         {
-            if (SelectedDocument is not null)
-            {
-                SelectedDocument.Status = AnalysisStatus.Failed;
-            }
-
+            onFailure?.Invoke();
             StatusMessage = $"{operation}失敗";
             AddLog($"ERROR: {exception.Message}");
             _dialogs.ShowError($"{operation}失敗", exception.Message);
@@ -259,16 +275,38 @@ public partial class MainViewModel : ObservableObject
     {
         var existing = Documents.FirstOrDefault(item =>
             item.FilePath.Equals(document.FilePath, StringComparison.OrdinalIgnoreCase));
+        var replacement = new SourceDocumentViewModel(document);
         if (existing is null)
         {
-            existing = new SourceDocumentViewModel(document);
-            Documents.Add(existing);
+            Documents.Add(replacement);
+        }
+        else
+        {
+            var wasSelected = ReferenceEquals(SelectedDocument, existing);
+            Documents[Documents.IndexOf(existing)] = replacement;
+            select |= wasSelected;
         }
 
         if (select)
         {
-            SelectedDocument = existing;
+            SelectedDocument = replacement;
         }
+    }
+
+    private void RefreshDocumentCommands(SourceDocumentViewModel document)
+    {
+        if (ReferenceEquals(SelectedDocument, document))
+        {
+            OnPropertyChanged(nameof(MarkdownHtml));
+            TranslateCommand.NotifyCanExecuteChanged();
+            SaveMarkdownCommand.NotifyCanExecuteChanged();
+        }
+    }
+
+    public void ReportMarkdownPreviewFailure(Exception exception)
+    {
+        AddLog($"ERROR: WebView2 Markdown preview unavailable: {exception.Message}");
+        _dialogs.ShowError("Markdown 預覽無法啟動", $"WebView2 啟動失敗，已改用純文字預覽。\n{exception.Message}");
     }
 
     private SourceDocument ApplyLanguageOverride(SourceDocument source)

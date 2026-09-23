@@ -2,7 +2,7 @@
 
 程式移植分析儀是一套 Windows WPF 概念驗證工具，目標是分析舊版 .NET Framework C# 與 Informix 4GL 原始碼，產生結構化分析、Markdown 報告與現代化 C# 程式碼草稿。
 
-> 目前狀態：第一階段 POC 已完成，可 Restore、Build、啟動，並已使用 10 份 samples 驗證分析與轉譯流程。
+> 目前狀態：第一階段 POC 已完成。第二階段加入可靠性與操作安全修正。互動式 WPF UI 驗收預定於第三階段執行。
 
 ## Features
 
@@ -111,6 +111,8 @@ dotnet run --project .\src\ProgramMigrationAnalyzer.App\ProgramMigrationAnalyzer
 
 分析報告與轉譯草稿會寫入 `output/`。此目錄中的執行產物預設不納入版本控制。
 
+為避免不同目錄的同名來源檔互相覆寫，輸出名稱使用來源檔名加上完整來源路徑的 16 位雜湊，例如 `CustomerQuery.4gl.a1b2c3d4e5f60708.analysis.md` 與 `CustomerQuery.4gl.a1b2c3d4e5f60708.net10.cs`。同一路徑重新分析會更新同一組輸出檔。
+
 ## Validation
 
 目前已驗證：
@@ -123,13 +125,21 @@ dotnet run --project .\src\ProgramMigrationAnalyzer.App\ProgramMigrationAnalyzer
 - 產生的 `CustomerQuery.4gl.net10.cs` 可獨立編譯
 - WPF 應用程式程序可啟動並保持正常回應
 
+第二階段專項檢查可執行：
+
+```powershell
+dotnet run --project .\tests\ProgramMigrationAnalyzer.Phase2Checks\ProgramMigrationAnalyzer.Phase2Checks.csproj
+```
+
+檢查涵蓋資料夾排除、同名輸出、背景分析、切換文件期間的結果歸屬、同路徑重新載入、失敗後狀態，以及 WebView2 提示與 Log。WebView2 實際啟動失敗的畫面驗收留待第三階段。
+
 ## Known Limitations
 
 - 不提供完整 4GL compiler 或 production-grade source-to-source compiler。
 - 不保證自動轉譯後的程式與來源程式完全語意等價。
 - Migration Score 是規則式 POC 指標，不代表實際移植工時或成功率。
 - SQL 與 legacy API 偵測結果仍需人工審查。
-- WebView2 無法初始化時會降級為純 Markdown 文字預覽。
+- WebView2 無法初始化時會提示並記錄錯誤，再降級為純 Markdown 文字預覽。
 
 ## Future Work
 

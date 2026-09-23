@@ -8,6 +8,8 @@ public partial class MainWindow : Window
 {
     private readonly MainViewModel _viewModel;
     private bool _webViewReady;
+    private bool _webViewUnavailable;
+    private Task? _webViewInitialization;
 
     public MainWindow(MainViewModel viewModel)
     {
@@ -31,11 +33,18 @@ public partial class MainWindow : Window
 
     private async Task UpdateMarkdownPreviewAsync()
     {
+        if (_webViewUnavailable)
+        {
+            ShowMarkdownFallback();
+            return;
+        }
+
         try
         {
             if (!_webViewReady)
             {
-                await MarkdownWebView.EnsureCoreWebView2Async();
+                _webViewInitialization ??= MarkdownWebView.EnsureCoreWebView2Async();
+                await _webViewInitialization;
                 _webViewReady = true;
             }
 
@@ -43,11 +52,21 @@ public partial class MainWindow : Window
             MarkdownWebView.Visibility = Visibility.Visible;
             MarkdownFallback.Visibility = Visibility.Collapsed;
         }
-        catch (Exception)
+        catch (Exception exception)
         {
-            MarkdownWebView.Visibility = Visibility.Collapsed;
-            MarkdownFallback.Visibility = Visibility.Visible;
+            ShowMarkdownFallback();
+            if (!_webViewUnavailable)
+            {
+                _webViewUnavailable = true;
+                _viewModel.ReportMarkdownPreviewFailure(exception);
+            }
         }
+    }
+
+    private void ShowMarkdownFallback()
+    {
+        MarkdownWebView.Visibility = Visibility.Collapsed;
+        MarkdownFallback.Visibility = Visibility.Visible;
     }
 
     private void OnClosed(object? sender, EventArgs e)
