@@ -1,8 +1,8 @@
-# Program Migration Analyzer POC
+# Program Migration Analyzer
 
-程式移植分析儀是一套 Windows WPF 概念驗證工具，目標是分析舊版 .NET Framework C# 與 Informix 4GL 原始碼，產生結構化分析、Markdown 報告與現代化 C# 程式碼草稿。
+程式移植分析儀是一套 Windows WPF 工具，目標是分析舊版 .NET Framework C# 與 Informix 4GL 原始碼，產生結構化分析、Markdown 報告與現代化 C# 程式碼草稿。
 
-> 目前狀態：第一階段 POC 與第二階段可靠性修正已合併。第三階段的樣本回歸、WPF 畫面流程及實際桌面操作已通過，WebView2 HTML 預覽與失敗備援均已驗證。按鈕與頁籤的視覺設計仍待使用者確認。
+> 目前狀態：第一階段功能與第二階段可靠性修正已合併。第三階段的樣本回歸、WPF 畫面流程及實際桌面操作已通過，WebView2 HTML 預覽與失敗備援均已驗證。按鈕與頁籤的視覺設計仍待使用者確認。
 
 ## Features
 
@@ -112,7 +112,7 @@ dotnet run --project .\src\ProgramMigrationAnalyzer.App\ProgramMigrationAnalyzer
 
 第一階段以 Informix 4GL 風格語法為主，涵蓋 `MAIN`、`FUNCTION`、`DEFINE`、`CALL`、SQL、cursor、transaction、`DISPLAY`、`INPUT`、`REPORT` 與常見控制流程。
 
-此 parser 是可擴充的 POC parser，不是完整的 compiler-grade parser。
+此 parser 可擴充，但不是完整的 compiler-grade parser。
 
 ## Translation Behavior
 
@@ -160,7 +160,7 @@ dotnet run --no-build --project .\tests\ProgramMigrationAnalyzer.WpfChecks\Progr
 
 - 不提供完整 4GL compiler 或 production-grade source-to-source compiler。
 - 不保證自動轉譯後的程式與來源程式完全語意等價。
-- Migration Score 是規則式 POC 指標，不代表實際移植工時或成功率。
+- Migration Score 是規則式評估指標，不代表實際移植工時或成功率。
 - SQL 與 legacy API 偵測結果仍需人工審查。
 - WebView2 無法初始化時會提示並記錄錯誤，再降級為純 Markdown 文字預覽。
 

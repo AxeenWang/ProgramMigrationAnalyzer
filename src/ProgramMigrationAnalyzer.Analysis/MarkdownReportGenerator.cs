@@ -134,7 +134,7 @@ public sealed class MarkdownReportGenerator : IMarkdownReportGenerator
         var assessment = result.Assessment;
         builder.AppendLine("## Migration Assessment");
         builder.AppendLine();
-        builder.AppendLine("> 規則式 POC 評估指標，不代表實際工時或語意等價保證。");
+        builder.AppendLine("> 規則式評估指標，不代表實際工時，也不保證轉譯後與來源語意等價。");
         builder.AppendLine();
         builder.AppendLine($"- Functions：{assessment.FunctionCount}");
         builder.AppendLine($"- SQL Statements：{assessment.SqlStatementCount}");

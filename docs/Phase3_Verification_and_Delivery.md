@@ -48,4 +48,4 @@ Phase 3 的功能與互動式 UI 驗證已完成，視覺設計仍待使用者�
 - 回歸檢查：`tests/ProgramMigrationAnalyzer.RegressionChecks/`
 - WPF 畫面檢查：`tests/ProgramMigrationAnalyzer.WpfChecks/`
 
-移植評分是規則式 POC 指標。4GL 轉譯為可讀的 C# 草稿，不能保證與來源程式語意等價。SQL、相依性與移植建議仍需人工審查。
+移植評分是規則式評估指標。4GL 轉譯為可讀的 C# 草稿，不能保證與來源程式語意等價。SQL、相依性與移植建議仍需人工審查。
