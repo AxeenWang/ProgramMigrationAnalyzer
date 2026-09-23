@@ -1,0 +1,92 @@
+# Build outputs
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+[Aa]rtifacts/
+.artifacts/
+[Oo]ut/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+
+# Visual Studio and user-specific files
+.vs/
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# JetBrains Rider and ReSharper
+.idea/
+*.sln.iml
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+# NuGet outputs and transient restore files
+*.nupkg
+*.snupkg
+packages/
+project.lock.json
+project.fragment.lock.json
+
+# Test, coverage, and benchmark results
+[Tt]est[Rr]esult*/
+*.trx
+*.coverage
+*.coveragexml
+coverage/
+coverage.*
+BenchmarkDotNet.Artifacts/
+
+# Build, diagnostic, and temporary files
+*.binlog
+*.log
+*.tmp
+*.temp
+*.cache
+*.pdb
+*.opendb
+*.VC.db
+*.pidb
+*.svclog
+*.scc
+*.scc2
+~$*
+*~
+
+# Publish and deployment artifacts
+[Pp]ublish/
+*.pubxml.user
+*.publishproj
+*.publishsettings
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+secrets.json
+
+# WPF and WebView2 runtime-generated data
+*.exe.WebView2/
+EBWebView/
+
+# Program Migration Analyzer generated reports and translations
+[Oo]utput/*
+![Oo]utput/.gitkeep
+
+# Agent-owned temporary directories
+.codex-tmp/
+.claude-tmp/
+
+# Operating-system metadata
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
