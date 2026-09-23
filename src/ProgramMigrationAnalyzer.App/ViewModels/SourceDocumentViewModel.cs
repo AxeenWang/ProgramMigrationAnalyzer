@@ -28,6 +28,8 @@ public partial class SourceDocumentViewModel(SourceDocument model) : ObservableO
     [ObservableProperty]
     private string markdown = string.Empty;
 
+    public string RenderedMarkdownHtml { get; private set; } = string.Empty;
+
     [ObservableProperty]
     private string translationCode = string.Empty;
 
@@ -48,11 +50,44 @@ public partial class SourceDocumentViewModel(SourceDocument model) : ObservableO
 
     partial void OnStatusChanged(AnalysisStatus value) => OnPropertyChanged(nameof(StatusText));
 
-    public void ApplyAnalysis(AnalysisResult result, string report, string outputPath)
+    public void BeginAnalysis()
+    {
+        ClearAnalysis();
+        Status = AnalysisStatus.Analyzing;
+    }
+
+    public void FailAnalysis()
+    {
+        ClearAnalysis();
+        Status = AnalysisStatus.Failed;
+    }
+
+    private void ClearAnalysis()
+    {
+        Analysis = null;
+        AnalysisView = null;
+        Markdown = string.Empty;
+        RenderedMarkdownHtml = string.Empty;
+        AnalysisOutputPath = string.Empty;
+        ClearTranslation();
+    }
+
+    public void BeginTranslation() => ClearTranslation();
+
+    public void MarkFailed() => Status = AnalysisStatus.Failed;
+
+    private void ClearTranslation()
+    {
+        TranslationCode = string.Empty;
+        TranslationOutputPath = string.Empty;
+    }
+
+    public void ApplyAnalysis(AnalysisResult result, string report, string renderedHtml, string outputPath)
     {
         Analysis = result;
         AnalysisView = new AnalysisViewModel(result);
         Markdown = report;
+        RenderedMarkdownHtml = renderedHtml;
         AnalysisOutputPath = outputPath;
         Status = AnalysisStatus.Completed;
     }
@@ -61,5 +96,6 @@ public partial class SourceDocumentViewModel(SourceDocument model) : ObservableO
     {
         TranslationCode = result.GeneratedCode;
         TranslationOutputPath = outputPath;
+        Status = AnalysisStatus.Completed;
     }
 }

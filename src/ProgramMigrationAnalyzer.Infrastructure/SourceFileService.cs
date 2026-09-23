@@ -8,8 +8,9 @@ public sealed class SourceFileService : ISourceFileService
     private static readonly HashSet<string> SupportedExtensions =
         new(StringComparer.OrdinalIgnoreCase) { ".cs", ".4gl", ".per" };
 
-    private static readonly string[] IgnoredDirectoryNames =
-        [".git", ".vs", "bin", "obj", "output", ".codex-tmp", ".claude-tmp"];
+    private static readonly HashSet<string> IgnoredDirectoryNames =
+        new(StringComparer.OrdinalIgnoreCase)
+        { ".git", ".vs", "bin", "obj", "output", ".codex-tmp", ".claude-tmp" };
 
     static SourceFileService()
     {
@@ -54,11 +55,7 @@ public sealed class SourceFileService : ISourceFileService
             throw new DirectoryNotFoundException("The selected source folder does not exist.");
         }
 
-        var files = Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories)
-            .Where(file => SupportedExtensions.Contains(Path.GetExtension(file)))
-            .Where(file => !ContainsIgnoredDirectory(file))
-            .OrderBy(file => file, StringComparer.OrdinalIgnoreCase)
-            .ToList();
+        var files = await Task.Run(() => EnumerateSourceFiles(path, cancellationToken), cancellationToken);
 
         var documents = new List<SourceDocument>(files.Count);
         foreach (var file in files)
@@ -103,11 +100,42 @@ public sealed class SourceFileService : ISourceFileService
         }
     }
 
-    private static bool ContainsIgnoredDirectory(string path)
+    private static List<string> EnumerateSourceFiles(string root, CancellationToken cancellationToken)
     {
-        var directories = Path.GetDirectoryName(path)?.Split(
-            [Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar],
-            StringSplitOptions.RemoveEmptyEntries) ?? [];
-        return directories.Any(directory => IgnoredDirectoryNames.Contains(directory, StringComparer.OrdinalIgnoreCase));
+        var files = new List<string>();
+        var pending = new Stack<string>();
+        pending.Push(root);
+
+        while (pending.Count > 0)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var directory = pending.Pop();
+            if (IgnoredDirectoryNames.Contains(Path.GetFileName(Path.TrimEndingDirectorySeparator(directory))))
+            {
+                continue;
+            }
+
+            foreach (var file in Directory.EnumerateFiles(directory))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (SupportedExtensions.Contains(Path.GetExtension(file)))
+                {
+                    files.Add(file);
+                }
+            }
+
+            foreach (var child in Directory.EnumerateDirectories(directory))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (!IgnoredDirectoryNames.Contains(Path.GetFileName(child)) &&
+                    !File.GetAttributes(child).HasFlag(FileAttributes.ReparsePoint))
+                {
+                    pending.Push(child);
+                }
+            }
+        }
+
+        files.Sort(StringComparer.OrdinalIgnoreCase);
+        return files;
     }
 }

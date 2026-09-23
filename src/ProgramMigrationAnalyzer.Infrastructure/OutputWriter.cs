@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using System.Text;
 using ProgramMigrationAnalyzer.Core;
 
@@ -13,7 +14,7 @@ public sealed class OutputWriter(string outputDirectory) : IOutputWriter
         CancellationToken cancellationToken = default)
     {
         EnsureDirectory();
-        var path = Path.Combine(OutputDirectory, $"{Sanitize(source.FileName)}.analysis.md");
+        var path = Path.Combine(OutputDirectory, $"{GetOutputStem(source)}.analysis.md");
         await File.WriteAllTextAsync(path, markdown, new UTF8Encoding(false), cancellationToken);
         return path;
     }
@@ -24,12 +25,20 @@ public sealed class OutputWriter(string outputDirectory) : IOutputWriter
     {
         EnsureDirectory();
         var suffix = result.TargetFramework == MigrationTargetFramework.Net8 ? "net8" : "net10";
-        var path = Path.Combine(OutputDirectory, $"{Sanitize(result.Source.FileName)}.{suffix}.cs");
+        var path = Path.Combine(OutputDirectory, $"{GetOutputStem(result.Source)}.{suffix}.cs");
         await File.WriteAllTextAsync(path, result.GeneratedCode, new UTF8Encoding(false), cancellationToken);
         return path;
     }
 
     private void EnsureDirectory() => Directory.CreateDirectory(OutputDirectory);
+
+    private static string GetOutputStem(SourceDocument source)
+    {
+        var fullPath = Path.GetFullPath(source.FilePath);
+        var identity = OperatingSystem.IsWindows() ? fullPath.ToUpperInvariant() : fullPath;
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(identity));
+        return $"{Sanitize(source.FileName)}.{Convert.ToHexString(hash)[..16].ToLowerInvariant()}";
+    }
 
     private static string Sanitize(string fileName)
     {

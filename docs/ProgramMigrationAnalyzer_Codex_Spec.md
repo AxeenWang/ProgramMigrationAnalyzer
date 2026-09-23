@@ -560,14 +560,16 @@ output/
 檔名：
 
 ```text
-{SourceFileName}.analysis.md
+{SourceFileName}.{SourcePathHash}.analysis.md
 ```
 
 例如：
 
 ```text
-CustomerQuery.4gl.analysis.md
+CustomerQuery.4gl.{SourcePathHash}.analysis.md
 ```
+
+第二階段以完整來源路徑的 SHA-256 前 16 位十六進位字元作為 `SourcePathHash`，避免不同目錄的同名來源檔互相覆寫。
 
 Markdown 必須包含：
 
@@ -1321,10 +1323,10 @@ output/
 
 ```text
 output/
-├─ CustomerQuery.4gl.analysis.md
-├─ CustomerQuery.4gl.net10.cs
-├─ CustomerService.cs.analysis.md
-└─ CustomerService.cs.net10.cs
+├─ CustomerQuery.4gl.{SourcePathHash}.analysis.md
+├─ CustomerQuery.4gl.{SourcePathHash}.net10.cs
+├─ CustomerService.cs.{SourcePathHash}.analysis.md
+└─ CustomerService.cs.{SourcePathHash}.net10.cs
 ```
 
 .NET 8：
