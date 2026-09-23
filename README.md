@@ -85,6 +85,12 @@ dotnet build ProgramMigrationAnalyzer.sln --no-restore -m:1 -nr:false -p:UseShar
 
 本機 Phase 3 驗證使用單一 MSBuild 節點且停用節點重用，完成後沒有留下 `dotnet` 或 `MSBuild` 背景程序。
 
+### 發佈單一 EXE
+
+在專案根目錄執行 `publish.bat`，會發佈 Windows x64 自包含版本至 `publish/win-x64-single-file/ProgramMigrationAnalyzer.App.exe`。將此 EXE 複製給 Windows x64 使用者即可，對方不需要安裝 .NET。建置電腦仍需 .NET 10 SDK。批次檔使用單一 MSBuild 節點並停用節點重用。重新發佈前請先關閉正在執行的舊版 EXE。
+
+Markdown 的 HTML 預覽仍需要收件端安裝 Microsoft Edge WebView2 Runtime。若 WebView2 無法啟動，程式會改用純文字 Markdown 預覽。單檔 EXE 啟動時會在系統暫存目錄解開必要的原生程式庫。
+
 ## Run
 
 ```powershell
