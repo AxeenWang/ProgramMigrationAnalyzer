@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Windows;
+using System.Windows.Controls;
 using ProgramMigrationAnalyzer.App.ViewModels;
 
 namespace ProgramMigrationAnalyzer.App;
@@ -16,20 +17,30 @@ public partial class MainWindow : Window
         InitializeComponent();
         _viewModel = viewModel;
         DataContext = viewModel;
-        Loaded += OnLoaded;
         Closed += OnClosed;
+        PreviewTabs.SelectionChanged += OnPreviewTabChanged;
         _viewModel.PropertyChanged += OnViewModelPropertyChanged;
     }
 
-    private async void OnLoaded(object sender, RoutedEventArgs e) => await UpdateMarkdownPreviewAsync();
-
-    private async void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs eventArgs)
+    private async void OnPreviewTabChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (eventArgs.PropertyName is nameof(MainViewModel.MarkdownHtml) or nameof(MainViewModel.SelectedDocument))
+        if (ReferenceEquals(e.Source, PreviewTabs) && IsMarkdownTabSelected())
         {
             await UpdateMarkdownPreviewAsync();
         }
     }
+
+    private async void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs eventArgs)
+    {
+        if (IsMarkdownTabSelected() &&
+            eventArgs.PropertyName is (nameof(MainViewModel.MarkdownHtml) or nameof(MainViewModel.SelectedDocument)))
+        {
+            await UpdateMarkdownPreviewAsync();
+        }
+    }
+
+    private bool IsMarkdownTabSelected() =>
+        Equals((PreviewTabs.SelectedItem as TabItem)?.Header, "Markdown");
 
     private async Task UpdateMarkdownPreviewAsync()
     {
@@ -72,6 +83,7 @@ public partial class MainWindow : Window
     private void OnClosed(object? sender, EventArgs e)
     {
         _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
+        PreviewTabs.SelectionChanged -= OnPreviewTabChanged;
         MarkdownWebView.Dispose();
     }
 }

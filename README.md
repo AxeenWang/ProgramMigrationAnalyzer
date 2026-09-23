@@ -2,7 +2,7 @@
 
 程式移植分析儀是一套 Windows WPF 概念驗證工具，目標是分析舊版 .NET Framework C# 與 Informix 4GL 原始碼，產生結構化分析、Markdown 報告與現代化 C# 程式碼草稿。
 
-> 目前狀態：第一階段 POC 已完成。第二階段加入可靠性與操作安全修正。互動式 WPF UI 驗收預定於第三階段執行。
+> 目前狀態：第一階段 POC 與第二階段可靠性修正已合併。第三階段的樣本回歸、WPF 畫面流程及實際桌面操作已通過，WebView2 HTML 預覽與失敗備援均已驗證。按鈕與頁籤的視覺設計仍待使用者確認。
 
 ## Features
 
@@ -47,6 +47,10 @@ ProgramMigrationAnalyzer/
 ├─ samples/
 │  ├─ 4gl/
 │  └─ csharp-framework/
+├─ tests/
+│  ├─ ProgramMigrationAnalyzer.Phase2Checks/
+│  ├─ ProgramMigrationAnalyzer.RegressionChecks/
+│  └─ ProgramMigrationAnalyzer.WpfChecks/
 ├─ output/
 └─ docs/
 ```
@@ -74,8 +78,12 @@ ProgramMigrationAnalyzer/
 
 ```powershell
 dotnet restore ProgramMigrationAnalyzer.sln
-dotnet build ProgramMigrationAnalyzer.sln
+$env:MSBUILDDISABLENODEREUSE = '1'
+$env:DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER = '1'
+dotnet build ProgramMigrationAnalyzer.sln --no-restore -m:1 -nr:false -p:UseSharedCompilation=false
 ```
+
+本機 Phase 3 驗證使用單一 MSBuild 節點且停用節點重用，完成後沒有留下 `dotnet` 或 `MSBuild` 背景程序。
 
 ## Run
 
@@ -131,7 +139,16 @@ dotnet run --project .\src\ProgramMigrationAnalyzer.App\ProgramMigrationAnalyzer
 dotnet run --project .\tests\ProgramMigrationAnalyzer.Phase2Checks\ProgramMigrationAnalyzer.Phase2Checks.csproj
 ```
 
-檢查涵蓋資料夾排除、同名輸出、背景分析、切換文件期間的結果歸屬、同路徑重新載入、失敗後狀態，以及 WebView2 提示與 Log。WebView2 實際啟動失敗的畫面驗收留待第三階段。
+檢查涵蓋資料夾排除、同名輸出、背景分析、切換文件期間的結果歸屬、同路徑重新載入、失敗後狀態，以及 WebView2 提示與 Log。第三階段另以真實 WPF 視窗檢查純文字備援，並以主程式實際操作確認 HTML 成功渲染。
+
+第三階段的樣本與 WPF 畫面流程檢查：
+
+```powershell
+dotnet run --no-build --project .\tests\ProgramMigrationAnalyzer.RegressionChecks\ProgramMigrationAnalyzer.RegressionChecks.csproj
+dotnet run --no-build --project .\tests\ProgramMigrationAnalyzer.WpfChecks\ProgramMigrationAnalyzer.WpfChecks.csproj
+```
+
+回歸檢查涵蓋 10 份樣本、規格 Scenario A/B/C、`.NET 8` 與 `.NET 10` 輸出、5 份 4GL 草稿的 C# 編譯，以及邊界輸入。WPF 檢查會顯示真實視窗並驗證畫面綁定、操作命令、頁籤、報告儲存與失敗提示。另以實際桌面操作確認原生對話框、文件切換、Markdown HTML 與 SQL 表格的可讀性。詳細結果和待確認項目見 [`docs/Phase3_Verification_and_Delivery.md`](docs/Phase3_Verification_and_Delivery.md)。
 
 ## Known Limitations
 

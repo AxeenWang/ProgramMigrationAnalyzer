@@ -16,6 +16,11 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
+        if (MainWindow is not null)
+        {
+            return;
+        }
+
         var outputDirectory = ResolveOutputDirectory();
         var parsers = new ISourceParser[]
         {
