@@ -85,6 +85,9 @@ EBWebView/
 .codex-tmp/
 .claude-tmp/
 
+# Local reference material
+.references/
+
 # Operating-system metadata
 Thumbs.db
 ehthumbs.db
