@@ -206,7 +206,7 @@ CheckSupport.Check(embeddedKeyId == snapshotKeyId, "Published trust must use the
 - [x] 在替換真實帳號檔前，取得指定測試機的新版本 ProgramData／ACL 授權，具體說明舊 unsigned 帳號將換成公司 Key、建議的恢復方式與可保留備份。授權未取得可完成其餘隔離工作，但本 Task 的真實部署保持未完成。
 - [x] 用正式公鑰 publish，使用者手動完成 UAC／Key 匯入／帳密登入。實測取消、首次啟用、舊入口拒絕、不同工作目錄、重啟、Scenario A／B／C、分析／轉譯、HTML／純文字、忙碌登出、重新登入與輸出保留、關閉無殘留程序。拒絕測試只用隔離資料，不破壞真實 Key。核對真實 ACL 與祖先 ACL 不變，不打印 hash／salt。
 - [x] 更新 README 的公司 keygen／issue／import／update／publish、公鑰設定、8 字元規則、舊版遷移、私鑰備份、公鑰更換、離線重放及主機管理員限制。交付紀錄分列自動化、publish、真實部署、未執行項目與必要恢復手續。
-- [ ] 經驗證後用 repo-push 提交及推送，建議 commit `test: verify offline authorization and document delivery`，確認工作區乾淨、upstream 0／0。所有必要驗收完成才用 repo-open-pr 建立唯一 ready PR，描述正式客戶端行為、測試及限制並 attach 到目前 chat，不自動 merge。
+- [x] 經驗證後用 repo-push 提交及推送，commit `3e1b1fd`（`test: verify offline authorization and document delivery`），確認工作區乾淨、upstream 0／0。所有必要驗收完成後用 repo-open-pr 建立唯一 ready [PR #11](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/11)，描述正式客戶端行為、測試及限制並 attach 到目前 chat，不自動 merge。
 
 ## 驗收對照與進度
 
@@ -217,10 +217,10 @@ CheckSupport.Check(embeddedKeyId == snapshotKeyId, "Published trust must use the
 | O6 | T2 atomic／ACL、T4 UAC／取消 | T6 |
 | O8、O9 | T3 issuer／密碼與記憶體金鑰 | T6 使用者操作正式 issuer |
 | O10 | T2 revision／雙隔離部署 | 不額外要求第二台真實主機 |
-| O11 | T5 publish／snapshot／轉送 | T6 正式 public key publish |
+| O11 | T5 publish／snapshot／正式根目錄建置 | T6 正式 public key publish |
 | O12 | T4 累積回歸、T6 完整 suites | T6 桌面／樣本／退出 |
 
-P5-T1 已完成並推送 5a791c6。P5-T2 已完成並推送 52fcb92。P5-T3 已完成並推送 888c8f0，P5-T4 已完成並推送 5455e16，P5-T5 已完成並推送 64fe9c1。P5-T6 的公司金鑰、部署、回歸、使用者桌面驗收及退出檢查已完成，準備提交／推送與唯一 ready PR。使用者已核准按本計畫開分支、逐 Task 驗證／commit／push，Phase 完成建立唯一 PR。分支只在實際開始當前 Phase 時建立，不預建後續 Phase。授權範圍不含 merge、force push、歷史覆寫或未指定電腦部署。
+P5-T1 已完成並推送 5a791c6。P5-T2 已完成並推送 52fcb92。P5-T3 已完成並推送 888c8f0，P5-T4 已完成並推送 5455e16，P5-T5 已完成並推送 64fe9c1，P5-T6 已完成驗證並推送 3e1b1fd。唯一 ready PR #11 已建立並附加，目前 OPEN，等待人員審查與合併。使用者已核准按本計畫開分支、逐 Task 驗證／commit／push，Phase 完成建立唯一 PR。分支只在實際開始當前 Phase 時建立，不預建後續 Phase。授權範圍不含 merge、force push、歷史覆寫或未指定電腦部署。
 
 ### P5-T1 執行紀錄
 
@@ -264,7 +264,7 @@ P5-T1 已完成並推送 5a791c6。P5-T2 已完成並推送 52fcb92。P5-T3 已�
 
 Ruling：正式發布函式允許專案內明確指定的隔離輸出位置，僅供驗證相同 root publisher，不改變兩個 bat 的正式輸出位置，也不讀取 runtime trust override。成本是多一個具範圍驗證的輸出參數，避免使用測試公鑰覆寫現有正式 EXE。
 
-### P5-T6 執行紀錄（進行中）
+### P5-T6 執行紀錄
 
 2026-10-01：初始 restore、build、AuthenticationChecks all 80 PASS、Phase2Checks、RegressionChecks、WpfChecks 全部 exit 0，build 0 warnings／0 errors。WPF 檢查實際確認 WebView2 0x8000FFFF 後純文字備援成功，正式 HTML 仍待桌面驗證。
 
@@ -281,3 +281,5 @@ T6 正式金鑰與部署進度：使用者確認公司加密私鑰／公鑰已�
 T6 桌面驗收確認：使用者明確回覆新版正式 EXE 已完成 Axeen 登入、Scenario A／B／C 分析與轉譯、HTML／純文字預覽、忙碌登出限制、重登清空且輸出保留。上述為使用者觀察，與自動化 WPF 純文字備援證據分列。原有操作簡報依使用者指定僅加入本機 `.git/info/exclude`，原檔 SHA256 未變，不納入 PR。設計文件同步修正授權副檔名為 `.pma-key`、直接由正式根目錄發布的流程與 temp 只存證據的界線，保持與後續核准指示及實作一致。殘留程序清理、正式 EXE 舊入口與正常退出仍待完成，未宣告 T6 完成。
 
 T6 退出檢查完成：正式公司公鑰 EXE 的舊管理參數只顯示拒絕提示，使用者確認並關閉，exit 1，帳號檔全檔指紋未變。使用者授權結束的兩個既有程序在再次核對時已自行退出，未執行強制終止，最終產品程序數為 0。正式 signed verifier／Windows ACL policy 再核對通過。所有必要驗證與文件已完成，待依最後一項執行提交、推送及 ready PR。
+
+T6 Git 交付完成：3e1b1fd 已推送，工作區乾淨且 upstream 0／0。全 Phase PR 範圍檢查通過，正式金鑰、Key、帳號檔、temp、publish 產物及原有簡報均未納入。PR #11 已建立為 ready，base main、head 為當前 Phase 分支，已 attach 到本 chat，未自動合併。本次僅補記已發生的 Git 結果，後續由人員審查。

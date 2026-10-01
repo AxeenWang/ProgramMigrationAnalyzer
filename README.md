@@ -4,7 +4,7 @@
 
 > 目前狀態：第一階段功能與第二階段可靠性修正已合併。第三階段的樣本回歸、WPF 畫面流程及實際桌面操作已通過，WebView2 HTML 預覽與失敗備援均已驗證。按鈕與頁籤的視覺設計仍待使用者確認。
 
-公司簽章離線授權已接入正常啟動流程，Phase 5 的 T1～T5 已推送，T6 已完成正式公司金鑰與 SWANG-PC 帳號部署，使用者已確認完整桌面驗收通過，舊入口與退出檢查也已完成，準備 Git 交付。客戶端須先匯入公司 Key，再以帳密登入，密碼最低 8 個字元，允許特殊符號。目前證據與待驗項目見[離線授權交付紀錄](docs/Offline_Authorization_Verification_and_Delivery.md)。Phase 4 的舊版本結果另保留在[登入驗證與交付紀錄](docs/Login_Verification_and_Delivery.md)。
+公司簽章離線授權已接入正常啟動流程，Phase 5 的 T1～T6 已完成並推送，[PR #11](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/11) 為 ready、等待審查。正式公司金鑰與 SWANG-PC 帳號部署、使用者完整桌面驗收、舊入口及退出檢查均已完成。客戶端須先匯入公司 Key，再以帳密登入，密碼最低 8 個字元，允許特殊符號。目前證據與未執行項目見[離線授權交付紀錄](docs/Offline_Authorization_Verification_and_Delivery.md)。Phase 4 的舊版本結果另保留在[登入驗證與交付紀錄](docs/Login_Verification_and_Delivery.md)。
 
 ## Features
 

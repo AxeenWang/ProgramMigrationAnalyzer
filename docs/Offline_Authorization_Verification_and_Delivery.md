@@ -2,13 +2,13 @@
 
 更新日期：2026-10-01。Active Target：`Projects/ProgramMigrationAnalyzer`，Target Lock enabled，CodeLab-managed。正式來源、建置及發布均使用 `D:/AxeenWorld/CodeLab/Projects/ProgramMigrationAnalyzer`。
 
-目前 Phase 5 的 T1～T5 已完成並推送，T6 的回歸、正式部署、桌面驗收與退出檢查已完成，準備提交、推送及建立 ready PR。正式公司金鑰、公司 Key 發布與帳號替換已完成，使用者已確認新版正式 EXE 的完整桌面驗收通過。
+Phase 5 的 T1～T6 已完成驗證及推送，唯一 [PR #11](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/11) 已建立為 ready，目前 OPEN，等待人員審查與合併。正式公司金鑰、公司 Key 發布與帳號替換已完成，使用者已確認新版正式 EXE 的完整桌面驗收通過。
 
 ## Git 與來源
 
 - 分支：`codex/offline-authorization-phase-5`，基底 `7513324`。
 - T1：`5a791c6`，T2：`52fcb92`，T3：`888c8f0`，T4：`5455e16`，T5：`64fe9c1`。
-- T5 推送後 upstream 0／0，T6 變更尚未提交。
+- T6 驗證與交付提交：`3e1b1fd`，推送後工作區乾淨、upstream 0／0。PR base 為 `main`，head 為本 Phase 分支，`isDraft=false`，沒有自動合併。
 - 舊暫存 worktree 是非作業用復原副本，不作為來源或發布 fallback。
 - 使用者原有操作簡報未修改，依使用者指定僅在本機 `.git/info/exclude` 排除該檔案，不納入本 Phase PR。
 
@@ -99,4 +99,4 @@ T6 作者自審檢查 App 的 project references 與 trust resource、issuer 的
 
 完全離線且客戶持有管理員權限，不能保證抵抗 EXE 修改、程序記憶體擷取或完整狀態回滾。revision 比較防止正常更新流程降版，不能阻止刪除帳號檔後重放有效舊 Key。既有 session 不即時撤銷，不加密分析輸出，不提供集中停權。
 
-T6 的必要驗證已完成，待執行 Git 提交／推送與唯一 ready PR。公司金鑰、簽發 Key、正式客戶端發布、帳號替換、簽章及 ACL 核對已完成，完整桌面驗收已由使用者確認，最終相關程序數為 0。乾淨無 .NET 的 VM、第二台真實主機與管理員攻擊測試不在本次正式驗收。
+T6 的必要驗證、提交／推送與唯一 ready PR 已完成。公司金鑰、簽發 Key、正式客戶端發布、帳號替換、簽章及 ACL 核對已完成，完整桌面驗收已由使用者確認，最終相關程序數為 0。後續先審查 PR，合併後再依使用者指示同步主線及清理 Phase 分支。乾淨無 .NET 的 VM、第二台真實主機與管理員攻擊測試不在本次正式驗收。
