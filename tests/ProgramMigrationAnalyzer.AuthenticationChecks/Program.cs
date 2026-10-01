@@ -7,14 +7,15 @@ internal static class Program
     {
         var suites = new Dictionary<string, Action>(StringComparer.OrdinalIgnoreCase)
         {
-            ["contracts"] = ContractChecks.Run
+            ["contracts"] = ContractChecks.Run,
+            ["crypto"] = CryptoChecks.Run
         };
         var selected = args.Length == 0 ? "all"
             : args.Length == 2 && args[0] == "--suite" ? args[1] : string.Empty;
 
         if (selected != "all" && !suites.ContainsKey(selected))
         {
-            Console.Error.WriteLine("Usage: AuthenticationChecks --suite contracts|all. Unimplemented suites cannot pass.");
+            Console.Error.WriteLine("Usage: AuthenticationChecks --suite contracts|crypto|all. Unimplemented suites cannot pass.");
             return 2;
         }
 
