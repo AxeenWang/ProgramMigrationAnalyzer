@@ -10,7 +10,7 @@
 
 **Spec:** [ProgramMigrationAnalyzer_Codex_Spec.md](../../ProgramMigrationAnalyzer_Codex_Spec.md)，第 37 節及第 7、19、22、24～27、32～34 節相關更新。
 
-**日期／狀態:** 2026-10-01／Phase 1～3 已合併並清理各自兩端主題分支。Phase 4 已從最新 origin/main 的 `82474c8` 開工，P4-T1 已推送 `9d0e2d2`，P4-T2 部署修正及完成紀錄已推送 `a12b7a4`、`6d80a48`，P4-T3 已推送 `c7b0ea6`。各 Task 完成後確認同步 0／0 且工作區乾淨，唯一 [PR #9](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/9) 已查證為 OPEN／ready 並附加 chat，Phase 4 已送審，尚未合併。原專案範圍為 `D:/AxeenWorld/CodeLab/Projects/ProgramMigrationAnalyzer`，檔案路徑均相對於各 Phase 的 Git root，既有隔離路徑見開工決議。
+**日期／狀態:** 2026-10-01／Phase 1～3 已合併並清理各自兩端主題分支。Phase 4 已從最新 origin/main 的 `82474c8` 開工，P4-T1 已推送 `9d0e2d2`，P4-T2 部署修正及完成紀錄已推送 `a12b7a4`、`6d80a48`，P4-T3 已推送 `c7b0ea6`。各 Task 完成後確認同步 0／0 且工作區乾淨，唯一 [PR #9](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/9) 已合併，merge commit `7533d6b`，登入 Phase 1～4 已完成。2026-10-01 使用者授權全部登入作業回到正式專案根目錄，見 [工作區復原](../../Workspace_Restoration_2026-10-01.md)。下文各階段的審查狀態保留當時紀錄。原專案範圍為 `D:/AxeenWorld/CodeLab/Projects/ProgramMigrationAnalyzer`，檔案路徑均相對於各 Phase 的 Git root，既有隔離路徑見開工決議。
 
 ## Phase 與分支總覽
 
@@ -365,7 +365,7 @@ dotnet run --no-build --project tests/ProgramMigrationAnalyzer.WpfChecks
 | 1 | 2／2 完成並逐一推送 | 已清理，原 `codex/login-phase-1-foundation` | contracts 5 組、crypto 7 組及既有回歸通過 | [PR #6](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/6)，MERGED | `e33e33f` |
 | 2 | 2／2 完成並逐一推送 | 已清理，原 `codex/login-phase-2-local-accounts` | contracts 5、crypto 7、store 11、admin 6 及既有回歸通過 | [PR #7](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/7)，MERGED | `d890707` |
 | 3 | 3／3 完成並逐一推送，已合併 | 已清理，原 `codex/login-phase-3-desktop-gate` | login 5／5、startup 11／11、access 6／6，累積 51 組及既有回歸通過 | [PR #8](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/8)，MERGED | `82474c8` |
-| 4 | 3／3 完成並逐一推送，已送審 | `codex/login-phase-4-verification`，保留供審查 | 認證 56／56、Build 0 warnings／0 errors、三組回歸、SWANG-PC 必要部署及文件檢查通過 | [PR #9](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/9)，OPEN／ready | 未合併 |
+| 4 | 3／3 完成並逐一推送，已合併 | `codex/login-phase-4-verification`，已完成合併後清理 | 認證 56／56、Build 0 warnings／0 errors、三組回歸、SWANG-PC 必要部署及文件檢查通過 | [PR #9](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/9)，MERGED，`7533d6b` | 已合併 |
 
 Phase 的正常狀態依序為「未開始 → 實作中 → 驗證通過 → 已送審 → 已合併」。Task 全部完成且必要檢查通過，才可標記「驗證通過」，PR URL 與遠端狀態查證成功，才可標記「已送審」。未能送 PR 時仍是未交付，不能略過此狀態。下一 Phase 的開工條件為前一 Phase「已合併」。
 

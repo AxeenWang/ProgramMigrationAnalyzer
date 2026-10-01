@@ -16,12 +16,15 @@ internal static class Program
             };
         if (args is ["--admin-window-check"])
             return AdministrationChecks.RunWindowChild();
+        if (args is ["--issuer-window-check"])
+            return IssuerChecks.RunWindowChild();
         if (args is ["--login-window-check"])
             return LoginChecks.RunWindowChild();
         var suites = new Dictionary<string, Action>(StringComparer.OrdinalIgnoreCase)
         {
             ["signature"] = AuthorizationSignatureChecks.Run,
             ["signed-store"] = SignedStoreChecks.Run,
+            ["issuer"] = IssuerChecks.Run,
             ["contracts"] = ContractChecks.Run,
             ["crypto"] = CryptoChecks.Run,
             ["store"] = StoreChecks.Run,
@@ -35,7 +38,7 @@ internal static class Program
 
         if (selected != "all" && !suites.ContainsKey(selected))
         {
-            Console.Error.WriteLine("Usage: AuthenticationChecks --suite contracts|crypto|store|admin|login|startup|access|all. Unimplemented suites cannot pass.");
+            Console.Error.WriteLine($"Usage: AuthenticationChecks --suite {string.Join("|",suites.Keys)}|all. Unimplemented suites cannot pass.");
             return 2;
         }
 
