@@ -154,7 +154,7 @@ internal static class AdministrationChecks
                 await vm.SubmitCommand.ExecutionTask!;
                 Check(password.Password.Length == 0 && confirmation.Password.Length == 0
                     && !File.Exists(fixture.FilePath), "Window must clear both passwords and reject mismatch.");
-                password.Password = confirmation.Password = "Test-only credential one";
+                password.Password = confirmation.Password = "Ab@!#9x?";
                 submit.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                 Check(vm.IsBusy && !password.IsEnabled && !submit.IsEnabled, "Background submission must disable editing and duplicate submits.");
                 var pendingSubmission = vm.SubmitCommand.ExecutionTask;
@@ -164,6 +164,9 @@ internal static class AdministrationChecks
                 await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
                 Check((await fixture.Store.ReadAsync()).Users.Count == 1 && password.Password.Length == 0
                     && confirmation.Password.Length == 0, "Window must create the account and clear secrets.");
+                Check(vm.StatusMessage == "帳號設定已儲存，下次登入生效。"
+                    && (await fixture.Authenticate("user.one", "Ab@!#9x?")).IsSuccess,
+                    "Eight-character symbol password submitted through the real window must save and authenticate.");
                 password.Password = confirmation.Password = "discard these credentials";
                 vm.Mode = LocalAccountConfigurationMode.Disable;
                 Check(!password.IsEnabled && password.Password.Length == 0 && confirmation.Password.Length == 0,

@@ -13,7 +13,7 @@ public sealed class LocalPasswordHasher
 
     public PasswordHashRecord Create(SecureString password)
     {
-        using var buffer = PasswordBuffer.Read(password, minimumScalarCount: 15);
+        using var buffer = PasswordBuffer.Read(password, minimumScalarCount: 8);
         var salt = RandomNumberGenerator.GetBytes(SaltLength);
         var hash = Rfc2898DeriveBytes.Pbkdf2(buffer.Bytes, salt, CreationIterations, HashAlgorithmName.SHA256, HashLength);
         return new PasswordHashRecord(Algorithm, CreationIterations, salt, hash);

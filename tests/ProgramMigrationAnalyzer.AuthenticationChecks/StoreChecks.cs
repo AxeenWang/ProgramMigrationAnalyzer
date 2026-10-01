@@ -29,7 +29,9 @@ internal static class StoreChecks
         (nameof(NonElevatedStoreCannotWrite), () => NonElevatedStoreCannotWrite().GetAwaiter().GetResult()),
         (nameof(UnsafeLockPathFailsBeforeOpening), () => UnsafeLockPathFailsBeforeOpening().GetAwaiter().GetResult()),
         (nameof(OversizedUpdatePreservesOldFile), () => OversizedUpdatePreservesOldFile().GetAwaiter().GetResult()),
-        (nameof(PostReplacementValidationRollsBack), () => PostReplacementValidationRollsBack().GetAwaiter().GetResult()));
+        (nameof(PostReplacementValidationRollsBack), () => PostReplacementValidationRollsBack().GetAwaiter().GetResult()),
+        (nameof(WindowsAclChecks.VolumeRootDeleteCannotReplaceDeployment), WindowsAclChecks.VolumeRootDeleteCannotReplaceDeployment),
+        (nameof(WindowsAclChecks.ReplacementAndRootControlRemainForbidden), WindowsAclChecks.ReplacementAndRootControlRemainForbidden));
 
     private static async Task ValidEnabledAccountOnly()
     {
