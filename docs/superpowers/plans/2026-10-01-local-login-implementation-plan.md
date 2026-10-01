@@ -162,6 +162,8 @@ Phase 內依 Task ID 順序執行，Phase 之間依合併順序開始。每項�
 
 ### Task P2-T1：帳號儲存、ACL 與實際認證
 
+**進度:** store 8／8 行為檢查從失敗轉為通過，涵蓋檔案驗證、唯讀登入、權限拒絕、原子更新、取消與 5 秒競爭鎖。Solution build 0 warnings／0 errors，累積回歸通過。Windows ACL adapter 尚未做真實部署整合驗證，測試使用 fake policy。隔離檔案原子替換在沙箱內遭 0x80070005 拒絕，相同測試經核准執行通過。此 Task 驗證後提交及推送，確認同步才開始 P2-T2。
+
 **Files:** Create `LocalAccountAccessPolicy.cs`、`LocalAccountStore.cs`、`LocalAuthenticationService.cs`，Create `StoreChecks.cs`。
 
 **Interfaces:**
@@ -171,14 +173,14 @@ Phase 內依 Task ID 順序執行，Phase 之間依合併順序開始。每項�
 - `LocalAccountConfigurationException`：只攜帶安全分類，不回傳原始 JSON。
 - `LocalAuthenticationService(LocalAccountStore store, LocalPasswordHasher hasher)` 實作 P1-T1 的認證介面，正常產品路徑以 CommonApplicationData 取得，僅測試 DI 可以指定隔離檔案。
 
-- [ ] 寫 `ValidEnabledAccountOnly`：正確帳密＋啟用才成功，未知、錯誤、停用都回 InvalidCredentials，Interactive 回 UnsupportedRequest，每次驗證重新讀檔。
-- [ ] 寫 `InvalidAccountFileFailsClosed`：缺檔、半份 JSON、schema != 1、重複正規化帳號／GUID、無效 Base64、錯誤欄位類型回 ConfigurationInvalid，正常驗證不建立或修改檔案。
-- [ ] 寫 `AclAndInterruptedWrite`：一般使用者具有 Write／Delete／ChangePermissions 或父目錄可替換檔案時拒絕，寫入中斷仍可讀舊記錄，更新成功保留必要 ACL。ACL 斷言以 fake 模擬，真實 adapter 的整合測試只用已授權隔離目錄。
-- [ ] 執行 store suite，確認上述情境失敗後再實作。
-- [ ] 實作 camelCase JSON、完整驗證及背景雜湊，未知／停用帳號亦完成等價 dummy hash 工作，再回統一失敗，減少帳號探測的時間差。
-- [ ] 實作受保護 auth 目錄及檔案 ACL：Administrators／SYSTEM FullControl、Users 讀取，移除不安全繼承寫入規則，不使用會連管理者一併阻擋的 Everyone deny。拒絕會跳出指定 auth 目錄的 reparse points。
-- [ ] UpdateAsync 只允許提升的管理程序：在受保護目錄取得獨占 lock file 後重讀最新資料，以同目錄安全暫存檔原子替換，取消／失敗保留舊檔並釋放 lock。競爭鎖等待最多 5 秒，逾時提示稍後重試，避免兩個管理程序覆蓋彼此更新。首次無檔案的空 schema 1 初始化僅限此管理路徑，損壞現有檔不可默默覆寫。
-- [ ] 重跑 `dotnet run --project tests/ProgramMigrationAnalyzer.AuthenticationChecks -- --suite store`，確認通過，並檢查診斷輸出未包含帳號檔或 hash。
+- [x] 寫 `ValidEnabledAccountOnly`：正確帳密＋啟用才成功，未知、錯誤、停用都回 InvalidCredentials，Interactive 回 UnsupportedRequest，每次驗證重新讀檔。
+- [x] 寫 `InvalidAccountFileFailsClosed`：缺檔、半份 JSON、schema != 1、重複正規化帳號／GUID、無效 Base64、錯誤欄位類型回 ConfigurationInvalid，正常驗證不建立或修改檔案。
+- [x] 寫 `AclAndInterruptedWrite`：一般使用者具有 Write／Delete／ChangePermissions 或父目錄可替換檔案時拒絕，寫入中斷仍可讀舊記錄，更新成功保留必要 ACL。ACL 斷言以 fake 模擬，真實 adapter 的整合測試只用已授權隔離目錄。
+- [x] 執行 store suite，確認上述情境失敗後再實作。
+- [x] 實作 camelCase JSON、完整驗證及背景雜湊，未知／停用帳號亦完成等價 dummy hash 工作，再回統一失敗，減少帳號探測的時間差。
+- [x] 實作受保護 auth 目錄及檔案 ACL：Administrators／SYSTEM FullControl、Users 讀取，移除不安全繼承寫入規則，不使用會連管理者一併阻擋的 Everyone deny。拒絕會跳出指定 auth 目錄的 reparse points。
+- [x] UpdateAsync 只允許提升的管理程序：在受保護目錄取得獨占 lock file 後重讀最新資料，以同目錄安全暫存檔原子替換，取消／失敗保留舊檔並釋放 lock。競爭鎖等待最多 5 秒，逾時提示稍後重試，避免兩個管理程序覆蓋彼此更新。首次無檔案的空 schema 1 初始化僅限此管理路徑，損壞現有檔不可默默覆寫。
+- [x] 重跑 `dotnet run --project tests/ProgramMigrationAnalyzer.AuthenticationChecks -- --suite store`，確認通過，並檢查診斷輸出未包含帳號檔或 hash。
 
 ### Task P2-T2：管理者帳號設定模式
 
@@ -353,7 +355,7 @@ dotnet run --no-build --project tests/ProgramMigrationAnalyzer.WpfChecks
 | Phase | Task 狀態 | 分支狀態 | 驗證 | PR URL／狀態 | 合併狀態 |
 | --- | --- | --- | --- | --- | --- |
 | 1 | 2／2 完成並逐一推送 | 已清理，原 `codex/login-phase-1-foundation` | contracts 5 組、crypto 7 組及既有回歸通過 | [PR #6](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/6)，MERGED | `e33e33f` |
-| 2 | 0／2 完成 | 未建立 | 未執行 | 未建立 | 未合併 |
+| 2 | P2-T1 完成，P2-T2 尚未開始 | 已建立 codex/login-phase-2-local-accounts | store 8 組及累積回歸通過 | 未建立 | 未合併 |
 | 3 | 0／3 完成 | 未建立 | 未執行 | 未建立 | 未合併 |
 | 4 | 0／3 完成 | 未建立 | 未執行 | 未建立 | 未合併 |
 
