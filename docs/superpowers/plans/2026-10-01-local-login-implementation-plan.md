@@ -10,7 +10,7 @@
 
 **Spec:** [ProgramMigrationAnalyzer_Codex_Spec.md](../../ProgramMigrationAnalyzer_Codex_Spec.md)，第 37 節及第 7、19、22、24～27、32～34 節相關更新。
 
-**日期／狀態:** 2026-10-01／Phase 1 已合併並清理分支。Phase 1 基礎元件及檢查完成，Phase 2～4 尚未開始，產品登入與發佈驗收尚未完成。原專案範圍為 `D:/AxeenWorld/CodeLab/Projects/ProgramMigrationAnalyzer`，檔案路徑均相對於各 Phase 的 Git root，Phase 1 隔離路徑見開工決議。
+**日期／狀態:** 2026-10-01／Phase 1 已合併並清理分支，Phase 2 兩個 Task 已逐一完成及推送，Phase 審查與驗證通過，ready PR #7 已建立並附加 chat，目前已送審、尚未合併。Phase 3～4 尚未開始，產品登入與發佈驗收尚未完成。原專案範圍為 `D:/AxeenWorld/CodeLab/Projects/ProgramMigrationAnalyzer`，檔案路徑均相對於各 Phase 的 Git root，Phase 1 隔離路徑見開工決議。
 
 ## Phase 與分支總覽
 
@@ -162,6 +162,8 @@ Phase 內依 Task ID 順序執行，Phase 之間依合併順序開始。每項�
 
 ### Task P2-T1：帳號儲存、ACL 與實際認證
 
+**進度:** store 8／8 行為檢查從失敗轉為通過，涵蓋檔案驗證、唯讀登入、權限拒絕、原子更新、取消與 5 秒競爭鎖。Solution build 0 warnings／0 errors，累積回歸通過。Windows ACL adapter 尚未做真實部署整合驗證，測試使用 fake policy。隔離檔案原子替換在沙箱內遭 0x80070005 拒絕，相同測試經核准執行通過。此 Task 驗證後提交及推送，確認同步才開始 P2-T2。
+
 **Files:** Create `LocalAccountAccessPolicy.cs`、`LocalAccountStore.cs`、`LocalAuthenticationService.cs`，Create `StoreChecks.cs`。
 
 **Interfaces:**
@@ -171,16 +173,18 @@ Phase 內依 Task ID 順序執行，Phase 之間依合併順序開始。每項�
 - `LocalAccountConfigurationException`：只攜帶安全分類，不回傳原始 JSON。
 - `LocalAuthenticationService(LocalAccountStore store, LocalPasswordHasher hasher)` 實作 P1-T1 的認證介面，正常產品路徑以 CommonApplicationData 取得，僅測試 DI 可以指定隔離檔案。
 
-- [ ] 寫 `ValidEnabledAccountOnly`：正確帳密＋啟用才成功，未知、錯誤、停用都回 InvalidCredentials，Interactive 回 UnsupportedRequest，每次驗證重新讀檔。
-- [ ] 寫 `InvalidAccountFileFailsClosed`：缺檔、半份 JSON、schema != 1、重複正規化帳號／GUID、無效 Base64、錯誤欄位類型回 ConfigurationInvalid，正常驗證不建立或修改檔案。
-- [ ] 寫 `AclAndInterruptedWrite`：一般使用者具有 Write／Delete／ChangePermissions 或父目錄可替換檔案時拒絕，寫入中斷仍可讀舊記錄，更新成功保留必要 ACL。ACL 斷言以 fake 模擬，真實 adapter 的整合測試只用已授權隔離目錄。
-- [ ] 執行 store suite，確認上述情境失敗後再實作。
-- [ ] 實作 camelCase JSON、完整驗證及背景雜湊，未知／停用帳號亦完成等價 dummy hash 工作，再回統一失敗，減少帳號探測的時間差。
-- [ ] 實作受保護 auth 目錄及檔案 ACL：Administrators／SYSTEM FullControl、Users 讀取，移除不安全繼承寫入規則，不使用會連管理者一併阻擋的 Everyone deny。拒絕會跳出指定 auth 目錄的 reparse points。
-- [ ] UpdateAsync 只允許提升的管理程序：在受保護目錄取得獨占 lock file 後重讀最新資料，以同目錄安全暫存檔原子替換，取消／失敗保留舊檔並釋放 lock。競爭鎖等待最多 5 秒，逾時提示稍後重試，避免兩個管理程序覆蓋彼此更新。首次無檔案的空 schema 1 初始化僅限此管理路徑，損壞現有檔不可默默覆寫。
-- [ ] 重跑 `dotnet run --project tests/ProgramMigrationAnalyzer.AuthenticationChecks -- --suite store`，確認通過，並檢查診斷輸出未包含帳號檔或 hash。
+- [x] 寫 `ValidEnabledAccountOnly`：正確帳密＋啟用才成功，未知、錯誤、停用都回 InvalidCredentials，Interactive 回 UnsupportedRequest，每次驗證重新讀檔。
+- [x] 寫 `InvalidAccountFileFailsClosed`：缺檔、半份 JSON、schema != 1、重複正規化帳號／GUID、無效 Base64、錯誤欄位類型回 ConfigurationInvalid，正常驗證不建立或修改檔案。
+- [x] 寫 `AclAndInterruptedWrite`：一般使用者具有 Write／Delete／ChangePermissions 或父目錄可替換檔案時拒絕，寫入中斷仍可讀舊記錄，更新成功保留必要 ACL。ACL 斷言以 fake 模擬，真實 adapter 的整合測試只用已授權隔離目錄。
+- [x] 執行 store suite，確認上述情境失敗後再實作。
+- [x] 實作 camelCase JSON、完整驗證及背景雜湊，未知／停用帳號亦完成等價 dummy hash 工作，再回統一失敗，減少帳號探測的時間差。
+- [x] 實作受保護 auth 目錄及檔案 ACL：Administrators／SYSTEM FullControl、Users 讀取，移除不安全繼承寫入規則，不使用會連管理者一併阻擋的 Everyone deny。拒絕會跳出指定 auth 目錄的 reparse points。
+- [x] UpdateAsync 只允許提升的管理程序：在受保護目錄取得獨占 lock file 後重讀最新資料，以同目錄安全暫存檔原子替換，取消／失敗保留舊檔並釋放 lock。競爭鎖等待最多 5 秒，逾時提示稍後重試，避免兩個管理程序覆蓋彼此更新。首次無檔案的空 schema 1 初始化僅限此管理路徑，損壞現有檔不可默默覆寫。
+- [x] 重跑 `dotnet run --project tests/ProgramMigrationAnalyzer.AuthenticationChecks -- --suite store`，確認通過，並檢查診斷輸出未包含帳號檔或 hash。
 
 ### Task P2-T2：管理者帳號設定模式
+
+**進度:** admin 6／6 行為檢查從失敗轉為通過，包含權限、生命週期、密碼確認、四種操作模式、取消及 STA 視窗隔離。重設保留 GUID 與停用狀態，關閉期間不提交晚到結果，密碼於送出、切換模式及關閉時清除。設定視窗影像已檢視。Solution build 0 warnings／0 errors，contracts 5、crypto 7、store 8、admin 6 及既有三組回歸通過。正式啟動入口尚未接入。驗證後逐 Task 提交、推送，再進行 Phase 審查。
 
 **Files:** Create `LocalAccountAdministrationService.cs`、`LocalAccountConfigurationWindow.xaml/.cs`、`ViewModels/LocalAccountConfigurationViewModel.cs`，Create `AdministrationChecks.cs`。
 
@@ -190,18 +194,18 @@ Phase 內依 Task ID 順序執行，Phase 之間依合併順序開始。每項�
 - `CreateOrResetAsync(string username, string displayName, SecureString password, CancellationToken) -> Task`，`SetEnabledAsync(string username, bool isEnabled, CancellationToken) -> Task`。
 - `LocalAccountConfigurationViewModel(LocalAccountAdministrationService administration)` 提供帳號、顯示名稱、模式（建立／重設／啟用／停用）、狀態與提交命令，視窗送出兩份短期 SecureString，不將密碼設為可觀察屬性。
 
-- [ ] 寫 `NonElevatedCannotManage`：fake policy 非提升時拒絕，沒有檔案寫入、沒有 session，`ManageAccountLifecycle`：建帳、重設保留 GUID、停用／啟用，錯誤時保留既有資料。
-- [ ] 寫 `ConfirmationAndModeIsolation`：兩密碼不一致不送出，僅切換啟用狀態不需要密碼，管理操作／關閉不顯示分析主視窗。
-- [ ] 執行 admin suite，確認服務及畫面缺少對應行為而失敗。
-- [ ] 實作建帳時以新 GUID、isEnabled=true 建立，重設時保留 GUID 與原 isEnabled，避免重設意外重新啟用停用帳號。未知帳號的啟用／停用回安全錯誤，不能隱式建帳。
-- [ ] 實作小型管理視窗、背景計算及清理，只接受互動遮罩密碼。啟動參數只允許選管理模式，不接受帳密，真正提升與否由 Windows token 檢查，不由工具 session 決定。
-- [ ] 重跑 `dotnet run --project tests/ProgramMigrationAnalyzer.AuthenticationChecks -- --suite admin`。實際接入啟動參數由 P3-T2 完成。
+- [x] 寫 `NonElevatedCannotManage`：fake policy 非提升時拒絕，沒有檔案寫入、沒有 session，`ManageAccountLifecycle`：建帳、重設保留 GUID、停用／啟用，錯誤時保留既有資料。
+- [x] 寫 `ConfirmationAndModeIsolation`：兩密碼不一致不送出，僅切換啟用狀態不需要密碼，管理操作／關閉不顯示分析主視窗。
+- [x] 執行 admin suite，確認服務及畫面缺少對應行為而失敗。
+- [x] 實作建帳時以新 GUID、isEnabled=true 建立，重設時保留 GUID 與原 isEnabled，避免重設意外重新啟用停用帳號。未知帳號的啟用／停用回安全錯誤，不能隱式建帳。
+- [x] 實作小型管理視窗、背景計算及清理，只接受互動遮罩密碼。啟動參數只允許選管理模式，不接受帳密，真正提升與否由 Windows token 檢查，不由工具 session 決定。
+- [x] 重跑 `dotnet run --project tests/ProgramMigrationAnalyzer.AuthenticationChecks -- --suite admin`。實際接入啟動參數由 P3-T2 完成。
 
 ### Phase 2 驗證與 PR
 
-- [ ] P2-T1、P2-T2 全部步驟完成，Solution build 與 contracts／crypto／store／admin suite 通過，既有三組 checks 通過。
-- [ ] 缺檔、格式、ACL、停用帳號、管理權限及寫入失敗皆有隔離測試證據，沒有建立真實 ProgramData 帳號。
-- [ ] commit／push 完成，worktree 乾淨，upstream 同步，建立並確認此分支的唯一 PR，記錄 URL，註明正式啟動入口待 Phase 3。
+- [x] P2-T1、P2-T2 全部步驟完成，Solution build 與 contracts／crypto／store／admin suite 通過，既有三組 checks 通過。
+- [x] 缺檔、格式、ACL、停用帳號、管理權限及寫入失敗皆有隔離測試證據，沒有建立真實 ProgramData 帳號。
+- [x] commit／push 完成，worktree 乾淨，upstream 同步，建立並確認此分支的唯一 PR，記錄 URL，註明正式啟動入口待 Phase 3。
 - [ ] 前述 PR 確認合併後，才允許開始 Phase 3。
 
 ## Phase 3：桌面登入整合
@@ -353,7 +357,7 @@ dotnet run --no-build --project tests/ProgramMigrationAnalyzer.WpfChecks
 | Phase | Task 狀態 | 分支狀態 | 驗證 | PR URL／狀態 | 合併狀態 |
 | --- | --- | --- | --- | --- | --- |
 | 1 | 2／2 完成並逐一推送 | 已清理，原 `codex/login-phase-1-foundation` | contracts 5 組、crypto 7 組及既有回歸通過 | [PR #6](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/6)，MERGED | `e33e33f` |
-| 2 | 0／2 完成 | 未建立 | 未執行 | 未建立 | 未合併 |
+| 2 | 2／2 完成並逐一推送 | codex/login-phase-2-local-accounts | contracts 5、crypto 7、store 11、admin 6 及既有回歸通過 | [PR #7](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/7)，OPEN／ready | 未合併 |
 | 3 | 0／3 完成 | 未建立 | 未執行 | 未建立 | 未合併 |
 | 4 | 0／3 完成 | 未建立 | 未執行 | 未建立 | 未合併 |
 
@@ -378,6 +382,25 @@ Phase 的正常狀態依序為「未開始 → 實作中 → 驗證通過 → �
 - 暫存進度使用 `.codex-tmp` 人工紀錄，遵守專案暫存規則及 Phase／Task 標題，成本為需人工維護，未使用 skill 的自動 ledger helpers。
 - 隔離 checkout 採 standalone bootstrap，原因見開工決議，成本為不自動匯入外部治理 anchor，仍遵守使用者已指定的隔離規則。
 - 使用作者自審，遵守本計畫對代理分工的授權限制，成本為沒有獨立代理的第二次檢查，仍須由 PR 審查確認是否可合併。
+
+### Phase 2 執行紀錄
+
+| Task | commit／push | 驗證 |
+| --- | --- | --- |
+| P2-T1 | d368e5b9a53bdb74102c011805542e5d6aa3e03c 已推送，0／0 後才開始 P2-T2 | store 初始 8／8 失敗，完成後 8／8 通過，累積回歸通過 |
+| P2-T2 | 8a3a7430833dd0d6604af0af78d5685f3c283902 已推送，0／0 後才開始 Phase 審查 | admin 初始 6／6 失敗，完成後 6／6 通過，包含 STA 設定視窗及取消檢查 |
+
+Phase 自審另以三個失敗檢查修正鎖檔開啟前驗證、4 MiB 帳號檔大小門檻及替換後驗證失敗的舊檔還原。更新用同目錄受保護備份保留舊資料，排他鎖涵蓋替換、還原及清理，成功後清理備份。還原期間的鎖保留另以實際隔離檔案的競爭開啟斷言確認，先失敗再修正。若作業系統連還原也拒絕，保留受保護備份供管理者復原，不宣稱能克服磁碟或作業系統故障。
+
+Phase 審查修正已提交並推送 40ba222348b7133c6ebe3aff227be88f301cae6b。PR #7 已查證為 OPEN、isDraft=false，base main、head codex/login-phase-2-local-accounts，已附加目前 chat，狀態為已送審，尚未合併。
+
+最終 Solution build 為 0 warnings／0 errors，AuthenticationChecks 為 contracts 5／5、crypto 7／7、store 11／11、admin 6／6，共 29 組，Phase2Checks、RegressionChecks、WpfChecks 通過。WpfChecks 仍觀察到既有 WebView2 E_UNEXPECTED，純文字備援路徑通過，完整 WebView2 呈現未驗證。
+
+帳號、鎖檔、hash、視窗影像及驗證產物均僅存在隔離暫存區，未提交。測試使用 fake policy，沒有存取真實 ProgramData 帳號或修改部署 ACL。Windows ACL adapter 的真實部署整合仍待另獲授權驗證。沙箱內原子替換遇到 0x80070005，相同隔離檢查經核准執行通過。
+
+設定視窗已以實際 STA 子程序驗證並檢視影像，帳密確認、背景計算、重複送出、模式切換及關閉清理通過。服務保留計畫的 CreateOrResetAsync，另提供 CreateAsync／ResetAsync，讓視窗四種模式拒絕重複建帳及未知帳號重設。一般權限拒絕管理，管理元件不建立工具 session 或分析主視窗。
+
+依使用者限制，由同一實作者順序執行及自審，未使用代理分工，獨立審查留待 PR。暫存進度沿用專案 .codex-tmp，未使用 skill 的其他 scratch 位置。正式 --configure-local-account 入口、登入畫面、啟動門檻與登出均待 Phase 3，此 Phase 不代表產品登入已完成。Phase 3／4 分支未建立。
 
 ## 完成與交接條件
 
