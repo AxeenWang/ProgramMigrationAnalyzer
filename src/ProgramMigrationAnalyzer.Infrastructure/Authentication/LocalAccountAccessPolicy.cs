@@ -105,13 +105,19 @@ public sealed class WindowsLocalAccountAccessPolicy : ILocalAccountAccessPolicy
     {
         var security = directory.GetAccessControl(AccessControlSections.Access | AccessControlSections.Owner);
         if (requireProtected && !security.AreAccessRulesProtected) throw UnsafeAccess();
-        ValidateSecurity(security, forbidden);
+        ValidateSecurity(security, forbidden, directory.FullName);
     }
 
-    private static void ValidateSecurity(FileSystemSecurity security, FileSystemRights forbidden)
+    private static void ValidateSecurity(FileSystemSecurity security, FileSystemRights forbidden, string? directoryPath = null)
     {
         if (security.GetOwner(typeof(SecurityIdentifier)) is not SecurityIdentifier owner || !Trusted(owner))
             throw UnsafeAccess();
+        // A local volume root cannot itself be removed or renamed. DELETE on that root
+        // does not authorize replacing its children. Still reject DELETE_CHILD and ACL control.
+        if (forbidden == ReplacementRights && directoryPath is { Length: 3 }
+            && char.IsAsciiLetter(directoryPath[0]) && directoryPath[1] == ':'
+            && directoryPath[2] is '\\' or '/')
+            forbidden &= ~FileSystemRights.Delete;
         // Empty/null DACL and grants to unknown principals are never trusted.
         var rules = security.GetAccessRules(includeExplicit: true, includeInherited: true, typeof(SecurityIdentifier));
         if (rules.Count == 0) throw UnsafeAccess();

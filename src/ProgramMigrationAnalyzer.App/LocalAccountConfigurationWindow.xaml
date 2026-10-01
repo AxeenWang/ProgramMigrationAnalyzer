@@ -40,7 +40,7 @@
                 <TextBlock Text="顯示名稱（建立或重設時必填）" Margin="0,12,0,5" />
                 <TextBox x:Name="DisplayNameInput" Text="{Binding DisplayName, UpdateSourceTrigger=PropertyChanged}"
                          IsEnabled="{Binding CanEditPassword}" AutomationProperties.Name="顯示名稱" />
-                <TextBlock Text="密碼（15～128 個 Unicode 字元，保留空白）" Margin="0,12,0,5" TextWrapping="Wrap" />
+                <TextBlock Text="密碼（8～128 個 Unicode 字元，允許符號與空白）" Margin="0,12,0,5" TextWrapping="Wrap" />
                 <PasswordBox x:Name="PasswordInput" IsEnabled="{Binding CanEditPassword}" AutomationProperties.Name="密碼" />
                 <TextBlock Text="再次輸入密碼" Margin="0,12,0,5" />
                 <PasswordBox x:Name="ConfirmationInput" IsEnabled="{Binding CanEditPassword}" AutomationProperties.Name="確認密碼" />

@@ -22,7 +22,9 @@ internal static class StartupChecks
         ("OpeningMainCancellationDisposesCandidate", () => RunStaChild("", "opening-cancel")),
         ("CountdownUsesUiDispatcher", () => RunStaChild("", "throttle")),
         ("StrictStartupModes", StrictStartupModes),
-        ("InvalidModeExits", () => RunStaChild("--skip-login", "invalid")));
+        ("InvalidModeExits", () => RunStaChild("--skip-login", "invalid")),
+        ("LocalProviderStartupAndReauthentication", () => RunStaChild("", "local-lifecycle", "Local provider lifecycle checked.")),
+        ("LocalProviderConfigurationFailsClosed", () => RunStaChild("", "local-configuration", "Local provider configuration checked.")));
 
     private static void StrictStartupModes()
     {

@@ -24,7 +24,7 @@ public static class LocalAccountValidation
 
     public static void ValidateNewPassword(SecureString password)
     {
-        using var buffer = PasswordBuffer.Read(password, minimumScalarCount: 15);
+        using var buffer = PasswordBuffer.Read(password, minimumScalarCount: 8);
     }
 }
 

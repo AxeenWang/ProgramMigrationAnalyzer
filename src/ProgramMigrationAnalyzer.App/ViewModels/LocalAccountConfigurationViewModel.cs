@@ -147,7 +147,7 @@ internal sealed partial class LocalAccountConfigurationViewModel : ObservableObj
         catch (UnauthorizedAccessException)
         { if (!_closed) StatusMessage = "需要提升權限的 Windows 管理者程序。"; }
         catch (ArgumentException)
-        { if (!_closed) StatusMessage = "請確認帳號、顯示名稱、操作模式及密碼，密碼須為 15～128 個 Unicode 字元。"; }
+        { if (!_closed) StatusMessage = "請確認帳號、顯示名稱、操作模式及密碼，密碼須為 8～128 個 Unicode 字元，允許特殊符號。"; }
         catch (LocalAccountConfigurationException exception)
         {
             if (!_closed) StatusMessage = exception.Failure == LocalAccountConfigurationFailure.Busy

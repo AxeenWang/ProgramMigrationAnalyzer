@@ -9,6 +9,7 @@ internal static class CryptoChecks
     public static void Run() => CheckSupport.Run(
         (nameof(UsernameCanonicalization), UsernameCanonicalization),
         (nameof(PasswordUnicodeAndWhitespace), PasswordUnicodeAndWhitespace),
+        (nameof(EightCharacterPasswordWithSymbols), EightCharacterPasswordWithSymbols),
         (nameof(SaltAndResetSemantics), SaltAndResetSemantics),
         (nameof(HashParametersRejectedBeforeExpensiveWork), HashParametersRejectedBeforeExpensiveWork),
         (nameof(IndependentPbkdf2Vectors), IndependentPbkdf2Vectors),
@@ -30,13 +31,13 @@ internal static class CryptoChecks
 
     private static void PasswordUnicodeAndWhitespace()
     {
-        foreach (var value in new[] { new string('a', 15), new string('a', 128), string.Concat(Enumerable.Repeat("😀", 128)), "  Mixed Case 密碼😀  " })
+        foreach (var value in new[] { new string('a', 8), string.Concat(Enumerable.Repeat("😀", 8)), new string('a', 128), string.Concat(Enumerable.Repeat("😀", 128)), "  Mixed Case 密碼😀  " })
         {
             using var password = Password(value);
             LocalAccountValidation.ValidateNewPassword(password);
         }
 
-        foreach (var value in new[] { new string('a', 14), new string('a', 129), string.Concat(Enumerable.Repeat("😀", 14)), string.Concat(Enumerable.Repeat("😀", 129)), "abcdefghijklmno\uD800", "abcdefghijklmno\uDC00" })
+        foreach (var value in new[] { new string('a', 7), new string('a', 129), string.Concat(Enumerable.Repeat("😀", 7)), string.Concat(Enumerable.Repeat("😀", 129)), "abcdefghijklmno\uD800", "abcdefghijklmno\uDC00" })
         {
             using var password = Password(value);
             Throws<ArgumentException>(() => LocalAccountValidation.ValidateNewPassword(password));
@@ -51,6 +52,19 @@ internal static class CryptoChecks
         using var composed = Password("Test-only password é");
         using var decomposed = Password("Test-only password e\u0301");
         Check(!hasher.Verify(decomposed, hasher.Create(composed)), "Password Unicode must not be normalized.");
+    }
+
+    private static void EightCharacterPasswordWithSymbols()
+    {
+        using var exact = Password("Ab@!#9x?");
+        using var changedSymbol = Password("Ab@!#9x!");
+        using var changedCase = Password("ab@!#9x?");
+        using var tooShort = Password("Ab@!#9x");
+        var hasher = new LocalPasswordHasher();
+        var record = hasher.Create(exact);
+        Check(hasher.Verify(exact, record) && !hasher.Verify(changedSymbol, record)
+            && !hasher.Verify(changedCase, record), "Eight-character passwords must preserve symbols and case exactly.");
+        Throws<ArgumentException>(() => hasher.Create(tooShort));
     }
 
     private static void SaltAndResetSemantics()

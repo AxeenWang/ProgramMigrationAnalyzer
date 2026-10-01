@@ -1944,7 +1944,7 @@ Translator
 | salt | Base64 編碼的隨機 salt |
 | passwordHash | Base64 編碼的密碼雜湊 |
 
-帳號名稱為 3～64 個 ASCII 字元，允許英文字母、數字、點、底線及連字號；建立與登入皆先 Trim，再以 invariant 小寫正規化，禁止重複。密碼不 Trim、不轉大小寫、不截斷。新建／重設密碼為 15～128 個 Unicode scalar values，允許空白及 Unicode，不強制特定符號組合。
+帳號名稱為 3～64 個 ASCII 字元，允許英文字母、數字、點、底線及連字號。建立與登入皆先 Trim，再以 invariant 小寫正規化，禁止重複。密碼不 Trim、不轉大小寫、不截斷。新建／重設密碼為 8～128 個 Unicode scalar values，允許 `@`、`!`、`#` 等特殊符號、空白及 Unicode，不強制特定符號組合。最低長度依 2026-10-01 使用者續作指示由 15 改為 8。
 
 ### 首次部署與帳號維護
 

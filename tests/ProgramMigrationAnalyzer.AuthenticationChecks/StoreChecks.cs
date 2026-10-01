@@ -29,7 +29,9 @@ internal static class StoreChecks
         (nameof(NonElevatedStoreCannotWrite), () => NonElevatedStoreCannotWrite().GetAwaiter().GetResult()),
         (nameof(UnsafeLockPathFailsBeforeOpening), () => UnsafeLockPathFailsBeforeOpening().GetAwaiter().GetResult()),
         (nameof(OversizedUpdatePreservesOldFile), () => OversizedUpdatePreservesOldFile().GetAwaiter().GetResult()),
-        (nameof(PostReplacementValidationRollsBack), () => PostReplacementValidationRollsBack().GetAwaiter().GetResult()));
+        (nameof(PostReplacementValidationRollsBack), () => PostReplacementValidationRollsBack().GetAwaiter().GetResult()),
+        (nameof(WindowsAclChecks.VolumeRootDeleteCannotReplaceDeployment), WindowsAclChecks.VolumeRootDeleteCannotReplaceDeployment),
+        (nameof(WindowsAclChecks.ReplacementAndRootControlRemainForbidden), WindowsAclChecks.ReplacementAndRootControlRemainForbidden));
 
     private static async Task ValidEnabledAccountOnly()
     {
@@ -248,9 +250,9 @@ internal static class StoreChecks
 
 internal sealed class AccountFixture : IDisposable
 {
-    public AccountFixture()
+    public AccountFixture(string taskDirectory = "2026-10-01_login-phase-2")
     {
-        DirectoryPath = Path.Combine(FindRoot(), ".codex-tmp", "2026-10-01_login-phase-2", "accounts", Guid.NewGuid().ToString("N"), "auth");
+        DirectoryPath = Path.Combine(FindRoot(), ".codex-tmp", taskDirectory, "accounts", Guid.NewGuid().ToString("N"), "auth");
         FilePath = Path.Combine(DirectoryPath, "users.json");
         Store = new(FilePath, Policy);
         Authentication = new(Store, new());
