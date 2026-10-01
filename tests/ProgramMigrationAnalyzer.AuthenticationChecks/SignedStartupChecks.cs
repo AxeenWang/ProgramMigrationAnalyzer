@@ -34,14 +34,25 @@ internal static class SignedStartupChecks
     }
     private static void EmbeddedTrustCannotBeOverridden()
     {
+        string? compiledKeyId = null;
+        using (var resource = typeof(ProgramMigrationAnalyzer.App.App).Assembly.GetManifestResourceStream("ProgramMigrationAnalyzer.AuthorizationPublicKey"))
+        {
+            if (resource is not null)
+            {
+                using var reader = new StreamReader(resource, new System.Text.UTF8Encoding(false, true));
+                compiledKeyId = AuthorizationTrust.FromPublicKeyPem(reader.ReadToEnd()).KeyId;
+            }
+        }
+        Check(EmbeddedAuthorizationTrust.Load().KeyId == compiledKeyId, "Trust must match the compiled public resource, or remain absent without it.");
         using var f = new SignedAccountFixture(); Directory.CreateDirectory(f.DirectoryPath);
+        Check(f.Key.KeyId != compiledKeyId, "Runtime override fixture must use a different signing key.");
         var external = Path.Combine(f.DirectoryPath, "authorization-public-key.pem"); File.WriteAllText(external, f.Key.PublicPem);
         var previous = Environment.GetEnvironmentVariable("PMA_AUTHORIZATION_PUBLIC_KEY");
         var working = Directory.GetCurrentDirectory();
         try
         {
             Environment.SetEnvironmentVariable("PMA_AUTHORIZATION_PUBLIC_KEY", external); Directory.SetCurrentDirectory(f.DirectoryPath);
-            Check(EmbeddedAuthorizationTrust.Load().KeyId is null, "External key files, environment and working directory cannot add development trust.");
+            Check(EmbeddedAuthorizationTrust.Load().KeyId == compiledKeyId, "External key files, environment and working directory cannot add or replace compiled trust.");
         }
         finally { Environment.SetEnvironmentVariable("PMA_AUTHORIZATION_PUBLIC_KEY", previous); Directory.SetCurrentDirectory(working); }
     }

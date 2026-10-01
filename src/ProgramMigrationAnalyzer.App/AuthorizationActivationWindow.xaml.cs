@@ -14,7 +14,7 @@ internal partial class AuthorizationActivationWindow : Window
     }
     private async void OnSelectKey(object sender, RoutedEventArgs e)
     {
-        var dialog = new OpenFileDialog { Title = "選擇公司簽發的授權 Key", Filter = "授權 Key|*.key;*.json|所有檔案|*.*" };
+        var dialog = new OpenFileDialog { Title = "選擇公司簽發的授權 Key", Filter = "授權 Key|*.pma-key;*.key;*.json|所有檔案|*.*" };
         if (dialog.ShowDialog(this) == true) await ViewModel.PreviewAsync(dialog.FileName);
     }
     private void OnPreviewKeyDown(object sender, KeyEventArgs e)

@@ -4,7 +4,7 @@
 
 > 目前狀態：第一階段功能與第二階段可靠性修正已合併。第三階段的樣本回歸、WPF 畫面流程及實際桌面操作已通過，WebView2 HTML 預覽與失敗備援均已驗證。按鈕與頁籤的視覺設計仍待使用者確認。
 
-本機登入已接入正常啟動流程。登入 Phase 4 已完成回歸及 SWANG-PC 發佈部署驗證，新增／重設密碼最低 8 個字元，允許特殊符號。交付證據與未執行項目見 [登入驗證與交付紀錄](docs/Login_Verification_and_Delivery.md)，合併狀態以[實作計畫](docs/superpowers/plans/2026-10-01-local-login-implementation-plan.md)為準。
+公司簽章離線授權已接入正常啟動流程，Phase 5 的 T1～T5 已推送，T6 已完成正式公司金鑰與 SWANG-PC 帳號部署，使用者已確認完整桌面驗收通過，舊入口與退出檢查也已完成，準備 Git 交付。客戶端須先匯入公司 Key，再以帳密登入，密碼最低 8 個字元，允許特殊符號。目前證據與待驗項目見[離線授權交付紀錄](docs/Offline_Authorization_Verification_and_Delivery.md)。Phase 4 的舊版本結果另保留在[登入驗證與交付紀錄](docs/Login_Verification_and_Delivery.md)。
 
 ## Features
 
@@ -17,7 +17,8 @@
 - 選擇 `.NET 8` 或 `.NET 10` 作為轉譯目標
 - 產生現代化 C# 程式碼草稿與簡易 Diff
 - 顯示分析、轉譯進度及執行 Log
-- 本機帳號登入、使用者顯示、登出與獨立管理入口
+- 公司簽章離線 Key、帳號登入、使用者顯示與登出
+- 獨立公司發證工具，可建立帳號、重設密碼、啟用／停用並重新簽發 Key
 
 ## Architecture
 
@@ -46,7 +47,10 @@ ProgramMigrationAnalyzer/
 │  ├─ ProgramMigrationAnalyzer.Analysis/
 │  ├─ ProgramMigrationAnalyzer.Parsers/
 │  ├─ ProgramMigrationAnalyzer.Translation/
-│  └─ ProgramMigrationAnalyzer.Infrastructure/
+│  ├─ ProgramMigrationAnalyzer.Infrastructure/
+│  └─ ProgramMigrationAnalyzer.LicenseIssuer/
+├─ build/
+│  └─ ProgramMigrationAnalyzer.PublishPreparation/
 ├─ samples/
 │  ├─ 4gl/
 │  └─ csharp-framework/
@@ -71,7 +75,7 @@ ProgramMigrationAnalyzer/
 
 ## Requirements
 
-以下為建置環境需求。發佈 EXE 的收件端需 Windows x64，首次使用前由 Windows 管理者設定本機帳號，HTML 預覽另需 WebView2 Runtime。
+以下為建置環境需求。發佈 EXE 的收件端需 Windows x64、公司簽發的授權 Key 與公司提供的帳密，匯入 Key 需 Windows 管理員權限，HTML 預覽另需 WebView2 Runtime。
 
 - Windows operating system supported by the installed .NET 10 SDK and runtime
 - .NET 10 SDK
@@ -93,7 +97,16 @@ dotnet build ProgramMigrationAnalyzer.sln --no-restore -m:1 -nr:false -p:UseShar
 
 ### 發佈單一 EXE
 
-在專案根目錄執行 `publish.bat`，會發佈 Windows x64 自包含版本至 `publish/win-x64-single-file/ProgramMigrationAnalyzer.App.exe`，內含 .NET runtime。收件端先複製 EXE，再依下方操作設定自己的本機帳號，無須安裝 .NET SDK 或另附 runtime。SWANG-PC 已確認啟動使用內含 runtime，未另測沒有任何 .NET 安裝的乾淨 VM。建置電腦仍需 .NET 10 SDK。批次檔使用單一 MSBuild 節點並停用節點重用。重新發佈前請先關閉正在執行的舊版 EXE。
+在正式專案根目錄發布。客戶端必須指定有效的公司 P-256 SPKI 公鑰，也可預先將公開公鑰放在本機 `config/authorization-public-key.pem`，再不帶參數執行 `publish.bat`。公鑰檔只供建置使用，執行時不能換外部檔案改變信任。
+
+```powershell
+.\publish.bat "C:\Users\swang\Documents\ProgramMigrationAnalyzer-CompanyKeys\authorization-public-key.pem"
+.\publish-issuer.bat
+```
+
+客戶 EXE 輸出至 `publish/win-x64-single-file/ProgramMigrationAnalyzer.App.exe`，公司工具另輸出至 `publish/company-license-issuer/ProgramMigrationAnalyzer.LicenseIssuer.exe`。兩者為 Windows x64 自包含單檔，內含 .NET runtime。只交付客戶 EXE，公司人員自行保管發證工具、加密私鑰、Key 與帳密。收件端無須 .NET SDK，未另測沒有任何 .NET 安裝的乾淨 VM。
+
+發布先固定此次公鑰快照，再從正式來源建置，沒有公鑰、輸入不合法、使用 `--no-build` 或建置失敗都拒絕。成功後只替換 EXE，保留旁邊的 WebView2 資料。重新發布前請關閉執行中的舊 EXE。建置電腦仍需 .NET 10 SDK，腳本使用單一 MSBuild 節點並停用節點重用。
 
 Markdown 的 HTML 預覽仍需要收件端安裝 Microsoft Edge WebView2 Runtime。若 WebView2 無法啟動，程式會改用純文字 Markdown 預覽。單檔 EXE 啟動時會在系統暫存目錄解開必要的原生程式庫。
 
@@ -103,31 +116,31 @@ Markdown 的 HTML 預覽仍需要收件端安裝 Microsoft Edge WebView2 Runtime
 dotnet run --project .\src\ProgramMigrationAnalyzer.App\ProgramMigrationAnalyzer.App.csproj
 ```
 
-發佈版直接執行 `ProgramMigrationAnalyzer.App.exe`，不帶參數時先顯示登入視窗。成功後才建立分析主畫面，重新啟動仍須登入。
+發佈版直接執行 `ProgramMigrationAnalyzer.App.exe`。本機授權缺失或無效時先顯示授權匯入，已有有效授權才顯示登入。成功登入後才建立分析主畫面，重新啟動仍須登入。開發 build 若未提供公鑰，會保持未授權。
 
-## 本機帳號設定與登入
+## 公司簽發、啟用與登入
 
-首次部署由 Windows 管理者開啟「以系統管理員身分執行」的 PowerShell，切換到 EXE 所在目錄後執行：
+1. 公司人員開啟獨立發證工具，在私鑰保護密碼兩欄輸入一致的密碼，按「產生並儲存新金鑰」。加密私鑰存於 Git 專案之外，公鑰供客戶端發布。私鑰檔拒絕覆寫，ACL 僅目前 Windows 使用者與 SYSTEM 可存取。
+2. 選「建立帳號」，輸入帳號、顯示名稱與兩欄一致的登入密碼，按「更新帳號清單」，再按「簽發／重新簽發 Key」儲存 `.pma-key`。私鑰保護密碼與登入密碼分開輸入，送出後欄位清空，以狀態提示確認結果。
+3. 使用上述公鑰發布客戶端，開啟客戶 EXE，選公司 Key，確認摘要後按匯入，手動完成 Windows UAC，再於提升的匯入視窗確認並匯入。成功後返回登入，仍須正確帳密。
 
-```powershell
-.\ProgramMigrationAnalyzer.App.exe --configure-local-account
-```
-
-1. 在「本機帳號設定」選擇「建立帳號」，輸入帳號、顯示名稱及兩欄一致的密碼。
-2. 按儲存，確認提示「帳號設定已儲存，下次登入生效」。送出後密碼欄會清空，請以狀態提示確認結果。
-3. 關閉管理視窗，使用一般權限、不帶參數重新開啟 EXE，以剛建立的帳密登入。
+同一 Key 可以供內部人員跨主機使用，不綁定電腦、不設定到期日，也不連線公司服務。客戶端不提供自行建帳或重設密碼入口，舊 `--configure-local-account` 參數已拒絕。
 
 帳號為 3～64 個 ASCII 字元，允許英文字母、數字、點、底線及連字號，會去除前後空白並轉為小寫。新建與重設密碼接受 8～128 個 Unicode scalar values，允許 `@`、`!`、`#` 等符號、空白及 Unicode，不要求特定字元組合，不去除空白、不改大小寫。密碼只在視窗的遮罩欄位輸入，沒有共用預設帳密，不使用命令列、環境變數或腳本傳入密碼。
 
-管理入口不會自動提升權限，也不會登入分析工具。一般權限開啟時無法編輯或儲存。已提升權限的管理者可選「重設密碼」、「啟用帳號」或「停用帳號」。建立／重設須提供顯示名稱與兩欄密碼，啟用／停用不更動密碼。每次登入都重新讀取帳號資料，因此重設或停用於下次登入生效，既有 session 會持續至登出或程序結束，需要立即停權時須結束現有程序。
+更新帳號時，由公司人員載入加密私鑰，開啟原 Key，選「重設密碼」、「啟用帳號」或「停用帳號」，更新清單後重新簽發。客戶端在登入畫面的授權更新入口匯入新版。同一授權只接受較高版本，完全相同版本與內容可重複匯入。換成不同授權需在提升視窗確認目前授權 id，不能只依先前預覽放行。每次登入重新讀取並驗章，重設或停用於下次登入生效，既有 session 持續至登出或程序結束。
 
-帳號檔固定為 `%ProgramData%\ProgramMigrationAnalyzer\auth\users.json`，與 EXE 或目前工作目錄無關。管理模式建立工具目錄、auth 目錄與帳號檔的受保護 ACL，SYSTEM 與 Administrators 可維護，一般 Users 只能讀取。密碼以獨立 salt 的 PBKDF2-HMAC-SHA256 雜湊保存，正常登入不改寫帳號檔。請透過管理視窗維護，部署包不包含帳號資料，每台收件電腦須各自建帳。
+帳號檔固定為 `%ProgramData%\ProgramMigrationAnalyzer\auth\users.json`，與 EXE 或目前工作目錄無關。檔案保存完整公司簽章 envelope，包含帳號與獨立 salt 的 PBKDF2-HMAC-SHA256 雜湊，不保存明文密碼。客戶端每次登入驗證公司 ECDSA 簽章，正常登入不改寫檔案。匯入流程建立工具目錄、auth 目錄及帳號檔的受保護 ACL，SYSTEM 與 Administrators 可維護，Users 只讀，不修改 ProgramData 或磁碟根 ACL。
 
-設定缺漏、損壞或 ACL 不安全會提示聯絡管理者，不會自動建帳或放行。錯誤密碼、未知帳號與停用帳號顯示相同失敗提示。連續 5 次失敗後，此程序暫停提交 30 秒並顯示倒數，重啟程序會重設節流。
+遷移舊版時，先保留受保護的 unsigned 帳號檔備份及舊版 EXE，再匯入公司簽發的新 Key。舊檔不自動轉換或沿用，沒有有效 Key 不能登入。若匯入失敗，原子替換流程保留原檔。必要時由授權的管理者關閉所有工具程序，還原受保護備份與相符的舊版 EXE，舊 unsigned 檔不能供新版登入。
+
+公司須另外備份加密私鑰及 Key，私鑰保護密碼分開保管。私鑰遺失就不能對原授權重新簽發。換公司公鑰時須重新發布客戶 EXE，以新私鑰重新簽發 Key，再由管理者匯入，執行時不接受公鑰設定覆寫。新公鑰版本不會沿用舊公鑰簽章。
+
+設定缺漏、簽章無效、損壞或 ACL 不安全會要求匯入有效 Key 或聯絡管理者，不會自動建帳或放行。錯誤密碼、未知帳號與停用帳號顯示相同失敗提示。連續 5 次失敗後，此程序暫停提交 30 秒並顯示倒數，重啟程序會重設節流。
 
 登入後可在主畫面按「登出」。執行分析、轉譯、載入或儲存時，登出停用並提示等待工作完成。登出會清除 session、來源、報告、預覽及執行紀錄，保留已寫入 `output/` 的檔案，下次登入建立空白工作區。
 
-目前僅支援本機帳號，session 存於程序記憶體，沒有自動登入、記住密碼、SSO、角色權限矩陣或閒置逾時。本機登入保護桌面操作入口，不加密輸出、不抵抗 EXE 修改，也不提供集中停權或帳號同步。
+session 存於程序記憶體，沒有自動登入、記住密碼、SSO、角色權限矩陣或閒置逾時。簽章限制正常客戶端接受的帳號資料，主機管理員仍能修改 EXE、擷取程序記憶體或還原整套舊狀態。離線 revision 只對目前安裝的授權比較，不能阻止管理員完整回滾或刪檔後重放有效舊 Key。不加密分析輸出，也不提供集中停權或帳號同步。
 
 ## Sample Data
 
@@ -167,7 +180,7 @@ dotnet run --project .\src\ProgramMigrationAnalyzer.App\ProgramMigrationAnalyzer
 dotnet run --no-build --project .\tests\ProgramMigrationAnalyzer.AuthenticationChecks -- --suite all
 ```
 
-2026-10-01 登入 Phase 4 修正版通過 56／56，涵蓋 contracts 5、crypto 8、store 13、admin 6、login 5、startup 13、access 6。另完成 SWANG-PC 正式 EXE 的建帳與 ACL、一般權限登入、Scenario A／B／C、HTML／純文字預覽、忙碌登出、重登清空、不同工作目錄及正常退出。各項方法與限制見[登入驗證與交付紀錄](docs/Login_Verification_and_Delivery.md)。
+2026-10-01 Phase 5 的 AuthenticationChecks 通過 80 組，涵蓋簽章、signed store、發證、啟用、發布、密碼、ACL、登入、啟動與操作門檻。T6 的 restore、build、Phase2Checks、RegressionChecks、WpfChecks 全部 exit 0，build 0 warnings／0 errors。WPF 檢查實際走過 WebView2 失敗時的純文字備援，正式公司 Key 的簽章／ACL 與客戶 EXE 發布已核對。使用者確認正式 EXE 的 Axeen 登入、Scenario A／B／C、HTML／純文字、忙碌登出、重登清空與輸出保留通過，證據分列於[離線授權交付紀錄](docs/Offline_Authorization_Verification_and_Delivery.md)。舊版 Phase 4 的 56 組及桌面結果保留為歷史證據，不套用到新版。
 
 目前已驗證：
 
@@ -217,4 +230,4 @@ dotnet run --no-build --project .\tests\ProgramMigrationAnalyzer.WpfChecks\Progr
 
 完整需求與驗收條件請參閱 [`docs/ProgramMigrationAnalyzer_Codex_Spec.md`](docs/ProgramMigrationAnalyzer_Codex_Spec.md)。
 
-本機登入的 L1～L14 結果與發佈紀錄見 [`docs/Login_Verification_and_Delivery.md`](docs/Login_Verification_and_Delivery.md)。
+目前離線授權 O1～O12 與交付狀態見 [`docs/Offline_Authorization_Verification_and_Delivery.md`](docs/Offline_Authorization_Verification_and_Delivery.md)，執行進度見[Phase 5 計畫](docs/superpowers/plans/2026-10-01-offline-signed-authorization-implementation-plan.md)。本機登入 L1～L14 的歷史結果另見 [`docs/Login_Verification_and_Delivery.md`](docs/Login_Verification_and_Delivery.md)。

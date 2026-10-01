@@ -39,19 +39,19 @@ Key 可跨主機複製。持有 Key 仍須知道密碼才能登入。完全離�
 | 程式 | 對象與職責 |
 | --- | --- |
 | `ProgramMigrationAnalyzer.App.exe` | 客戶主機使用，驗證公鑰、匯入授權、登入、分析、轉譯與登出 |
-| `ProgramMigrationAnalyzer.LicenseIssuer.exe` | 公司內部使用，產生公司簽章金鑰、建立／重設／停用帳號、簽發 `.pmauth` 授權檔 |
+| `ProgramMigrationAnalyzer.LicenseIssuer.exe` | 公司內部使用，產生公司簽章金鑰、建立／重設／停用帳號、簽發 `.pma-key` 授權檔 |
 
 公司首次使用發證工具時，互動選擇公司內部受保護的私鑰儲存位置，輸入兩次遮罩的私鑰保護密碼，產生 ECDSA P-256 金鑰。私鑰只匯出為加密 PKCS#8 PEM，使用 .NET PBE 的 AES-256-CBC、PBKDF2-HMAC-SHA256、600,000 iterations。私鑰保護密碼採相同 8～128 字元有效 Unicode 規則，但與登入密碼分開輸入及處理。公鑰匯出為 SubjectPublicKeyInfo PEM。實際儲存位置及金鑰操作須由使用者在公司環境完成，代理不代選外部路徑或保存正式私鑰。
 
-公司把公鑰交給建置流程，產生包含該公鑰的客戶端。公司端選擇加密私鑰檔並輸入保護密碼，再輸入內部帳號、顯示名稱及兩次登入密碼，簽發 `.pmauth`。兩種密碼在畫面中分開標示，不透過命令列、環境變數、腳本或檔案傳入。
+公司把公鑰交給建置流程，產生包含該公鑰的客戶端。公司端選擇加密私鑰檔並輸入保護密碼，再輸入內部帳號、顯示名稱及兩次登入密碼，簽發 `.pma-key`。兩種密碼在畫面中分開標示，不透過命令列、環境變數、腳本或檔案傳入。
 
-發證工具支援開啟既有 `.pmauth`，先以目前私鑰對應的公鑰驗證，再維護整份帳號清單。新增／重設產生新 salt 與 hash，重設保留 userId。啟用／停用保留密碼驗證資料。儲存時增加 revision 並重新簽章，不在公司端維護客戶主機的 ProgramData。
+發證工具支援開啟既有 `.pma-key`，先以目前私鑰對應的公鑰驗證，再維護整份帳號清單。新增／重設產生新 salt 與 hash，重設保留 userId。啟用／停用保留密碼驗證資料。儲存時增加 revision 並重新簽章，不在公司端維護客戶主機的 ProgramData。
 
 修改後的 Key 需人工送到各離線主機重新匯入。重設與停用於下一次登入生效，已登入 session 沿用既有生命週期，不新增即時撤銷。舊 Key 的離線重放限制依第 7 節處理。
 
 ## 4. 授權檔格式與簽章
 
-匯出的 `.pmauth` 與客戶端 `users.json` 使用同一種簽章 envelope。`users.json` 保存整份 envelope，不把驗證後的帳號拆成可直接修改的 unsigned JSON。
+匯出的 `.pma-key` 與客戶端 `users.json` 使用同一種簽章 envelope。`users.json` 保存整份 envelope，不把驗證後的帳號拆成可直接修改的 unsigned JSON。
 
 外層只允許下列欄位，未知欄位、重複欄位或型別錯誤一律拒絕。
 
@@ -95,7 +95,7 @@ ECDSA-P256-SHA256-P1363\n
 正常啟動先讀取固定的 `%ProgramData%/ProgramMigrationAnalyzer/auth/users.json`，不依目前工作目錄改變路徑。
 
 1. 有效簽章與安全 ACL：顯示原登入視窗，輸入帳密才可建立 session 與主工作區。
-2. 檔案不存在、舊 unsigned schema 1、損壞、簽章不合法或 ACL 不安全：保持未登入，顯示授權匯入畫面及可讀原因分類。使用者可選公司提供的 `.pmauth` 或取消。
+2. 檔案不存在、舊 unsigned schema 1、損壞、簽章不合法或 ACL 不安全：保持未登入，顯示授權匯入畫面及可讀原因分類。使用者可選公司提供的 `.pma-key` 或取消。
 3. 匯入畫面只能選取授權檔，沒有建帳、修改帳號、設定密碼或啟用帳號欄位。顯示驗證通過的授權識別、revision 與帳號數，不顯示 salt、hash 或完整 payload。
 4. 按「匯入授權」後重新讀取並驗證候選檔。一般程序需由使用者手動完成 Windows UAC，啟動同一 EXE 的獨立 `--import-authorization <檔案完整路徑>` 模式。命令列只傳路徑，不傳 Key 內容或密碼。
 5. 提升權限程序重新讀取並驗證候選檔及目標狀態，顯示實際 authorizationId、revision 與帳號數供使用者確認，再固定寫入 ProgramData。它不使用父程序傳來的「已驗證」boolean，不建立認證 session 或主工作區。匯入成功後結束。
@@ -140,13 +140,13 @@ revision 只阻擋正常流程誤匯入舊 Key。客戶管理員可刪除帳號�
 
 公鑰來源預設為建置端 `config/authorization-public-key.pem`，可由建置參數指定其他公鑰路徑，編譯成客戶端資源。這是公開資訊，可依公司決定納入版本控制。沒有有效公鑰的開發 build 保持未授權，不能登入，正式 publish 必須失敗並明確提示設定公鑰，不能內建測試公鑰或臨時信任根。
 
-客戶端 `publish.bat` 維持最新作業與原目錄轉送流程，只發佈客戶端，更新「收件端自行建帳」提示為公司授權匯入。轉送時完整保留公鑰輸入設定，來源失敗或無有效公鑰時，不覆蓋原目錄既有 EXE。公鑰驗證後須固定本次建置所用的 bytes，不能在建置中途換檔而發佈其他公鑰。
+客戶端 `publish.bat` 依使用者後續指示在正式專案根目錄直接建置最新來源，只發佈客戶端，更新「收件端自行建帳」提示為公司授權匯入。發布時完整保留公鑰輸入設定，來源失敗或無有效公鑰時，不覆蓋既有 EXE。公鑰驗證後須固定本次建置所用的 bytes，不能在建置中途換檔而發佈其他公鑰。
 
-公司發證工具使用獨立 `publish-issuer.bat` 及獨立輸出目錄，不複製進客戶端 `publish/win-x64-single-file`。任何 publish 都不得把私鑰、登入帳密、實際 `.pmauth` 或 ProgramData 帳號檔打包到 EXE 或輸出目錄。
+公司發證工具使用獨立 `publish-issuer.bat` 及獨立輸出目錄，不複製進客戶端 `publish/win-x64-single-file`。任何 publish 都不得把私鑰、登入帳密、實際 `.pma-key` 或 ProgramData 帳號檔打包到 EXE 或輸出目錄。
 
 ## 9. 驗收要求
 
-以下為新版本須執行的驗收，現在均未宣稱通過。
+以下為新版本須執行的驗收，執行結果與證據來源見[離線授權交付紀錄](../../Offline_Authorization_Verification_and_Delivery.md)。
 
 | 編號 | 情境與預期 |
 | --- | --- |
@@ -160,10 +160,10 @@ revision 只阻擋正常流程誤匯入舊 Key。客戶管理員可刪除帳號�
 | O8 | 發證新建／重設／停用產生完整有效 Key，8 字元與 @ ! # 密碼可用，無明文或共用預設帳密 |
 | O9 | 私鑰加密匯出／載入的記憶體 roundtrip 通過，錯誤保護密碼拒絕，公私鑰匹配，敏感值不進入 ToString、log、Git 或客戶端交付 |
 | O10 | 同一 Key 可在兩個隔離部署位置使用，相同／較低／較高 revision 與不同 authorizationId 遵守更新規則 |
-| O11 | 無正式公鑰 publish 失敗，有效公鑰 publish 成功，原目錄轉送使用新版本，失敗不覆蓋舊 EXE，兩種交付目錄分離 |
+| O11 | 無正式公鑰 publish 失敗，有效公鑰 publish 成功，正式專案根目錄直接建置最新來源，失敗不覆蓋舊 EXE，兩種交付目錄分離 |
 | O12 | Solution build、AuthenticationChecks、Phase2Checks、RegressionChecks、WpfChecks、Scenario A／B／C、登出重登、輸出保留、HTML／純文字及無殘留程序回歸 |
 
-測試只使用即時產生的記憶體測試金鑰與測試專用密碼。隔離帳號／授權檔與 log 位於當次 worktree 的 `.codex-tmp/YYYY-MM-DD_<task-name>/`，不提交。測試不得以 fake authentication 成功代替正式 provider／簽章驗證。ACL 與 UAC 替身的證據須和真實 Windows 部署觀察分開。
+測試只使用即時產生的記憶體測試金鑰與測試專用密碼。隔離帳號／授權檔與 log 位於正式專案根目錄的 `.codex-tmp/YYYY-MM-DD_<task-name>/`，不提交。正式來源及發布依使用者後續指示直接在專案根目錄維護，舊暫存 worktree 僅保留為復原副本。測試不得以 fake authentication 成功代替正式 provider／簽章驗證。ACL 與 UAC 替身的證據須和真實 Windows 部署觀察分開。
 
 正式私鑰與實際帳號由使用者互動操作，代理不讀取或記錄值。新版本真實 ProgramData／ACL 及 UAC 部署驗證須先取得指定電腦與可替換資料的授權。未完成真實部署驗證時，不標記全部驗收完成或送 ready PR。
 
@@ -173,7 +173,7 @@ revision 只阻擋正常流程誤匯入舊 Key。客戶管理員可刪除帳號�
 
 依 project AGENTS，實際開始當前 Phase 時才從最新遠端預設分支建立該 Phase 分支。審閱稿先保存於忽略的 `.codex-tmp/2026-10-01_offline-authorization-design/`，核准後在第一個實作 Task 移入正式 `docs/superpowers/specs/2026-10-01-offline-signed-authorization-design.md`，並連同計畫及 authoritative spec 更新形成基線。
 
-每個實作 Task 完成後依專案流程驗證、commit／push、確認同步，再開始下一 Task。每個 Phase 全部驗證後建立唯一 PR，不自動 merge，不 force push，不預先建立後續 Phase 分支。原 detached checkout 的既有規格、治理文件、簡報及登入部署全部保留，只在發布任務中維護已授權的 publish 轉送腳本。
+每個實作 Task 完成後依專案流程驗證、commit／push、確認同步，再開始下一 Task。每個 Phase 全部驗證後建立唯一 PR，不自動 merge，不 force push，不預先建立後續 Phase 分支。原 detached checkout 的既有規格、治理文件、簡報及登入部署全部保留，依使用者後續授權將正式成果移回專案根目錄，發布直接使用該目錄的最新來源。
 
 ## 11. 官方技術依據
 

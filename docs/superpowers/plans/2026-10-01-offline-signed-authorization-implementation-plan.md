@@ -10,7 +10,7 @@
 
 **Spec:** [核准規格](../specs/2026-10-01-offline-signed-authorization-design.md)，已於 2026-10-01 核准。兩份核准文件已在第一個 Task 納入正式 docs。
 
-**狀態:** 使用者已指示依本計畫作業。Phase 5 分支 `codex/offline-authorization-phase-5` 從 `7513324` 開工，P5-T1 已完成並推送 5a791c6，P5-T2 已完成並推送 52fcb92，P5-T3 已完成並推送 888c8f0，P5-T4 已完成並推送 5455e16，P5-T5 已完成實作與驗證，待提交／推送，P5-T6 尚未開始。Active Target 為 `Projects/ProgramMigrationAnalyzer`，Target Lock enabled。Git root 已依使用者授權移回 `D:/AxeenWorld/CodeLab/Projects/ProgramMigrationAnalyzer`，CodeLab-managed 模式。Phase 1～4 登入成果、T1／T2 及未提交 T3 已完整回到正式目錄，舊 worktree 保留為非作業用復原副本。
+**狀態:** 使用者已指示依本計畫作業。Phase 5 分支 `codex/offline-authorization-phase-5` 從 `7513324` 開工，P5-T1 已完成並推送 5a791c6，P5-T2 已完成並推送 52fcb92，P5-T3 已完成並推送 888c8f0，P5-T4 已完成並推送 5455e16，P5-T5 已完成並推送 64fe9c1，P5-T6 正在完成正式公司金鑰與部署驗收。Active Target 為 `Projects/ProgramMigrationAnalyzer`，Target Lock enabled。Git root 已依使用者授權移回 `D:/AxeenWorld/CodeLab/Projects/ProgramMigrationAnalyzer`，CodeLab-managed 模式。Phase 1～4 登入成果、T1／T2 及未提交 T3 已完整回到正式目錄，舊 worktree 保留為非作業用復原副本。
 
 ## Global Constraints
 
@@ -192,7 +192,7 @@ CheckSupport.Check(embeddedKeyId == snapshotKeyId, "Published trust must use the
 - [x] 實作 preparation／MSBuild target，避免 preparation 和 App 相互循環 build。公鑰快照是標準 obj 產物，不在正式 repo 生出暫存憑證。發布先輸出 staging，成功才替換既有客戶 EXE，失敗保留先前 EXE，正確處理空白路徑與 child exit code。
 - [x] 實作獨立 issuer publish 到 `publish/company-license-issuer`，client 仍為 `publish/win-x64-single-file`。保留自包含 Windows x64 單檔、IncludeNativeLibrariesForSelfExtract、PublishTrimmed=false、單節點與 node reuse 關閉。檢查目錄沒有 issuer／實際 Key／私鑰／users.json，更新腳本提示。
 - [x] 執行 publish suite，並使用記憶體測試金鑰匯出的公鑰在隔離 task 目錄實際發佈兩個 EXE。只保存 public PEM，不保存測試私鑰。檢查 client 內嵌 fingerprint 與指定 public 一致、無公鑰直接 publish 失敗，以及正式根目錄建置／輸出的 EXE 指紋一致。此為發佈管線驗證，不替代正式公司金鑰部署。
-- [ ] 保留原目錄其餘檔案指紋與狀態，直接在正式根目錄維護及驗證 publish.bat。記錄結果並 repo-push，建議 commit `fix: publish signed authorization client and issuer separately`，確認乾淨與 upstream 0／0。
+- [x] 保留原目錄其餘檔案指紋與狀態，直接在正式根目錄維護及驗證 publish.bat。記錄結果並 repo-push，建議 commit `fix: publish signed authorization client and issuer separately`，確認乾淨與 upstream 0／0。
 
 ### Task P5-T6：完整回歸、公司金鑰交接、授權部署與 ready PR
 
@@ -200,12 +200,12 @@ CheckSupport.Check(embeddedKeyId == snapshotKeyId, "Published trust must use the
 
 **Interfaces:** 使用已完成的公司 issuer、客戶 EXE、publish 腳本及所有 suite，不引入新功能或正式程式測試 bypass。
 
-- [ ] 執行 restore、build、AuthenticationChecks all、Phase2Checks、RegressionChecks、WpfChecks，確認全部 exit 0、build 0 warnings／0 errors，列出實際 checks 數量。比對 O1～O12 與本計畫 Review Focus 的覆蓋，不將新版檢查數套用舊版 56 組。
-- [ ] 完成全 Phase 自審，檢查 App 不引用 issuer、內建資源只有公鑰、無舊 admin store／模式／runtime trust override、無 secrets／實際 Key／temp／publish 產物被 tracked。官方驗證與測試 fixture 不共用會掩蓋錯誤的「假驗章」服務。
-- [ ] 開啟已發布的公司發證工具，請使用者互動產生並保存正式加密私鑰、提供其公開公鑰檔路徑，簽發實際測試帳號 Key。代理只核對 public fingerprint，不讀取私鑰或詢問密碼。私鑰目的地在工作區外時，使用者選定及授權該目的地後才執行相關操作。
-- [ ] 在替換真實帳號檔前，取得指定測試機的新版本 ProgramData／ACL 授權，具體說明舊 unsigned 帳號將換成公司 Key、建議的恢復方式與可保留備份。授權未取得可完成其餘隔離工作，但本 Task 的真實部署保持未完成。
-- [ ] 用正式公鑰 publish，使用者手動完成 UAC／Key 匯入／帳密登入。實測取消、首次啟用、舊入口拒絕、不同工作目錄、重啟、Scenario A／B／C、分析／轉譯、HTML／純文字、忙碌登出、重新登入與輸出保留、關閉無殘留程序。拒絕測試只用隔離資料，不破壞真實 Key。核對真實 ACL 與祖先 ACL 不變，不打印 hash／salt。
-- [ ] 更新 README 的公司 keygen／issue／import／update／publish、公鑰設定、8 字元規則、舊版遷移、私鑰備份、公鑰更換、離線重放及主機管理員限制。交付紀錄分列自動化、publish、真實部署、未執行項目與必要恢復手續。
+- [x] 執行 restore、build、AuthenticationChecks all、Phase2Checks、RegressionChecks、WpfChecks，確認全部 exit 0、build 0 warnings／0 errors，列出實際 checks 數量。比對 O1～O12 與本計畫 Review Focus 的覆蓋，不將新版檢查數套用舊版 56 組。
+- [x] 完成全 Phase 自審，檢查 App 不引用 issuer、內建資源只有公鑰、無舊 admin store／模式／runtime trust override、無 secrets／實際 Key／temp／publish 產物被 tracked。官方驗證與測試 fixture 不共用會掩蓋錯誤的「假驗章」服務。
+- [x] 開啟已發布的公司發證工具，請使用者互動產生並保存正式加密私鑰、提供其公開公鑰檔路徑，簽發實際測試帳號 Key。代理只核對 public fingerprint，不讀取私鑰或詢問密碼。私鑰目的地在工作區外時，使用者選定及授權該目的地後才執行相關操作。
+- [x] 在替換真實帳號檔前，取得指定測試機的新版本 ProgramData／ACL 授權，具體說明舊 unsigned 帳號將換成公司 Key、建議的恢復方式與可保留備份。授權未取得可完成其餘隔離工作，但本 Task 的真實部署保持未完成。
+- [x] 用正式公鑰 publish，使用者手動完成 UAC／Key 匯入／帳密登入。實測取消、首次啟用、舊入口拒絕、不同工作目錄、重啟、Scenario A／B／C、分析／轉譯、HTML／純文字、忙碌登出、重新登入與輸出保留、關閉無殘留程序。拒絕測試只用隔離資料，不破壞真實 Key。核對真實 ACL 與祖先 ACL 不變，不打印 hash／salt。
+- [x] 更新 README 的公司 keygen／issue／import／update／publish、公鑰設定、8 字元規則、舊版遷移、私鑰備份、公鑰更換、離線重放及主機管理員限制。交付紀錄分列自動化、publish、真實部署、未執行項目與必要恢復手續。
 - [ ] 經驗證後用 repo-push 提交及推送，建議 commit `test: verify offline authorization and document delivery`，確認工作區乾淨、upstream 0／0。所有必要驗收完成才用 repo-open-pr 建立唯一 ready PR，描述正式客戶端行為、測試及限制並 attach 到目前 chat，不自動 merge。
 
 ## 驗收對照與進度
@@ -220,7 +220,7 @@ CheckSupport.Check(embeddedKeyId == snapshotKeyId, "Published trust must use the
 | O11 | T5 publish／snapshot／轉送 | T6 正式 public key publish |
 | O12 | T4 累積回歸、T6 完整 suites | T6 桌面／樣本／退出 |
 
-P5-T1 已完成並推送 5a791c6。P5-T2 已完成並推送 52fcb92。P5-T3 已完成並推送 888c8f0，P5-T4 已完成並推送 5455e16，P5-T5 已完成實作與驗證，待提交／推送，P5-T6 尚未開始。使用者已核准按本計畫開分支、逐 Task 驗證／commit／push，Phase 完成建立唯一 PR。分支只在實際開始當前 Phase 時建立，不預建後續 Phase。授權範圍不含 merge、force push、歷史覆寫或未指定電腦部署。
+P5-T1 已完成並推送 5a791c6。P5-T2 已完成並推送 52fcb92。P5-T3 已完成並推送 888c8f0，P5-T4 已完成並推送 5455e16，P5-T5 已完成並推送 64fe9c1。P5-T6 的公司金鑰、部署、回歸、使用者桌面驗收及退出檢查已完成，準備提交／推送與唯一 ready PR。使用者已核准按本計畫開分支、逐 Task 驗證／commit／push，Phase 完成建立唯一 PR。分支只在實際開始當前 Phase 時建立，不預建後續 Phase。授權範圍不含 merge、force push、歷史覆寫或未指定電腦部署。
 
 ### P5-T1 執行紀錄
 
@@ -263,3 +263,21 @@ P5-T1 已完成並推送 5a791c6。P5-T2 已完成並推送 52fcb92。P5-T3 已�
 獨立讀取 single-file manifest 及內嵌 App 的 PE resource，確認公鑰 keyId 22DC3101EAB51DA4D08614F0DDFBBC42A3D6257DE612A1C2A8DE72B3B9B1ACAC 與指定測試公鑰一致，bundle 中 App assembly 與正式根目錄 build 的 SHA256 相同，沒有 issuer、PEM、Key 或 users.json。格式核對 [Microsoft HostModel Bundler](https://source.dot.net/Microsoft.NET.HostModel/Bundle/Bundler.cs.html)、[Manifest](https://source.dot.net/Microsoft.NET.HostModel/Bundle/Manifest.cs.html) 與 [FileEntry](https://source.dot.net/Microsoft.NET.HostModel/Bundle/FileEntry.cs.html)。初版測試只讀 host 前 1 MiB 未找到 marker，查證本機 marker 在 8358264 bytes，改用有界 16 MiB host 檢查後通過。這是測試讀取器修正，不是發布失敗。
 
 Ruling：正式發布函式允許專案內明確指定的隔離輸出位置，僅供驗證相同 root publisher，不改變兩個 bat 的正式輸出位置，也不讀取 runtime trust override。成本是多一個具範圍驗證的輸出參數，避免使用測試公鑰覆寫現有正式 EXE。
+
+### P5-T6 執行紀錄（進行中）
+
+2026-10-01：初始 restore、build、AuthenticationChecks all 80 PASS、Phase2Checks、RegressionChecks、WpfChecks 全部 exit 0，build 0 warnings／0 errors。WPF 檢查實際確認 WebView2 0x8000FFFF 後純文字備援成功，正式 HTML 仍待桌面驗證。
+
+全 Phase 作者自審確認公鑰資源、App／issuer 分離、嚴格驗章、匯入鎖定與 rollback、UAC／生命週期及發布快照。發現客戶選檔未列出 issuer 預設 .pma-key，已補入，另補 Git ignore 的 .pma-key 及預設私鑰檔名。新版 Solution build 再次 0 warnings／0 errors，activation 9 PASS。受限執行的原子替換案例報 StorageUnavailable，同一隔離 suite 於允許環境通過，沒有為測試讀寫真實 ProgramData。
+
+使用者已核准 C:/Users/swang/Documents/ProgramMigrationAnalyzer-CompanyKeys 的正式加密私鑰／公鑰與私鑰 ACL，以及 SWANG-PC 舊 users.json 的受保護備份、替換及工具／auth／帳號檔 ACL，祖先 ACL 排除。公司 issuer 已發布並開啟，私鑰及帳密等待使用者互動輸入。已保存真實部署前 ACL metadata 並準備受保護恢復備份腳本，尚未替換帳號檔。README 與新版交付紀錄已更新，完整正式部署、T6 提交／推送與 ready PR 仍未完成。
+
+T6 正式備份進度：使用者手動完成 UAC 後，SWANG-PC 的舊帳號已建立受保護備份，ACL 僅 Administrators／SYSTEM，帳號及舊 EXE 的備份 SHA256 與原檔一致。原 users.json 未替換，ProgramData 與磁碟根 SDDL 未變。備份位置與 helper 的隱藏目錄修正詳見新版交付紀錄。公司發證工具重新開啟，正式金鑰及 Key 簽發等待使用者輸入，後續客戶端發布／匯入驗收仍未完成。
+
+T6 正式金鑰與部署進度：使用者確認公司加密私鑰／公鑰已儲存，Axeen Key 已簽發。私鑰 metadata 的目前使用者／SYSTEM 保護 ACL 通過，代理未讀私鑰。正式公鑰存於忽略的本機 config，直接 publish.bat 成功，bundle 公鑰與公司公鑰及 root Release assembly 均相符。真實 users.json 與簽發 Key 的全檔指紋相同，生產 verifier／Windows ACL policy 通過，revision 1、axeen 已啟用，祖先 SDDL 不變。
+
+設定公司公鑰後，EmbeddedTrustCannotBeOverridden 因原先假設資源缺漏而出現 RED，改驗實際編譯資源與外部覆寫隔離後，全部 Authentication 80 PASS，Solution build 0 warnings／0 errors，Phase2／Regression／WpfChecks 全部 exit 0。使用者回報目前測試成功，仍待確認完整桌面驗收範圍。桌面工具因 Esc 停止紀錄遭自動核准審查拒絕，沒有改用其他 UI 方法繞過。使用者回報視窗已關閉，但先前由代理啟動的兩個程序仍存在，退出驗收與 T6 提交／ready PR 尚未完成。
+
+T6 桌面驗收確認：使用者明確回覆新版正式 EXE 已完成 Axeen 登入、Scenario A／B／C 分析與轉譯、HTML／純文字預覽、忙碌登出限制、重登清空且輸出保留。上述為使用者觀察，與自動化 WPF 純文字備援證據分列。原有操作簡報依使用者指定僅加入本機 `.git/info/exclude`，原檔 SHA256 未變，不納入 PR。設計文件同步修正授權副檔名為 `.pma-key`、直接由正式根目錄發布的流程與 temp 只存證據的界線，保持與後續核准指示及實作一致。殘留程序清理、正式 EXE 舊入口與正常退出仍待完成，未宣告 T6 完成。
+
+T6 退出檢查完成：正式公司公鑰 EXE 的舊管理參數只顯示拒絕提示，使用者確認並關閉，exit 1，帳號檔全檔指紋未變。使用者授權結束的兩個既有程序在再次核對時已自行退出，未執行強制終止，最終產品程序數為 0。正式 signed verifier／Windows ACL policy 再核對通過。所有必要驗證與文件已完成，待依最後一項執行提交、推送及 ready PR。

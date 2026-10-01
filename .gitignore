@@ -75,7 +75,9 @@ secrets.json
 # Company authorization configuration and issued credentials
 config/authorization-public-key.pem
 *.private.pem
+*-private-key.pem
 *.key
+*.pma-key
 users.json
 
 # WPF and WebView2 runtime-generated data
