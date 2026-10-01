@@ -26,7 +26,10 @@ internal static class StoreChecks
         (nameof(ConcurrentUpdatesReadLatest), () => ConcurrentUpdatesReadLatest().GetAwaiter().GetResult()),
         (nameof(LockTimeoutAndCancellation), () => LockTimeoutAndCancellation().GetAwaiter().GetResult()),
         (nameof(InitializationAndCorruptUpdate), () => InitializationAndCorruptUpdate().GetAwaiter().GetResult()),
-        (nameof(NonElevatedStoreCannotWrite), () => NonElevatedStoreCannotWrite().GetAwaiter().GetResult()));
+        (nameof(NonElevatedStoreCannotWrite), () => NonElevatedStoreCannotWrite().GetAwaiter().GetResult()),
+        (nameof(UnsafeLockPathFailsBeforeOpening), () => UnsafeLockPathFailsBeforeOpening().GetAwaiter().GetResult()),
+        (nameof(OversizedUpdatePreservesOldFile), () => OversizedUpdatePreservesOldFile().GetAwaiter().GetResult()),
+        (nameof(PostReplacementValidationRollsBack), () => PostReplacementValidationRollsBack().GetAwaiter().GetResult()));
 
     private static async Task ValidEnabledAccountOnly()
     {
@@ -190,6 +193,51 @@ internal static class StoreChecks
         Check(!Directory.Exists(fixture.DirectoryPath), "Non-elevated write must have no filesystem effects.");
     }
 
+    private static async Task UnsafeLockPathFailsBeforeOpening()
+    {
+        using var fixture = new AccountFixture();
+        var account = Account();
+        await fixture.Write(new(1, [account]));
+        await File.WriteAllTextAsync(fixture.FilePath + ".lock", "test lock");
+        fixture.Policy.RejectLockPath = true;
+        var before = await File.ReadAllBytesAsync(fixture.FilePath);
+        await Expect<LocalAccountConfigurationException>(() => fixture.Store.UpdateAsync(file =>
+            file with { Users = [account with { IsEnabled = false }] }));
+        Check(Enumerable.SequenceEqual(before, await File.ReadAllBytesAsync(fixture.FilePath)),
+            "Unsafe/reparse lock path must prevent updates before it is opened.");
+    }
+
+    private static async Task OversizedUpdatePreservesOldFile()
+    {
+        using var fixture = new AccountFixture();
+        var account = Account();
+        await fixture.Write(new(1, [account]));
+        var before = await File.ReadAllBytesAsync(fixture.FilePath);
+        await Expect<LocalAccountConfigurationException>(() => fixture.Store.UpdateAsync(file =>
+            file with { Users = [account with { DisplayName = new string('x', 4 * 1024 * 1024) }] }));
+        Check(Enumerable.SequenceEqual(before, await File.ReadAllBytesAsync(fixture.FilePath)),
+            "Management must not commit a file that exceeds its own read limit.");
+    }
+
+    private static async Task PostReplacementValidationRollsBack()
+    {
+        using var fixture = new AccountFixture();
+        var account = Account();
+        await fixture.Write(new(1, [account]));
+        var before = await File.ReadAllBytesAsync(fixture.FilePath);
+        fixture.Policy.RejectFinalValidation = true;
+        fixture.Policy.ProbeRollbackLock = true;
+        await Expect<LocalAccountConfigurationException>(() => fixture.Store.UpdateAsync(file =>
+            file with { Users = [account with { IsEnabled = false }] }));
+        fixture.Policy.RejectFinalValidation = false;
+        Check(Enumerable.SequenceEqual(before, await File.ReadAllBytesAsync(fixture.FilePath)),
+            "Failure after replacement must restore the exact old account file.");
+        Check(fixture.Policy.RollbackWasLocked, "Backup recovery must retain the writer lock until restoration completes.");
+        fixture.Policy.ResetTemporaryState();
+        await fixture.Store.UpdateAsync(file => file);
+        Check(!Directory.EnumerateFiles(fixture.DirectoryPath, "*.tmp").Any(), "Completed rollback and update must clean safe backups.");
+    }
+
     internal static async Task<TException> Expect<TException>(Func<Task> action) where TException : Exception
     {
         try { await action(); }
@@ -241,12 +289,27 @@ internal sealed class FakeAccountPolicy : ILocalAccountAccessPolicy
     public bool IsElevatedAdministrator { get; set; } = true;
     public string? ReadFailure { get; set; }
     public bool FailSecuringTemporary { get; set; }
+    public bool RejectLockPath { get; set; }
+    public bool RejectFinalValidation { get; set; }
+    public bool ProbeRollbackLock { get; set; }
+    public bool RollbackWasLocked { get; private set; }
     public bool SecuredTemporary { get; private set; }
     public HashSet<string> ValidatedPaths { get; } = [];
     public void ValidateReadAccess(string filePath)
     {
         ValidatedPaths.Add(filePath);
-        if (ReadFailure is not null) throw new LocalAccountConfigurationException(LocalAccountConfigurationFailure.UnsafeAccess);
+        if (ProbeRollbackLock && Path.GetFileName(filePath).StartsWith(".users-backup-", StringComparison.Ordinal))
+        {
+            try
+            {
+                using var competing = new FileStream(Path.Combine(Path.GetDirectoryName(filePath)!, "users.json.lock"),
+                    FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+            }
+            catch (IOException exception) when ((exception.HResult & 0xFFFF) is 32 or 33) { RollbackWasLocked = true; }
+        }
+        if (ReadFailure is not null || (RejectLockPath && filePath.EndsWith(".lock", StringComparison.Ordinal))
+            || (RejectFinalValidation && SecuredTemporary && filePath.EndsWith("users.json", StringComparison.Ordinal)))
+            throw new LocalAccountConfigurationException(LocalAccountConfigurationFailure.UnsafeAccess);
     }
     public void PrepareWriteAccess(string directoryPath) => Directory.CreateDirectory(directoryPath);
     public void SecureFile(string filePath)
@@ -257,4 +320,5 @@ internal sealed class FakeAccountPolicy : ILocalAccountAccessPolicy
             SecuredTemporary = true;
         }
     }
+    public void ResetTemporaryState() => SecuredTemporary = false;
 }

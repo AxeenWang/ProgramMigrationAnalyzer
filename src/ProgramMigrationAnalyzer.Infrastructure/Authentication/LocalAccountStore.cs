@@ -73,11 +73,18 @@ public sealed class LocalAccountStore
 
         var directory = Path.GetDirectoryName(_filePath)!;
         string? temporary = null;
+        string? backup = null;
+        FileStream? heldLock = null;
+        var createdNewFile = false;
+        var completed = false;
         try
         {
             _accessPolicy.PrepareWriteAccess(directory);
+            // Validate even a missing path so a dangling reparse point is rejected before opening.
+            try { _accessPolicy.ValidateReadAccess(_filePath + ".lock"); }
+            catch (LocalAccountConfigurationException exception) when (exception.Failure == LocalAccountConfigurationFailure.Missing) { }
             // The lock is persistent. Deleting a lock path on release can create two lock identities.
-            await using var heldLock = await AcquireLockAsync(cancellationToken);
+            heldLock = await AcquireLockAsync(cancellationToken);
             _accessPolicy.SecureFile(_filePath + ".lock");
             LocalAccountFile current;
             try { current = await ReadAsync(cancellationToken); }
@@ -92,28 +99,68 @@ public sealed class LocalAccountStore
             {
                 // The protected directory makes the file secure from the instant of creation.
                 await JsonSerializer.SerializeAsync(stream, replacement, JsonOptions, cancellationToken);
+                if (stream.Length > MaximumFileBytes) throw InvalidData();
                 await stream.FlushAsync(cancellationToken);
                 stream.Flush(flushToDisk: true);
             }
             _accessPolicy.SecureFile(temporary);
             _accessPolicy.ValidateReadAccess(temporary);
             cancellationToken.ThrowIfCancellationRequested();
-            if (File.Exists(_filePath)) File.Replace(temporary, _filePath, null);
-            else File.Move(temporary, _filePath);
+            if (File.Exists(_filePath))
+            {
+                // Keep the already validated old file and its ACL until the new file passes final validation.
+                backup = Path.Combine(directory, $".users-backup-{Guid.NewGuid():N}.tmp");
+                File.Replace(temporary, _filePath, backup);
+            }
+            else
+            {
+                File.Move(temporary, _filePath);
+                createdNewFile = true;
+            }
             temporary = null;
             _accessPolicy.ValidateReadAccess(_filePath);
+            completed = true;
         }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-        { throw new LocalAccountConfigurationException(LocalAccountConfigurationFailure.StorageUnavailable); }
+        catch (Exception exception)
+        {
+            // Also recover when the OS replacement itself fails after moving the old file to backup.
+            if (backup is not null && File.Exists(backup))
+            {
+                try
+                {
+                    _accessPolicy.ValidateReadAccess(backup);
+                    if (File.Exists(_filePath)) File.Replace(backup, _filePath, null);
+                    else File.Move(backup, _filePath);
+                    backup = null;
+                }
+                catch (Exception recoveryFailure) when (recoveryFailure is IOException or UnauthorizedAccessException)
+                { throw new LocalAccountConfigurationException(LocalAccountConfigurationFailure.StorageUnavailable); }
+            }
+            else if (createdNewFile)
+            {
+                try { File.Delete(_filePath); }
+                catch (Exception recoveryFailure) when (recoveryFailure is IOException or UnauthorizedAccessException)
+                { throw new LocalAccountConfigurationException(LocalAccountConfigurationFailure.StorageUnavailable); }
+            }
+            if (exception is IOException or UnauthorizedAccessException)
+                throw new LocalAccountConfigurationException(LocalAccountConfigurationFailure.StorageUnavailable);
+            throw;
+        }
         finally
         {
-            if (temporary is not null)
-            {
-                try { File.Delete(temporary); }
-                catch (IOException) { }
-                catch (UnauthorizedAccessException) { }
-            }
+            DeleteScratch(temporary);
+            // If rollback itself fails, keep the protected backup for administrator recovery.
+            if (completed) DeleteScratch(backup);
+            if (heldLock is not null) await heldLock.DisposeAsync();
         }
+    }
+
+    private static void DeleteScratch(string? path)
+    {
+        if (path is null) return;
+        try { File.Delete(path); }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
     }
 
     private async Task<FileStream> AcquireLockAsync(CancellationToken cancellationToken)
