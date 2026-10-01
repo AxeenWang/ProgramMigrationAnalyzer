@@ -10,7 +10,7 @@
 
 **Spec:** [核准規格](../specs/2026-10-01-offline-signed-authorization-design.md)，已於 2026-10-01 核准。兩份核准文件已在第一個 Task 納入正式 docs。
 
-**狀態:** 使用者已指示依本計畫作業。Phase 5 分支 `codex/offline-authorization-phase-5` 從 `7513324` 開工，P5-T1 進行中，P5-T2～T6 尚未開始。Active Target 為 `Projects/ProgramMigrationAnalyzer`，Target Lock enabled。Git root 為 `D:/AxeenWorld/CodeLab/Projects/ProgramMigrationAnalyzer/.codex-tmp/2026-10-01_login-phase-1/worktree`，standalone 模式。
+**狀態:** 使用者已指示依本計畫作業。Phase 5 分支 `codex/offline-authorization-phase-5` 從 `7513324` 開工，P5-T1 已完成並推送 5a791c6，P5-T2 已完成程式與驗證，P5-T3～T6 尚未開始。Active Target 為 `Projects/ProgramMigrationAnalyzer`，Target Lock enabled。Git root 為 `D:/AxeenWorld/CodeLab/Projects/ProgramMigrationAnalyzer/.codex-tmp/2026-10-01_login-phase-1/worktree`，standalone 模式。
 
 ## Global Constraints
 
@@ -88,7 +88,7 @@ CheckSupport.Throws<AuthorizationException>(() => verifier.Verify(unknownKeyEnve
 - [x] 在上列檔案實作介面。驗章使用 ECDsa.VerifyData 與明確 P1363。有界 stream 最多讀上限＋1 bytes，UTF-8 使用 throwOnInvalidBytes，嚴格屬性集合檢查。fixture 用記憶體 ECDsa 直接簽測試 payload，不存私鑰。
 - [x] 執行 build、signature、contracts、crypto suites，全部 exit 0。確認 verify 與 fixture 沒有把完整 Key／hash 加入錯誤輸出。
 - [x] 將核准 spec／plan複製到正式 docs，規格第 37 節新增 signed 模式後續要求與明確實作狀態，既有 Phase 4 證據保留。記錄當前 Task 結果。
-- [ ] 用 repo-push 提交及推送當前 Task，建議 commit `feat: define offline authorization signatures`，確認乾淨與 upstream 0／0。
+- [x] 用 repo-push 提交及推送當前 Task，commit `5a791c6`，確認乾淨與 upstream 0／0。
 
 ### Task P5-T2：簽章帳號 store、原子匯入與真實認證
 
@@ -102,7 +102,7 @@ CheckSupport.Throws<AuthorizationException>(() => verifier.Verify(unknownKeyEnve
 - `AuthorizationImportResult(Guid AuthorizationId, int Revision, string PayloadFingerprint, bool Changed)`，安全 ToString。
 - `SignedLocalAuthenticationService(SignedLocalAccountStore store, LocalPasswordHasher hasher): IAuthenticationService`，成功 provider 固定 `SignedLocal`。
 
-- [ ] 寫 RED 檢查 `ValidEnabledCredentialsRequireSignature`、`UnsignedAndTamperedStoreFailsClosed`、`ReauthenticationReadsAgain`、`TwoDeploymentsUseSameKey`、`RevisionAndIdRules`、`ReplacementConfirmationUsesLockedCurrentId`、`InterruptedImportRollsBack`、`CanceledAndNonElevatedImportPreservesFile`、`UnsafePathsLockAndBusy`。相同 revision 不同 payload 拒絕，跨 id 需正確目前 id，同一 Key 在兩個隔離路徑登入成功。
+- [x] 寫 RED 檢查 `ValidEnabledCredentialsRequireSignature`、`UnsignedAndTamperedStoreFailsClosed`、`ReauthenticationReadsAgain`、`TwoDeploymentsUseSameKey`、`RevisionAndIdRules`、`ReplacementConfirmationUsesLockedCurrentId`、`InterruptedImportRollsBack`、`CanceledAndNonElevatedImportPreservesFile`、`UnsafePathsLockAndBusy`。相同 revision 不同 payload 拒絕，跨 id 需正確目前 id，同一 Key 在兩個隔離路徑登入成功。
 
 ```csharp
 CheckSupport.Check(validLogin.IsSuccess && !tamperedLogin.IsSuccess, "Login must require signed credentials.");
@@ -110,10 +110,10 @@ CheckSupport.Check(deploymentOneLogin.IsSuccess && deploymentTwoLogin.IsSuccess,
 CheckSupport.Check(File.ReadAllBytes(accountPath).SequenceEqual(originalBytes), "Failed import changed prior data.");
 ```
 
-- [ ] 執行 `dotnet run --project tests/ProgramMigrationAnalyzer.AuthenticationChecks -- --suite signed-store`，確認 RED。
-- [ ] 實作上述三個方法。store 必須鎖定後重讀目前授權再決定 revision／確認要求，5 秒 lock 上限，取消可中止等待，同目錄 WriteThrough／flush／原子替換與受保護 rollback。Verifier 必須覆蓋匯入前及替換後檢查，無 unsigned Update callback。
-- [ ] 認證服務重讀 store 後才依正規化帳號、啟用與 PBKDF2 比對，未知帳號執行 dummy PBKDF2，例外映射現有 AuthenticationFailure，取消照舊往上傳遞。
-- [ ] 執行 build、signature、signed-store、contracts、crypto、既有 store／access suites，exit 0。ACL 使用隔離 fake policy 的結果與真實 policy 邊界檢查分別記錄，確認所有檔案寫入只在 task temp。
+- [x] 執行 `dotnet run --project tests/ProgramMigrationAnalyzer.AuthenticationChecks -- --suite signed-store`，確認 RED。
+- [x] 實作上述三個方法。store 必須鎖定後重讀目前授權再決定 revision／確認要求，5 秒 lock 上限，取消可中止等待，同目錄 WriteThrough／flush／原子替換與受保護 rollback。Verifier 必須覆蓋匯入前及替換後檢查，無 unsigned Update callback。
+- [x] 認證服務重讀 store 後才依正規化帳號、啟用與 PBKDF2 比對，未知帳號執行 dummy PBKDF2，例外映射現有 AuthenticationFailure，取消照舊往上傳遞。
+- [x] 執行 build、signature、signed-store、contracts、crypto、既有 store／access suites，exit 0。ACL 使用隔離 fake policy 的結果與真實 policy 邊界檢查分別記錄，確認所有檔案寫入只在 task temp。
 - [ ] 更新計畫結果並 repo-push，建議 commit `feat: import and authenticate signed local accounts`，確認乾淨與 upstream 0／0。
 
 ### Task P5-T3：公司 WPF 發證工具與加密私鑰處理
@@ -220,7 +220,7 @@ CheckSupport.Check(embeddedKeyId == snapshotKeyId, "Published trust must use the
 | O11 | T5 publish／snapshot／轉送 | T6 正式 public key publish |
 | O12 | T4 累積回歸、T6 完整 suites | T6 桌面／樣本／退出 |
 
-P5-T1 已完成程式與驗證，提交／推送尚待本次 Git 查證。P5-T2～T6 尚未開始。使用者已核准按本計畫開分支、逐 Task 驗證／commit／push，Phase 完成建立唯一 PR。分支只在實際開始當前 Phase 時建立，不預建後續 Phase。授權範圍不含 merge、force push、歷史覆寫或未指定電腦部署。
+P5-T1 已完成並推送 5a791c6。P5-T2 已完成程式與驗證，待本次提交／推送。P5-T3～T6 尚未開始。使用者已核准按本計畫開分支、逐 Task 驗證／commit／push，Phase 完成建立唯一 PR。分支只在實際開始當前 Phase 時建立，不預建後續 Phase。授權範圍不含 merge、force push、歷史覆寫或未指定電腦部署。
 
 ### P5-T1 執行紀錄
 
@@ -230,6 +230,9 @@ P5-T1 已完成程式與驗證，提交／推送尚待本次 Git 查證。P5-T2�
 
 證據保留在忽略的 `.codex-tmp/2026-10-01_offline-authorization-phase-5/`，測試私鑰僅在記憶體，沒有簽發正式 Key。客戶端 composition 尚未切換，P5-T4 及真實部署未開始。
 
+### P5-T2 執行紀錄
+
+2026-10-01：先確認 9 組 NotImplemented RED，再實作真實 signed store／provider。新增 ACL Missing 語意檢查，確認 RED 後修正首次建檔流程，signed-store 共 10 組 GREEN。全部 AuthenticationChecks 75 PASS，build 0 warnings／0 errors。覆蓋 revision／跨 id 確認、兩個隔離部署、鎖內重讀、取消、5 秒 Busy、失敗及鎖內 rollback。測試均限 task temp，fake policy 檢查不取代 T6 真實 ACL 部署。正式客戶端仍待 T4 接入。
 ## 計畫自審
 
 2026-10-01 計畫撰寫時：已依規格逐節對照六個 Task 與 O1～O12。確認 T1 型別／方法供 T2～T5 使用一致，沒有未定義的跨 Task function。五項 Review Focus 均有具名檢查，部署與正式私鑰操作保留使用者授權界線。撰寫時所有 checkbox 未勾選，沒有將計畫中的命令或預期結果記成已執行，後續完成項目以 Task 紀錄為準。

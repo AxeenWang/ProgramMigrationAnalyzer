@@ -21,6 +21,7 @@ internal static class Program
         var suites = new Dictionary<string, Action>(StringComparer.OrdinalIgnoreCase)
         {
             ["signature"] = AuthorizationSignatureChecks.Run,
+            ["signed-store"] = SignedStoreChecks.Run,
             ["contracts"] = ContractChecks.Run,
             ["crypto"] = CryptoChecks.Run,
             ["store"] = StoreChecks.Run,

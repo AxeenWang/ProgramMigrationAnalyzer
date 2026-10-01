@@ -6,6 +6,11 @@ public sealed record AuthorizationPayload(int SchemaVersion, string ProductId, G
     public override string ToString() => nameof(AuthorizationPayload);
 }
 
+public sealed record AuthorizationImportResult(Guid AuthorizationId, int Revision, string PayloadFingerprint, bool Changed)
+{
+    public override string ToString() => nameof(AuthorizationImportResult);
+}
+
 public sealed class VerifiedAuthorization
 {
     private readonly byte[] _envelope;
