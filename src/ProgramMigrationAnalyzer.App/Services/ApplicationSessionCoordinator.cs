@@ -2,68 +2,95 @@ using System.Windows;
 using System.Windows.Controls;
 using ProgramMigrationAnalyzer.App.ViewModels;
 using ProgramMigrationAnalyzer.Core.Authentication;
+using ProgramMigrationAnalyzer.Infrastructure.Authentication;
 
 namespace ProgramMigrationAnalyzer.App.Services;
 
-public enum StartupMode { Normal, ConfigureLocalAccount }
-public enum ApplicationSessionState { Starting, Login, OpeningMain, Main, ReturningToLogin, Closing, Admin }
-
-internal static class StartupModeParser
-{
-    public static StartupMode Parse(string[] args) => args switch
-    {
-        [] => StartupMode.Normal,
-        ["--configure-local-account"] => StartupMode.ConfigureLocalAccount,
-        _ => throw new ArgumentException("Unsupported startup arguments.")
-    };
-}
+public enum ApplicationSessionState { Starting, InspectingAuthorization, Activation, ImportingAuthorization, Login, OpeningMain, Main, ReturningToLogin, Closing }
 
 public sealed class ApplicationSessionCoordinator : IDisposable
 {
     private readonly Application _app;
     private readonly IAuthenticationService _authentication;
     private readonly Func<IUserSession, MainWindow> _mainWindowFactory;
-    private readonly Func<LocalAccountConfigurationWindow> _configurationWindowFactory;
+    private readonly SignedLocalAccountStore _store;
+    private readonly Func<bool, AuthorizationActivationWindow> _activationWindowFactory;
+    private readonly CancellationTokenSource _lifetime = new();
     private readonly TimeProvider _timeProvider;
     private readonly AuthenticationDiagnosticLog _diagnostics;
     private readonly AuthenticatedSession _session = new();
     private LoginWindow? _login;
     private LoginViewModel? _loginViewModel;
     private MainWindow? _main;
-    private Window? _adminOrError;
+    private Window? _error;
+    private AuthorizationActivationWindow? _activation;
+    private bool _importMode;
     private bool _disposed;
     private bool _shutdownRequested;
 
     internal ApplicationSessionCoordinator(Application app, IAuthenticationService authentication,
-        Func<IUserSession, MainWindow> mainWindowFactory, Func<LocalAccountConfigurationWindow> configurationWindowFactory,
+        Func<IUserSession, MainWindow> mainWindowFactory, SignedLocalAccountStore store, Func<bool, AuthorizationActivationWindow> activationWindowFactory,
         TimeProvider timeProvider, AuthenticationDiagnosticLog diagnostics)
     {
         _app = app;
         _authentication = authentication;
         _mainWindowFactory = mainWindowFactory;
-        _configurationWindowFactory = configurationWindowFactory;
+        _store = store;
+        _activationWindowFactory = activationWindowFactory;
         _timeProvider = timeProvider;
         _diagnostics = diagnostics;
     }
     public IUserSession Session => _session;
     public ApplicationSessionState State { get; private set; } = ApplicationSessionState.Starting;
 
-    public void Start(StartupMode mode)
+    internal async Task StartAsync(AuthorizationStartupRequest request)
     {
         _app.Dispatcher.VerifyAccess();
         if (_disposed || State != ApplicationSessionState.Starting) throw new InvalidOperationException("Startup has already been handled.");
         _app.ShutdownMode = ShutdownMode.OnExplicitShutdown;
-        if (mode == StartupMode.Normal) ShowLogin();
-        else if (mode == StartupMode.ConfigureLocalAccount)
+        _importMode = request.Mode == AuthorizationStartupMode.ImportAuthorization;
+        if (_importMode)
         {
-            State = ApplicationSessionState.Admin;
-            // The administration VM and service check the elevated token before enabling any writes.
-            _adminOrError = _configurationWindowFactory();
-            _adminOrError.Closed += OnAdminOrErrorClosed;
-            _app.MainWindow = _adminOrError;
-            _adminOrError.Show();
+            ShowActivation();
+            await _activation!.ViewModel.PreviewAsync(request.AbsolutePath!, _lifetime.Token);
+            return;
         }
-        else throw new ArgumentException("Unsupported startup mode.");
+        State = ApplicationSessionState.InspectingAuthorization;
+        try { await _store.ReadAsync(_lifetime.Token); }
+        catch (AuthorizationException) { if (!_disposed) ShowActivation(); return; }
+        catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { return; }
+        if (!_disposed) ShowLogin();
+    }
+    private void ShowActivation()
+    {
+        CloseLogin();
+        State = _importMode ? ApplicationSessionState.ImportingAuthorization : ApplicationSessionState.Activation;
+        _activation = _activationWindowFactory(_importMode);
+        _activation.ViewModel.Activated += OnActivated;
+        _activation.ViewModel.Cancelled += OnActivationCancelled;
+        _activation.Closed += OnActivationClosed;
+        _app.MainWindow = _activation;
+        _activation.Show();
+    }
+    private void OnActivated()
+    {
+        if (_disposed || _activation is not { IsVisible: true }
+            || State is not (ApplicationSessionState.Activation or ApplicationSessionState.ImportingAuthorization)) return;
+        if (_importMode) { Shutdown(0); return; }
+        CloseActivation(); ShowLogin();
+    }
+    private void RequestAuthorizationUpdate()
+    {
+        if (!_disposed && State == ApplicationSessionState.Login && _loginViewModel is { CanEdit: true }) ShowActivation();
+    }
+    private void OnActivationCancelled() => Shutdown(_importMode ? 2 : 0);
+    private void OnActivationClosed(object? sender, EventArgs args) => OnActivationCancelled();
+    private void CloseActivation()
+    {
+        var window = _activation; _activation = null;
+        if (window is null) return;
+        window.ViewModel.Activated -= OnActivated; window.ViewModel.Cancelled -= OnActivationCancelled;
+        window.Closed -= OnActivationClosed; window.ViewModel.Dispose(); window.Close();
     }
     internal void RejectStartup()
     {
@@ -71,18 +98,19 @@ public sealed class ApplicationSessionCoordinator : IDisposable
         _session.Clear();
         CloseLogin();
         CloseMain();
-        if (_adminOrError is { } previous)
+        CloseActivation();
+        if (_error is { } previous)
         {
-            previous.Closed -= OnAdminOrErrorClosed;
+            previous.Closed -= OnErrorClosed;
             previous.Close();
         }
         _diagnostics.Record(AuthenticationDiagnosticKind.InitializationFailed);
         var message = new TextBlock { Text = "程式無法啟動，請重新開啟或聯絡管理者。", TextWrapping = TextWrapping.Wrap, Margin = new Thickness(24) };
-        _adminOrError = new Window { Title = "程式移植分析儀", Width = 440, SizeToContent = SizeToContent.Height,
+        _error = new Window { Title = "程式移植分析儀", Width = 440, SizeToContent = SizeToContent.Height,
             WindowStartupLocation = WindowStartupLocation.CenterScreen, Content = message };
-        _adminOrError.Closed += OnAdminOrErrorClosed;
-        _app.MainWindow = _adminOrError;
-        _adminOrError.Show();
+        _error.Closed += OnErrorClosed;
+        _app.MainWindow = _error;
+        _error.Show();
     }
     private void ShowLogin()
     {
@@ -90,7 +118,8 @@ public sealed class ApplicationSessionCoordinator : IDisposable
         _loginViewModel = new(_authentication, _timeProvider, _diagnostics);
         _login = new(_loginViewModel);
         _loginViewModel.LoginSucceeded += OnLoginSucceeded;
-        _loginViewModel.Cancelled += Shutdown;
+        _loginViewModel.Cancelled += OnLoginCancelled;
+        _loginViewModel.ImportAuthorizationRequested += RequestAuthorizationUpdate;
         _login.Closed += OnLoginClosed;
         _app.MainWindow = _login;
         _login.Show();
@@ -155,7 +184,8 @@ public sealed class ApplicationSessionCoordinator : IDisposable
     {
         if (State is ApplicationSessionState.Main or ApplicationSessionState.OpeningMain) Shutdown();
     }
-    private void OnAdminOrErrorClosed(object? sender, EventArgs args) => Shutdown();
+    private void OnLoginCancelled() => Shutdown();
+    private void OnErrorClosed(object? sender, EventArgs args) => Shutdown(1);
     private void CloseLogin()
     {
         var window = _login;
@@ -165,7 +195,8 @@ public sealed class ApplicationSessionCoordinator : IDisposable
         if (vm is not null)
         {
             vm.LoginSucceeded -= OnLoginSucceeded;
-            vm.Cancelled -= Shutdown;
+            vm.Cancelled -= OnLoginCancelled;
+            vm.ImportAuthorizationRequested -= RequestAuthorizationUpdate;
             vm.Dispose();
         }
         if (window is not null)
@@ -183,26 +214,29 @@ public sealed class ApplicationSessionCoordinator : IDisposable
         window.Dispose();
         window.Close();
     }
-    public void Shutdown()
+    public void Shutdown() => Shutdown(0);
+    private void Shutdown(int exitCode)
     {
         _app.Dispatcher.VerifyAccess();
         if (_shutdownRequested) return;
         _shutdownRequested = true;
         Dispose();
-        _app.Shutdown();
+        _app.Shutdown(exitCode);
     }
     public void Dispose()
     {
         if (_disposed) return;
         _disposed = true;
+        _lifetime.Cancel();
         State = ApplicationSessionState.Closing;
         _session.Clear();
         CloseLogin();
         CloseMain();
-        if (_adminOrError is { } window)
+        CloseActivation();
+        if (_error is { } window)
         {
-            _adminOrError = null;
-            window.Closed -= OnAdminOrErrorClosed;
+            _error = null;
+            window.Closed -= OnErrorClosed;
             window.Close();
         }
     }

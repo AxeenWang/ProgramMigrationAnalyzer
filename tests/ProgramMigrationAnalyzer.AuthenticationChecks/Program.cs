@@ -5,25 +5,37 @@ internal static class Program
     [STAThread]
     private static int Main(string[] args)
     {
+        if (Environment.GetEnvironmentVariable("PMA_PUBLISH_CHECK_STUB") == "1") return PublishChecks.RunDotNetStub(args);
+        if (args is ["--verify-published-bundle", var bundle, var selectedPublic]) return PublishedBundleChecks.Verify(bundle, selectedPublic);
+        if (args is ["--create-publish-public-fixture", var publicPath])
+        {
+            using var key = new AuthorizationTestFixture();
+            System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(System.IO.Path.GetFullPath(publicPath))!);
+            System.IO.File.WriteAllText(publicPath, key.PublicPem); Console.WriteLine(key.KeyId); return 0;
+        }
         // Test-host routing only. App receives the actual normal/admin/invalid command line.
         if (Environment.GetEnvironmentVariable("PMA_AUTH_CHECK_SCENARIO") is { } scenario)
             return scenario switch
             {
                 "logout" => AccessChecks.RunWindowChild(),
-                "local-lifecycle" => LocalStartupChecks.RunChild(configuration: false),
-                "local-configuration" => LocalStartupChecks.RunChild(configuration: true),
+                var signed when signed.StartsWith("signed-", StringComparison.Ordinal) => SignedStartupChecks.RunChild(signed),
                 _ => StartupChecks.RunChild(scenario)
             };
-        if (args is ["--admin-window-check"])
-            return AdministrationChecks.RunWindowChild();
+        if (args is ["--issuer-window-check"])
+            return IssuerChecks.RunWindowChild();
         if (args is ["--login-window-check"])
             return LoginChecks.RunWindowChild();
         var suites = new Dictionary<string, Action>(StringComparer.OrdinalIgnoreCase)
         {
+            ["signature"] = AuthorizationSignatureChecks.Run,
+            ["signed-store"] = SignedStoreChecks.Run,
+            ["issuer"] = IssuerChecks.Run,
+            ["activation"] = SignedStartupChecks.Run,
+            ["publish"] = PublishChecks.Run,
             ["contracts"] = ContractChecks.Run,
             ["crypto"] = CryptoChecks.Run,
-            ["store"] = StoreChecks.Run,
-            ["admin"] = AdministrationChecks.Run,
+            ["acl"] = () => CheckSupport.Run(("VolumeRootDeleteCannotReplaceDeployment", WindowsAclChecks.VolumeRootDeleteCannotReplaceDeployment),
+                ("ReplacementAndRootControlRemainForbidden", WindowsAclChecks.ReplacementAndRootControlRemainForbidden)),
             ["login"] = LoginChecks.Run,
             ["startup"] = StartupChecks.Run,
             ["access"] = AccessChecks.Run
@@ -33,7 +45,7 @@ internal static class Program
 
         if (selected != "all" && !suites.ContainsKey(selected))
         {
-            Console.Error.WriteLine("Usage: AuthenticationChecks --suite contracts|crypto|store|admin|login|startup|access|all. Unimplemented suites cannot pass.");
+            Console.Error.WriteLine($"Usage: AuthenticationChecks --suite {string.Join("|",suites.Keys)}|all. Unimplemented suites cannot pass.");
             return 2;
         }
 

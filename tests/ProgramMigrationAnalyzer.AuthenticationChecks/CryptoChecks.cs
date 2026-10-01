@@ -143,11 +143,11 @@ internal static class CryptoChecks
         const string hashFixture = "Test-only hash marker";
         const string saltFixture = "Test-only salt marker";
         var user = new LocalAccountRecord(Guid.NewGuid(), "test.user", "Test user", true, "PBKDF2-HMAC-SHA256", 600_000, saltFixture, hashFixture);
-        var accounts = new LocalAccountFile(1, [user]);
+        var accounts = new AuthorizationPayload(2, "ProgramMigrationAnalyzer", Guid.NewGuid(), 1, DateTimeOffset.UtcNow, [user]);
         var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
         var json = JsonSerializer.Serialize(accounts, options);
-        var restored = JsonSerializer.Deserialize<LocalAccountFile>(json, options);
-        Check(restored?.SchemaVersion == 1 && restored.Users.Single() == user, "Account data must round-trip with the schema 1 fields.");
+        var restored = JsonSerializer.Deserialize<AuthorizationPayload>(json, options);
+        Check(restored?.SchemaVersion == 2 && restored.Users.Single() == user, "Signed account data must round-trip with schema 2 fields.");
         using var document = JsonDocument.Parse(json);
         var serializedUser = document.RootElement.GetProperty("users")[0];
         Check(serializedUser.GetProperty("passwordAlgorithm").GetString() == "PBKDF2-HMAC-SHA256"

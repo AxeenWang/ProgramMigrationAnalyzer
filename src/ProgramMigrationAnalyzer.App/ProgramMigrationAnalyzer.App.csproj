@@ -23,4 +23,27 @@
     <UseWPF>true</UseWPF>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <AuthorizationPublicKeyPath Condition="'$(AuthorizationPublicKeyPath)' == '' and Exists('$(MSBuildProjectDirectory)/../../config/authorization-public-key.pem')">$(MSBuildProjectDirectory)/../../config/authorization-public-key.pem</AuthorizationPublicKeyPath>
+  </PropertyGroup>
+  <Target Name="PrepareAuthorizationPublicKey" BeforeTargets="PrepareForBuild" Condition="'$(AuthorizationPublicKeyPath)' != ''">
+    <PropertyGroup>
+      <_PreparationProject>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)/../../build/ProgramMigrationAnalyzer.PublishPreparation/ProgramMigrationAnalyzer.PublishPreparation.csproj'))</_PreparationProject>
+      <_PreparationAssembly>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)/../../build/ProgramMigrationAnalyzer.PublishPreparation/bin/$(Configuration)/net10.0/ProgramMigrationAnalyzer.PublishPreparation.dll'))</_PreparationAssembly>
+      <_PublicKeyStaging>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)/$(IntermediateOutputPath)authorization'))</_PublicKeyStaging>
+    </PropertyGroup>
+    <MSBuild Projects="$(_PreparationProject)" Targets="Restore;Build" BuildInParallel="false"
+             RemoveProperties="TargetFramework;RuntimeIdentifier;RuntimeIdentifiers;SelfContained;PublishSingleFile;NoBuild;AuthorizationPublicKeyPath;AuthorizationPublicKeySnapshot;OutputPath;IntermediateOutputPath;BaseIntermediateOutputPath;PublishDir;PublishAot"
+             Properties="Configuration=$(Configuration);UseSharedCompilation=false;SelfContained=false;PublishSingleFile=false" />
+    <Exec Command="dotnet &quot;$(_PreparationAssembly)&quot; --public-key &quot;$(AuthorizationPublicKeyPath)&quot; --staging &quot;$(_PublicKeyStaging)&quot;" ConsoleToMSBuild="true" StandardOutputImportance="Low">
+      <Output TaskParameter="ConsoleOutput" PropertyName="_PreparedAuthorizationPublicKey" />
+    </Exec>
+    <Error Condition="'$(_PreparedAuthorizationPublicKey)' == '' or !Exists('$(_PreparedAuthorizationPublicKey)')" Text="PMA_AUTH_KEY_REQUIRED: No validated company public key snapshot." />
+    <ItemGroup><EmbeddedResource Include="$(_PreparedAuthorizationPublicKey)" LogicalName="ProgramMigrationAnalyzer.AuthorizationPublicKey" /></ItemGroup>
+    <PropertyGroup><_AuthorizationKeyPrepared>true</_AuthorizationKeyPrepared></PropertyGroup>
+  </Target>
+  <Target Name="RequireAuthorizationPublicKeyForPublish" BeforeTargets="PrepareForPublish">
+    <Error Condition="'$(NoBuild)' == 'true'" Text="PMA_AUTH_NO_BUILD: Signed client publication requires a fresh build with the company public key." />
+    <Error Condition="'$(_AuthorizationKeyPrepared)' != 'true' or '$(_PreparedAuthorizationPublicKey)' == '' or !Exists('$(_PreparedAuthorizationPublicKey)')" Text="PMA_AUTH_KEY_REQUIRED: Supply a valid company P-256 public PEM with AuthorizationPublicKeyPath." />
+  </Target>
 </Project>

@@ -27,6 +27,7 @@ internal sealed partial class LoginViewModel : ObservableObject, IDisposable
         _diagnostics = diagnostics;
         LoginCommand = new AsyncRelayCommand<SecureString>(LoginAsync, _ => CanSubmit);
         CancelLoginCommand = new RelayCommand(Cancel, () => !_closed);
+        ImportAuthorizationCommand = new RelayCommand(() => ImportAuthorizationRequested?.Invoke(), () => CanEdit);
     }
 
     [ObservableProperty] private string username = "";
@@ -37,6 +38,8 @@ internal sealed partial class LoginViewModel : ObservableObject, IDisposable
     private bool CanSubmit => CanEdit && RemainingCooldownSeconds == 0;
     public IAsyncRelayCommand<SecureString> LoginCommand { get; }
     public IRelayCommand CancelLoginCommand { get; }
+    public IRelayCommand ImportAuthorizationCommand { get; }
+    public event Action? ImportAuthorizationRequested;
     public event Action<AuthenticatedUser>? LoginSucceeded;
     public event Action? Cancelled;
     public event EventHandler? ClearSensitiveInputsRequested;
@@ -48,6 +51,7 @@ internal sealed partial class LoginViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(CanEdit));
         LoginCommand.NotifyCanExecuteChanged();
         CancelLoginCommand.NotifyCanExecuteChanged();
+        ImportAuthorizationCommand.NotifyCanExecuteChanged();
     }
 
     internal async Task LoginAsync(SecureString? password, CancellationToken cancellationToken)
@@ -163,6 +167,7 @@ internal sealed partial class LoginViewModel : ObservableObject, IDisposable
         if (!_closed) Invalidate();
         LoginSucceeded = null;
         Cancelled = null;
+        ImportAuthorizationRequested = null;
         ClearSensitiveInputsRequested = null;
     }
 }

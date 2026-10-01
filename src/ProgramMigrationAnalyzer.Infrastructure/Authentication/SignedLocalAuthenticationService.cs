@@ -1,10 +1,9 @@
 using ProgramMigrationAnalyzer.Core.Authentication;
-using System.Security;
 using System.Security.Cryptography;
 
 namespace ProgramMigrationAnalyzer.Infrastructure.Authentication;
 
-public sealed class LocalAuthenticationService(LocalAccountStore store, LocalPasswordHasher hasher) : IAuthenticationService
+public sealed class SignedLocalAuthenticationService(SignedLocalAccountStore store, LocalPasswordHasher hasher) : IAuthenticationService
 {
     public async Task<AuthenticationResult> AuthenticateAsync(LoginRequest request, CancellationToken cancellationToken = default)
     {
@@ -14,12 +13,12 @@ public sealed class LocalAuthenticationService(LocalAccountStore store, LocalPas
             return AuthenticationResult.Failed(AuthenticationFailure.UnsupportedRequest);
         try
         {
-            var accounts = await store.ReadAsync(cancellationToken);
+            // Re-read and verify the signature on every login attempt.
+            var authorization = await store.ReadAsync(cancellationToken);
             string? username = null;
             try { username = LocalAccountValidation.NormalizeUsername(request.Username!); }
             catch (ArgumentException) { }
-            var account = accounts.Users.SingleOrDefault(user => user.Username == username && user.IsEnabled);
-            // Snapshot ownership allows the request and UI to be disposed during background work.
+            var account = authorization.Payload.Users.SingleOrDefault(user => user.Username == username && user.IsEnabled);
             using var password = request.Password!.Copy();
             var hash = account is null
                 ? new PasswordHashRecord(LocalPasswordHasher.Algorithm, LocalPasswordHasher.CreationIterations,
@@ -30,11 +29,11 @@ public sealed class LocalAuthenticationService(LocalAccountStore store, LocalPas
             cancellationToken.ThrowIfCancellationRequested();
             if (!matches || account is null)
                 return AuthenticationResult.Failed(AuthenticationFailure.InvalidCredentials);
-            return AuthenticationResult.Succeeded(new(account.UserId, account.Username, account.DisplayName, "Local"));
+            return AuthenticationResult.Succeeded(new(account.UserId, account.Username, account.DisplayName, "SignedLocal"));
         }
-        catch (LocalAccountConfigurationException) { return AuthenticationResult.Failed(AuthenticationFailure.ConfigurationInvalid); }
+        catch (AuthorizationException) { return AuthenticationResult.Failed(AuthenticationFailure.ConfigurationInvalid); }
         catch (OperationCanceledException) { throw; }
-        catch (Exception exception) when (exception is ArgumentException or ObjectDisposedException or CryptographicException)
+        catch (Exception error) when (error is ArgumentException or ObjectDisposedException or CryptographicException)
         { return AuthenticationResult.Failed(AuthenticationFailure.UnexpectedFailure); }
     }
 }

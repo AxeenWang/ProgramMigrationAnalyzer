@@ -1,7 +1,7 @@
 # Codex 任務：完成 WPF「程式移植分析儀 - C#、4GL」
 
 > 2026-10-01 需求更新：新增「登入成功後才能開啟主程式」；登入設計與後續實作要求見第 37 節。
-> 本次更新是設計規格，尚未實作登入功能。第 37 節及相關驗收條件代表後續版本要求，不代表目前程式已具備這些能力。
+> 本機登入已完成 Phase 1～4。2026-10-01 新增公司簽章離線授權需求，見第 37.12 節，Phase 5 的 T1～T6 已完成驗證及推送，正式公司金鑰與帳號部署、使用者完整桌面驗收、舊入口及退出檢查均已完成，[PR #11](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/11) 為 ready、等待審查。
 
 ## 0. 執行原則
 
@@ -2086,3 +2086,11 @@ Parser、Analyzer 與 Translator 保持可獨立測試的元件，不在每個�
 - [Microsoft：Rfc2898DeriveBytes](https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.rfc2898derivebytes?view=net-10.0)
 - [OWASP：Password Storage Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html)
 - [Microsoft：Authorization code flow、PKCE 與 OIDC](https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-auth-code-flow)
+
+## 37.12 公司簽章離線授權（2026-10-01 新增）
+
+部署主機完全離線且由客戶管理，公司須持有簽章私鑰，客戶端只內建公鑰。公司端獨立工具簽發包含帳號、salt 與 PBKDF2 hash 的 Key，不含明文密碼。第一版不綁定電腦、不設定到期日，持有 Key 仍須正確帳密才能登入。
+
+新版本將以簽章 envelope 保存 users.json，每次登入重新驗章，封閉客戶端自行建帳、重設及停用入口，舊 unsigned schema 1 不自動沿用。公司端重新簽發後，由提升權限的獨立匯入流程原子安裝，匯入成功不能建立 session。8～128 字元密碼與特殊符號、既有 session、操作門檻及登出清理維持原規則。
+
+此節為已核准的新版本要求，取代第 37.3 節的客戶端本機管理設計。Phase 5 已完成 T1～T6 並建立 ready PR #11，正式來源已接入簽章啟用與每次登入驗章，舊客戶端管理入口已移除。設定正式公司公鑰後，80 組認證與發布檢查通過，Solution build 為 0 warnings／0 errors，Phase2／Regression／WPF 回歸全部通過。正式公司金鑰及 Axeen Key 已由使用者互動建立，正式 EXE 已使用公司公鑰發布，SWANG-PC 的帳號檔已替換並通過真實簽章與 ACL 核對，受保護舊版備份保留。使用者確認新版正式 EXE 的完整桌面驗收通過，正式 EXE 的舊入口拒絕及關閉後無殘留程序已核對，隔離檢查與使用者觀察分別記錄。交付狀態見[新版驗證與交付紀錄](Offline_Authorization_Verification_and_Delivery.md)。完整格式、保護界線與驗收見[離線授權設計](superpowers/specs/2026-10-01-offline-signed-authorization-design.md)，實作進度見[Phase 5 計畫](superpowers/plans/2026-10-01-offline-signed-authorization-implementation-plan.md)。

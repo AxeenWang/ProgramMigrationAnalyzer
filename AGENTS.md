@@ -17,3 +17,9 @@ Change the marker to `CodeLab-Governance: required` when failed managed-mode ver
 - Execute Tasks sequentially on the same Phase branch. Verify, commit and push each completed Task before starting the next Task.
 - After all Tasks in the Phase are complete and verified, create one PR for that Phase. Continue review fixes on the same branch until the PR is merged.
 - Direct commits and pushes to the default branch require explicit user authorization.
+
+## Formal Workspace
+
+- Implement, build and publish from the project repository root. Do not use a worktree inside an agent temp directory as the working source.
+- Keep source, tests and final documentation in their normal project directories. Agent temp directories contain only scratch data, test fixtures, logs and recovery copies.
+- The former login worktree under `.codex-tmp/2026-10-01_login-phase-1/worktree` is an inactive recovery copy. Do not use it for ongoing work or publish fallback.
