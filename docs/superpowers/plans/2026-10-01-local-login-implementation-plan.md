@@ -10,7 +10,7 @@
 
 **Spec:** [ProgramMigrationAnalyzer_Codex_Spec.md](../../ProgramMigrationAnalyzer_Codex_Spec.md)，第 37 節及第 7、19、22、24～27、32～34 節相關更新。
 
-**日期／狀態:** 2026-10-01／Phase 1 已合併並清理分支，Phase 2 PR #7 已合併並清理兩端分支。Phase 3 已從最新 origin/main 開工，P3-T1～P3-T3 實作與 Task 驗證完成，登入門檻、操作保護及登出已接入，Phase 審查與驗證已完成，唯一 ready PR 尚待建立。Phase 4 尚未開始，發佈驗收尚未完成。原專案範圍為 `D:/AxeenWorld/CodeLab/Projects/ProgramMigrationAnalyzer`，檔案路徑均相對於各 Phase 的 Git root，Phase 1 隔離路徑見開工決議。
+**日期／狀態:** 2026-10-01／Phase 1 已合併並清理分支，Phase 2 PR #7 已合併並清理兩端分支。Phase 3 已從最新 origin/main 開工，P3-T1～P3-T3 實作與 Task 驗證完成，登入門檻、操作保護及登出已接入，Phase 審查與驗證已完成，唯一 ready PR #8 已建立並附加 chat，狀態為已送審、尚未合併。Phase 4 尚未開始，發佈驗收尚未完成。原專案範圍為 `D:/AxeenWorld/CodeLab/Projects/ProgramMigrationAnalyzer`，檔案路徑均相對於各 Phase 的 Git root，Phase 1 隔離路徑見開工決議。
 
 ## Phase 與分支總覽
 
@@ -274,7 +274,7 @@ Phase 內依 Task ID 順序執行，Phase 之間依合併順序開始。每項�
 
 - [x] P3-T1、P3-T2、P3-T3 全部步驟完成，Solution build、AuthenticationChecks all suite 及既有三組 checks 通過。
 - [x] L1～L13 的自動化情境通過，正式入口登入前不建立主畫面，直接命令不可繞過，已驗證設定模式、登出與視窗生命週期。
-- [ ] commit／push 完成，worktree 乾淨，upstream 同步，建立並確認此分支的唯一 PR，記錄 URL，列出發佈 EXE／實際部署驗證將於 Phase 4 完成。
+- [x] commit／push 完成，worktree 乾淨，upstream 同步，唯一 ready PR #8 已確認及附加 chat，發佈 EXE／實際部署驗證仍待 Phase 4。
 - [ ] 前述 PR 確認合併後，才允許開始 Phase 4。
 
 ## Phase 4：驗證與交付
@@ -358,7 +358,7 @@ dotnet run --no-build --project tests/ProgramMigrationAnalyzer.WpfChecks
 | --- | --- | --- | --- | --- | --- |
 | 1 | 2／2 完成並逐一推送 | 已清理，原 `codex/login-phase-1-foundation` | contracts 5 組、crypto 7 組及既有回歸通過 | [PR #6](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/6)，MERGED | `e33e33f` |
 | 2 | 2／2 完成並逐一推送 | 已清理，原 `codex/login-phase-2-local-accounts` | contracts 5、crypto 7、store 11、admin 6 及既有回歸通過 | [PR #7](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/7)，MERGED | `d890707` |
-| 3 | 3／3 完成並逐一推送，Phase 驗證通過 | codex/login-phase-3-desktop-gate | login 5／5、startup 11／11、access 6／6，累積 51 組及既有回歸通過 | 待建立 | 未合併 |
+| 3 | 3／3 完成並逐一推送，已送審 | codex/login-phase-3-desktop-gate | login 5／5、startup 11／11、access 6／6，累積 51 組及既有回歸通過 | [PR #8](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/8)，OPEN／ready | 未合併 |
 | 4 | 0／3 完成 | 未建立 | 未執行 | 未建立 | 未合併 |
 
 Phase 的正常狀態依序為「未開始 → 實作中 → 驗證通過 → 已送審 → 已合併」。Task 全部完成且必要檢查通過，才可標記「驗證通過」，PR URL 與遠端狀態查證成功，才可標記「已送審」。未能送 PR 時仍是未交付，不能略過此狀態。下一 Phase 的開工條件為前一 Phase「已合併」。
@@ -441,3 +441,5 @@ Phase 3 自審：由同一實作者檢查完整分支，未使用代理。針對
 Phase 3 最終驗證：Solution build 0 warnings／0 errors。contracts 5／5、crypto 7／7、store 11／11、admin 6／6、login 5／5、startup 11／11、access 6／6，共 51 組通過。Phase2Checks、RegressionChecks、WpfChecks 均通過。登入與主視窗截圖已在隔離暫存區檢查，使用者顯示、登入／登出按鈕及版面可讀。未追蹤 .codex-tmp／.claude-tmp／.references，未包含真實帳號檔、預設密碼或正式 bypass。
 
 Phase 4 的發布 EXE、不同工作目錄及實際 ProgramData／Windows ACL 部署驗證仍未執行。沒有開始 Phase 4、建立其分支或合併 PR。已授權使用既有 worktree 及建立 ready PR，依使用者指示保留 worktree，未執行 skill 的重新選擇整合方式、暫存刪除或分支清理。
+
+Phase 3 自審修正已提交並推送 ca106d54f2f8477031a96dba10cfa00838fd3d14。唯一 [PR #8](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/8) 已查證為 OPEN、isDraft=false，base main、head codex/login-phase-3-desktop-gate，已附加目前 chat。狀態為已送審，尚未合併。此紀錄隨同一分支正常提交與推送，不另建 PR、不推送 main。
