@@ -72,6 +72,11 @@ BenchmarkDotNet.Artifacts/
 .env.*
 !.env.example
 secrets.json
+# Company authorization configuration and issued credentials
+config/authorization-public-key.pem
+*.private.pem
+*.key
+users.json
 
 # WPF and WebView2 runtime-generated data
 *.exe.WebView2/

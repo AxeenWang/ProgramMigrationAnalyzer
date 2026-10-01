@@ -10,7 +10,7 @@
 
 **Spec:** [核准規格](../specs/2026-10-01-offline-signed-authorization-design.md)，已於 2026-10-01 核准。兩份核准文件已在第一個 Task 納入正式 docs。
 
-**狀態:** 使用者已指示依本計畫作業。Phase 5 分支 `codex/offline-authorization-phase-5` 從 `7513324` 開工，P5-T1 已完成並推送 5a791c6，P5-T2 已完成並推送 52fcb92，P5-T3 已完成並推送 888c8f0，P5-T4 已完成實作與驗證，待提交／推送，P5-T5／T6 尚未開始。Active Target 為 `Projects/ProgramMigrationAnalyzer`，Target Lock enabled。Git root 已依使用者授權移回 `D:/AxeenWorld/CodeLab/Projects/ProgramMigrationAnalyzer`，CodeLab-managed 模式。Phase 1～4 登入成果、T1／T2 及未提交 T3 已完整回到正式目錄，舊 worktree 保留為非作業用復原副本。
+**狀態:** 使用者已指示依本計畫作業。Phase 5 分支 `codex/offline-authorization-phase-5` 從 `7513324` 開工，P5-T1 已完成並推送 5a791c6，P5-T2 已完成並推送 52fcb92，P5-T3 已完成並推送 888c8f0，P5-T4 已完成並推送 5455e16，P5-T5 已完成實作與驗證，待提交／推送，P5-T6 尚未開始。Active Target 為 `Projects/ProgramMigrationAnalyzer`，Target Lock enabled。Git root 已依使用者授權移回 `D:/AxeenWorld/CodeLab/Projects/ProgramMigrationAnalyzer`，CodeLab-managed 模式。Phase 1～4 登入成果、T1／T2 及未提交 T3 已完整回到正式目錄，舊 worktree 保留為非作業用復原副本。
 
 ## Global Constraints
 
@@ -166,7 +166,7 @@ CheckSupport.Throws<ArgumentException>(() => AuthorizationStartupRequest.Parse([
 - [x] 實作上述介面及 WPF 啟用畫面，合法參數逐一判斷。提升模式重讀驗章、顯示實際摘要並確認、要求 elevated token，store 匯入成功 exit 0，使用者取消／錯誤維持未登入。正常模式保留 UAC 取消提示與 generation 檢查，禁止晚到 Activated 開主畫面。
 - [x] App csproj 條件式嵌入公鑰快照為 `ProgramMigrationAnalyzer.AuthorizationPublicKey` resource。缺失公鑰使用 None fail closed，正式組裝不引用 issuer。移除舊管理程式，Windows policy 用到的既有 configuration exception 移至 `LocalAccountConfigurationException.cs`，不保留舊可寫 store。現有 models 移除 obsolete LocalAccountFile，保留 LocalAccountRecord／PasswordHashRecord。
 - [x] 將原 store／admin／local-startup fixtures 與 WpfChecks 遷移到簽章資料，suite registry 保留 contracts／crypto／login／startup／access 並加入 signature／signed-store／issuer／activation，移除失效的 unsigned admin／store 情境。跑全部 AuthenticationChecks、Phase2Checks、RegressionChecks、WpfChecks，exit 0，檢查登入／登出／取消／六個命令及忙碌／晚到結果。
-- [ ] 更新計畫結果並 repo-push，建議 commit `feat: activate signed accounts before desktop login`，確認乾淨與 upstream 0／0。
+- [x] 更新計畫結果並 repo-push，commit `5455e16`，確認無本 Task 未提交變更與 upstream 0／0，原簡報保留。
 
 ### Task P5-T5：公鑰發布守門、雙工具分離與原目錄 publish 更新
 
@@ -180,7 +180,7 @@ CheckSupport.Throws<ArgumentException>(() => AuthorizationStartupRequest.Parse([
 
 發布守門安排在建置後的 PrepareForPublish 前，公鑰資源則先準備再編譯。順序已對照 [.NET 10 SDK 的 Microsoft.NET.Publish.targets](https://github.com/dotnet/sdk/blob/v10.0.100/src/Tasks/Microsoft.NET.Build.Tasks/targets/Microsoft.NET.Publish.targets)，實作時仍須以本機實際 SDK 與發布測試核對。
 
-- [ ] 寫 RED 檢查 `MissingInvalidAndPrivatePemPublishFails`、`RootPublishAndPublicKeySnapshot`、`FailedPublishKeepsPriorExe`、`IssuerAndClientDeliveryAreSeparate`。私鑰 PEM 拒絕測試用無效標記字串，不保存私鑰。snapshot 後修改原 public file，仍編譯預先固定的 bytes，錯誤來源不得回落舊版 unsigned EXE。
+- [x] 寫 RED 檢查 `MissingInvalidAndPrivatePemPublishFails`、`RootPublishAndPublicKeySnapshot`、`FailedPublishKeepsPriorExe`、`IssuerAndClientDeliveryAreSeparate`。私鑰 PEM 拒絕測試用無效標記字串，不保存私鑰。snapshot 後修改原 public file，仍編譯預先固定的 bytes，錯誤來源不得回落舊版 unsigned EXE。
 
 ```csharp
 CheckSupport.Check(missingKeyExitCode != 0 && privatePemExitCode != 0 && noBuildExitCode != 0, "Invalid publish must fail.");
@@ -188,10 +188,10 @@ CheckSupport.Check(File.ReadAllBytes(destinationExe).SequenceEqual(priorExeBytes
 CheckSupport.Check(embeddedKeyId == snapshotKeyId, "Published trust must use the validated public key snapshot.");
 ```
 
-- [ ] 執行 `dotnet run --project tests/ProgramMigrationAnalyzer.AuthenticationChecks -- --suite publish`，確認 RED。沿用前次 publish routing 測試方法，新增腳本測試放 task temp，不提交測試產物。
-- [ ] 實作 preparation／MSBuild target，避免 preparation 和 App 相互循環 build。公鑰快照是標準 obj 產物，不在正式 repo 生出暫存憑證。發布先輸出 staging，成功才替換既有客戶 EXE，失敗保留先前 EXE，正確處理空白路徑與 child exit code。
-- [ ] 實作獨立 issuer publish 到 `publish/company-license-issuer`，client 仍為 `publish/win-x64-single-file`。保留自包含 Windows x64 單檔、IncludeNativeLibrariesForSelfExtract、PublishTrimmed=false、單節點與 node reuse 關閉。檢查目錄沒有 issuer／實際 Key／私鑰／users.json，更新腳本提示。
-- [ ] 執行 publish suite，並使用記憶體測試金鑰匯出的公鑰在隔離 task 目錄實際發佈兩個 EXE。只保存 public PEM，不保存測試私鑰。檢查 client 內嵌 fingerprint 與指定 public 一致、無公鑰直接 publish 失敗，以及正式根目錄建置／輸出的 EXE 指紋一致。此為發佈管線驗證，不替代正式公司金鑰部署。
+- [x] 執行 `dotnet run --project tests/ProgramMigrationAnalyzer.AuthenticationChecks -- --suite publish`，確認 RED。沿用前次 publish routing 測試方法，新增腳本測試放 task temp，不提交測試產物。
+- [x] 實作 preparation／MSBuild target，避免 preparation 和 App 相互循環 build。公鑰快照是標準 obj 產物，不在正式 repo 生出暫存憑證。發布先輸出 staging，成功才替換既有客戶 EXE，失敗保留先前 EXE，正確處理空白路徑與 child exit code。
+- [x] 實作獨立 issuer publish 到 `publish/company-license-issuer`，client 仍為 `publish/win-x64-single-file`。保留自包含 Windows x64 單檔、IncludeNativeLibrariesForSelfExtract、PublishTrimmed=false、單節點與 node reuse 關閉。檢查目錄沒有 issuer／實際 Key／私鑰／users.json，更新腳本提示。
+- [x] 執行 publish suite，並使用記憶體測試金鑰匯出的公鑰在隔離 task 目錄實際發佈兩個 EXE。只保存 public PEM，不保存測試私鑰。檢查 client 內嵌 fingerprint 與指定 public 一致、無公鑰直接 publish 失敗，以及正式根目錄建置／輸出的 EXE 指紋一致。此為發佈管線驗證，不替代正式公司金鑰部署。
 - [ ] 保留原目錄其餘檔案指紋與狀態，直接在正式根目錄維護及驗證 publish.bat。記錄結果並 repo-push，建議 commit `fix: publish signed authorization client and issuer separately`，確認乾淨與 upstream 0／0。
 
 ### Task P5-T6：完整回歸、公司金鑰交接、授權部署與 ready PR
@@ -220,7 +220,7 @@ CheckSupport.Check(embeddedKeyId == snapshotKeyId, "Published trust must use the
 | O11 | T5 publish／snapshot／轉送 | T6 正式 public key publish |
 | O12 | T4 累積回歸、T6 完整 suites | T6 桌面／樣本／退出 |
 
-P5-T1 已完成並推送 5a791c6。P5-T2 已完成並推送 52fcb92。P5-T3 已完成並推送 888c8f0，P5-T4 已完成實作與驗證，待提交／推送，P5-T5／T6 尚未開始。使用者已核准按本計畫開分支、逐 Task 驗證／commit／push，Phase 完成建立唯一 PR。分支只在實際開始當前 Phase 時建立，不預建後續 Phase。授權範圍不含 merge、force push、歷史覆寫或未指定電腦部署。
+P5-T1 已完成並推送 5a791c6。P5-T2 已完成並推送 52fcb92。P5-T3 已完成並推送 888c8f0，P5-T4 已完成並推送 5455e16，P5-T5 已完成實作與驗證，待提交／推送，P5-T6 尚未開始。使用者已核准按本計畫開分支、逐 Task 驗證／commit／push，Phase 完成建立唯一 PR。分支只在實際開始當前 Phase 時建立，不預建後續 Phase。授權範圍不含 merge、force push、歷史覆寫或未指定電腦部署。
 
 ### P5-T1 執行紀錄
 
@@ -251,3 +251,15 @@ P5-T1 已完成並推送 5a791c6。P5-T2 已完成並推送 52fcb92。P5-T3 已�
 一般啟用只返回登入，提升匯入流程顯示重新驗章的實際摘要，要求管理員 token，成功只以 exit 0 結束。跨 authorizationId 替換確認綁定預覽時的現有 id，store 在鎖內重讀。候選檔變更、安裝內容不符、UAC 取消與父視窗關閉後的晚到成功均不自動登入。舊客戶端自行建帳／重設服務與 schema 1 store 已移除，ACL exception 與合法共用 hash record 保留。開發 build 無公鑰時保持未授權，外部檔案、工作目錄與環境變數不能提供信任根。
 
 測試經正式 App 啟動路徑使用真實 ECDSA／PBKDF2／signed store，ACL 與 UAC 在隔離 fixture 替換，提升模式以真實 WPF 匯入命令確認。啟用視窗截圖已檢視，不顯示 hash／salt。ProcessStartInfo.ArgumentList 依 [Microsoft 官方說明](https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.processstartinfo.argumentlist?view=net-10.0) 自動處理參數 quoting，未傳遞帳密。真實 UAC、正式公司金鑰及 ProgramData 尚未操作，發布守門待 T5。
+
+### P5-T5 執行紀錄
+
+2026-10-01：發布 4 組 RED，確認無公鑰仍發布、未實作快照、失敗覆寫舊 EXE、缺少獨立 issuer 發布。實作正式 build 準備工具、MSBuild 守門與兩個發布腳本。新增 NoBuild 與公鑰大小／快照衝突檢查後 publish 6 PASS，全部 AuthenticationChecks 80 PASS，Build 0 warnings／0 errors。缺少公鑰直接 SDK publish 以 PMA_AUTH_KEY_REQUIRED 拒絕，--no-build 以 PMA_AUTH_NO_BUILD 拒絕。一次驗證先因 RID 資產未還原而失敗，已正常還原後重跑，只有真正守門錯誤列為驗收證據。
+
+本機 SDK 10.0.401 的預處理 targets 確認 Build 先於 PrepareForPublish。公鑰準備在 PrepareForBuild 前，最大 8192 bytes，只接受 P-256 SPKI PUBLIC KEY，immutable snapshot 以公鑰 keyId 命名並拒絕衝突。發布腳本直接使用正式根目錄，唯一選用參數為公鑰路徑，預設 config/authorization-public-key.pem。先快照再 SDK build，成功後原子替換單一 EXE，保留旁邊 WebView2 資料。錯誤與失敗不覆寫舊 EXE，不轉送舊 worktree。發證工具獨立發布至 publish/company-license-issuer，客戶 EXE 仍至 publish/win-x64-single-file。
+
+實際 SDK 發布使用記憶體金鑰匯出的測試公鑰，EXE 輸出至隔離 sdk-publish/artifacts，現有正式 EXE 未替換。Client 192758045 bytes，SHA256 79E1642D28B99BD7E14EC03C44E6BF07FBA78E962D8C09572BA9ACDBE50538C6。Issuer 139840930 bytes，SHA256 7217EAD7FF812D8FDCE936E040D953DF9C09CB6FF350749A2B16BD79AD6D5FF0。只保存測試公鑰，沒有測試私鑰。
+
+獨立讀取 single-file manifest 及內嵌 App 的 PE resource，確認公鑰 keyId 22DC3101EAB51DA4D08614F0DDFBBC42A3D6257DE612A1C2A8DE72B3B9B1ACAC 與指定測試公鑰一致，bundle 中 App assembly 與正式根目錄 build 的 SHA256 相同，沒有 issuer、PEM、Key 或 users.json。格式核對 [Microsoft HostModel Bundler](https://source.dot.net/Microsoft.NET.HostModel/Bundle/Bundler.cs.html)、[Manifest](https://source.dot.net/Microsoft.NET.HostModel/Bundle/Manifest.cs.html) 與 [FileEntry](https://source.dot.net/Microsoft.NET.HostModel/Bundle/FileEntry.cs.html)。初版測試只讀 host 前 1 MiB 未找到 marker，查證本機 marker 在 8358264 bytes，改用有界 16 MiB host 檢查後通過。這是測試讀取器修正，不是發布失敗。
+
+Ruling：正式發布函式允許專案內明確指定的隔離輸出位置，僅供驗證相同 root publisher，不改變兩個 bat 的正式輸出位置，也不讀取 runtime trust override。成本是多一個具範圍驗證的輸出參數，避免使用測試公鑰覆寫現有正式 EXE。

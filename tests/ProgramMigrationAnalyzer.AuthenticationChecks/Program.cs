@@ -5,6 +5,14 @@ internal static class Program
     [STAThread]
     private static int Main(string[] args)
     {
+        if (Environment.GetEnvironmentVariable("PMA_PUBLISH_CHECK_STUB") == "1") return PublishChecks.RunDotNetStub(args);
+        if (args is ["--verify-published-bundle", var bundle, var selectedPublic]) return PublishedBundleChecks.Verify(bundle, selectedPublic);
+        if (args is ["--create-publish-public-fixture", var publicPath])
+        {
+            using var key = new AuthorizationTestFixture();
+            System.IO.Directory.CreateDirectory(System.IO.Path.GetDirectoryName(System.IO.Path.GetFullPath(publicPath))!);
+            System.IO.File.WriteAllText(publicPath, key.PublicPem); Console.WriteLine(key.KeyId); return 0;
+        }
         // Test-host routing only. App receives the actual normal/admin/invalid command line.
         if (Environment.GetEnvironmentVariable("PMA_AUTH_CHECK_SCENARIO") is { } scenario)
             return scenario switch
@@ -23,6 +31,7 @@ internal static class Program
             ["signed-store"] = SignedStoreChecks.Run,
             ["issuer"] = IssuerChecks.Run,
             ["activation"] = SignedStartupChecks.Run,
+            ["publish"] = PublishChecks.Run,
             ["contracts"] = ContractChecks.Run,
             ["crypto"] = CryptoChecks.Run,
             ["acl"] = () => CheckSupport.Run(("VolumeRootDeleteCannotReplaceDeployment", WindowsAclChecks.VolumeRootDeleteCannotReplaceDeployment),
