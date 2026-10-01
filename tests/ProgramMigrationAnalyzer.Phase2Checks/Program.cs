@@ -3,6 +3,7 @@ using System.IO;
 using ProgramMigrationAnalyzer.App.Services;
 using ProgramMigrationAnalyzer.App.ViewModels;
 using ProgramMigrationAnalyzer.Core;
+using ProgramMigrationAnalyzer.Core.Authentication;
 using ProgramMigrationAnalyzer.Infrastructure;
 using static Fixtures;
 
@@ -73,8 +74,8 @@ async Task CheckViewModelFlowAsync()
     var dialogs = new FakeDialogs();
     var parser = new FakeParser();
     var translator = new FakeTranslator();
-    var viewModel = new MainViewModel(files, [parser], new FakeAnalyzer(),
-        new FakeReport(), translator, new OutputWriter(Path.Combine(scratch, "vm-output")), dialogs);
+    using var viewModel = new MainViewModel(files, [parser], new FakeAnalyzer(),
+        new FakeReport(), translator, new OutputWriter(Path.Combine(scratch, "vm-output")), dialogs, new FakeUserSession());
 
     dialogs.NextFile = pathA;
     await viewModel.OpenFileCommand.ExecuteAsync(null);
@@ -176,6 +177,14 @@ sealed class FakeFiles : ISourceFileService
     public Task<IReadOnlyList<SourceDocument>> LoadFolderAsync(string path,
         SourceLanguage languageOverride = SourceLanguage.Unknown, CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<SourceDocument>>([]);
+}
+
+sealed class FakeUserSession : IUserSession
+{
+    public bool IsAuthenticated => true;
+    public AuthenticatedUser CurrentUser { get; } = new(Guid.NewGuid(), "test.user", "Test user", "Local");
+    public long Generation => 1;
+    public event EventHandler? Changed { add { } remove { } }
 }
 
 sealed class FakeDialogs : IFileDialogService
