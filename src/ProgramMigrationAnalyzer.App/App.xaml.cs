@@ -21,11 +21,13 @@ public partial class App : Application
         var policy = new WindowsLocalAccountAccessPolicy();
         var store = new LocalAccountStore(LocalAccountStore.DefaultFilePath, policy);
         var hasher = new LocalPasswordHasher();
-        var factory = new MainWindowFactory();
-        return new(this, new LocalAuthenticationService(store, hasher), factory.Create,
+        ApplicationSessionCoordinator? coordinator = null;
+        var factory = new MainWindowFactory(() => coordinator!.RequestLogout());
+        coordinator = new(this, new LocalAuthenticationService(store, hasher), factory.Create,
             () => new LocalAccountConfigurationWindow(new LocalAccountConfigurationViewModel(
                 new LocalAccountAdministrationService(store, hasher, policy))),
             TimeProvider.System, new AuthenticationDiagnosticLog());
+        return coordinator;
     }
     protected override void OnExit(ExitEventArgs e)
     {

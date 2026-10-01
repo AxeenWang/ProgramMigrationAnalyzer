@@ -8,7 +8,7 @@ using ProgramMigrationAnalyzer.Translation;
 
 namespace ProgramMigrationAnalyzer.App.Services;
 
-internal sealed class MainWindowFactory
+internal sealed class MainWindowFactory(Action requestLogout, string? outputDirectory = null)
 {
     public MainWindow Create(IUserSession session)
     {
@@ -16,8 +16,10 @@ internal sealed class MainWindowFactory
         var viewModel = new MainViewModel(new SourceFileService(),
             [new CSharpSourceParser(), new Informix4GlParser()], new MigrationAnalyzer(),
             new MarkdownReportGenerator(), new MigrationSourceTranslator(),
-            new OutputWriter(ResolveOutputDirectory()), new FileDialogService());
-        return new MainWindow(viewModel);
+            new OutputWriter(outputDirectory ?? ResolveOutputDirectory()), new FileDialogService(), session);
+        viewModel.LogoutRequested += requestLogout;
+        try { return new MainWindow(viewModel); }
+        catch { viewModel.Dispose(); throw; }
     }
     private static string ResolveOutputDirectory()
     {

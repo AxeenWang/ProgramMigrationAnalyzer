@@ -10,7 +10,7 @@
 
 **Spec:** [ProgramMigrationAnalyzer_Codex_Spec.md](../../ProgramMigrationAnalyzer_Codex_Spec.md)，第 37 節及第 7、19、22、24～27、32～34 節相關更新。
 
-**日期／狀態:** 2026-10-01／Phase 1 已合併並清理分支，Phase 2 PR #7 已合併並清理兩端分支。Phase 3 已從最新 origin/main 開工，P3-T1 登入元件與 P3-T2 正式啟動門檻完成，操作保護與既有 WpfChecks 改造待 P3-T3。Phase 4 尚未開始，發佈驗收尚未完成。原專案範圍為 `D:/AxeenWorld/CodeLab/Projects/ProgramMigrationAnalyzer`，檔案路徑均相對於各 Phase 的 Git root，Phase 1 隔離路徑見開工決議。
+**日期／狀態:** 2026-10-01／Phase 1 已合併並清理分支，Phase 2 PR #7 已合併並清理兩端分支。Phase 3 已從最新 origin/main 開工，P3-T1～P3-T3 實作與 Task 驗證完成，登入門檻、操作保護及登出已接入，Phase 審查及唯一 PR 尚待完成。Phase 4 尚未開始，發佈驗收尚未完成。原專案範圍為 `D:/AxeenWorld/CodeLab/Projects/ProgramMigrationAnalyzer`，檔案路徑均相對於各 Phase 的 Git root，Phase 1 隔離路徑見開工決議。
 
 ## Phase 與分支總覽
 
@@ -261,14 +261,14 @@ Phase 內依 Task ID 順序執行，Phase 之間依合併順序開始。每項�
 - 六個受保護操作維持原命令名稱，CanExecute 增加登入條件，所有實際入口檢查登入與 session.Generation。
 - MainWindowFactory 訂閱 LogoutRequested，所有訂閱以工作區 Dispose／Closed 解除，不能在登出後持有舊 ViewModel。
 
-- [ ] 寫 `SignedOutCommandsHaveNoEffects`：各命令 CanExecute=false，直接 Execute／ExecuteAsync 亦不開對話框、不呼叫 loader／parser／writer，OpenOutputFolder 不建立目錄或啟動 Explorer。
-- [ ] 寫 `SessionChangesDuringDialogAndAwait`：對話框返回或背景步驟完成前 generation 變更，不讀新檔、不寫後續結果、不更新舊 UI，用 fake services 及完成信號控制時序。
-- [ ] 寫 `LogoutClearsWorkspaceButKeepsFiles`：登出後 session 清空、Documents／Logs／SelectedDocument 清理，WebView2 Dispose、重新登入新工作區，事先建立的 output 檔仍存在。`BusyLogoutRejected`：忙碌時命令及 RequestLogout 都拒絕。
-- [ ] 執行 access suite，確認失敗，再實作所有入口檢查，不能只依賴 RelayCommand 的 CanExecute。
-- [ ] 在對話框返回後、await 後、寫入與 UI 更新前重新確認 session generation，工作區持有 lifetime CTS，正常關閉／Dispose 時取消並忽略晚到的 UI 更新，將 token 傳給既有支援取消的 service。
-- [ ] 登出順序為停用操作／Clear session → Dispose 工作區／關閉 MainWindow → 新建 LoginViewModel／LoginWindow，協調器區分退出和登出，不改寫 output ACL 或刪除檔案。
-- [ ] 調整 Phase2Checks 與 WpfChecks constructor，注入測試自有已登入 FakeUserSession，WpfChecks 改由 TestApp.CreateCoordinator＋fake 認證服務經登入流程進入主畫面，避免移除原 guard 後重複開窗。更新結束邏輯以配合 OnExplicitShutdown。
-- [ ] 重跑 access、Phase2Checks 與 WpfChecks，確認原操作行為維持，新增使用者名稱與登出 UI 的 binding 檢查。
+- [x] 寫 `SignedOutCommandsHaveNoEffects`：各命令 CanExecute=false，直接 Execute／ExecuteAsync 亦不開對話框、不呼叫 loader／parser／writer，OpenOutputFolder 不建立目錄或啟動 Explorer。
+- [x] 寫 `SessionChangesDuringDialogAndAwait`：對話框返回或背景步驟完成前 generation 變更，不讀新檔、不寫後續結果、不更新舊 UI，用 fake services 及完成信號控制時序。
+- [x] 寫 `LogoutClearsWorkspaceButKeepsFiles`：登出後 session 清空、Documents／Logs／SelectedDocument 清理，WebView2 Dispose、重新登入新工作區，事先建立的 output 檔仍存在。`BusyLogoutRejected`：忙碌時命令及 RequestLogout 都拒絕。
+- [x] 執行 access suite，確認失敗，再實作所有入口檢查，不能只依賴 RelayCommand 的 CanExecute。
+- [x] 在對話框返回後、await 後、寫入與 UI 更新前重新確認 session generation，工作區持有 lifetime CTS，正常關閉／Dispose 時取消並忽略晚到的 UI 更新，將 token 傳給既有支援取消的 service。
+- [x] 登出順序為停用操作／Clear session → Dispose 工作區／關閉 MainWindow → 新建 LoginViewModel／LoginWindow，協調器區分退出和登出，不改寫 output ACL 或刪除檔案。
+- [x] 調整 Phase2Checks 與 WpfChecks constructor，注入測試自有已登入 FakeUserSession，WpfChecks 改由 TestApp.CreateCoordinator＋fake 認證服務經登入流程進入主畫面，避免移除原 guard 後重複開窗。更新結束邏輯以配合 OnExplicitShutdown。
+- [x] 重跑 access、Phase2Checks 與 WpfChecks，確認原操作行為維持，新增使用者名稱與登出 UI 的 binding 檢查。
 
 ### Phase 3 驗證與 PR
 
@@ -358,7 +358,7 @@ dotnet run --no-build --project tests/ProgramMigrationAnalyzer.WpfChecks
 | --- | --- | --- | --- | --- | --- |
 | 1 | 2／2 完成並逐一推送 | 已清理，原 `codex/login-phase-1-foundation` | contracts 5 組、crypto 7 組及既有回歸通過 | [PR #6](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/6)，MERGED | `e33e33f` |
 | 2 | 2／2 完成並逐一推送 | 已清理，原 `codex/login-phase-2-local-accounts` | contracts 5、crypto 7、store 11、admin 6 及既有回歸通過 | [PR #7](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/7)，MERGED | `d890707` |
-| 3 | P3-T1／P3-T2 驗證完成，2／3 | codex/login-phase-3-desktop-gate | login 5／5、startup 8／8 及累積檢查通過 | 未建立 | 未合併 |
+| 3 | P3-T1～P3-T3 Task 驗證完成，3／3 | codex/login-phase-3-desktop-gate | login 5／5、startup 8／8、access 6／6，累積 48 組及既有回歸通過 | 未建立 | 未合併 |
 | 4 | 0／3 完成 | 未建立 | 未執行 | 未建立 | 未合併 |
 
 Phase 的正常狀態依序為「未開始 → 實作中 → 驗證通過 → 已送審 → 已合併」。Task 全部完成且必要檢查通過，才可標記「驗證通過」，PR URL 與遠端狀態查證成功，才可標記「已送審」。未能送 PR 時仍是未交付，不能略過此狀態。下一 Phase 的開工條件為前一 Phase「已合併」。
@@ -425,3 +425,11 @@ P3-T1 已提交並推送 afc89d6ed0b51d35af84389a3732fc7b4ec55c46，確認 upstr
 P3-T2：startup 先因缺少 coordinator／App hook 失敗，完成後 startup 8／8 通過，涵蓋只建立登入、主畫面初始化失敗重試、取消後晚到成功、預先存在的 MainWindow 不放行、管理權限及隔離、唯一參數與非法參數安全退出。Solution build 0 warnings／0 errors，累積認證 42 組及 Phase2Checks／RegressionChecks 通過。既有 WpfChecks 的登入改造依計畫留至 P3-T3，本 Task 不將舊直接 app.Run(mainWindow) 當作門檻證據。
 
 P3-T2 調整：WPF 產生的 App.InitializeComponent 無法載入至衍生 TestApp，共用樣式移至編譯的 Resources/ApplicationResources.xaml，正式 App 與 TestApp 載入相同資源。測試宿主用自有程序路由選擇 STA 案例，正式 App 僅解析無參數或唯一管理參數，不讀測試環境變數。coordinator 型別為 public 以支援 protected CreateCoordinator，constructor 保持 internal。
+
+P3-T2 已提交並推送 06d01470a9c8555acbab7768e7486c47211a1eb8，確認 upstream 0／0、工作區乾淨後才開始 P3-T3。
+
+P3-T3：access 先因缺少 session constructor、LogoutCommand／Dispose 而失敗，完成後 access 6／6 通過，包含六個入口的 CanExecute 與直接呼叫、三種對話框返回、八個背景步驟的晚到結果、token 取消、訂閱釋放、忙碌登出拒絕及完整 STA 登出／再次登入生命週期。MainViewModel 綁定建立時的 session Generation，session 改變或關閉即取消 lifetime token 並清理記憶體文件。MainWindow Dispose 釋放 WebView2 及事件，output 檔保留。
+
+MainWindowFactory 訂閱 LogoutRequested，正常 composition root 使用回呼連至 coordinator。共用樣式及唯一 provider 維持一致。測試的 factory 接受隔離 output 路徑，不加入正式命令列旗標。WpfChecks 使用測試組裝的 TestApp override 經正式 OnStartup、fake authentication 及 coordinator 進入主畫面，保留所有原功能檢查，另驗證使用者名稱、登出、新工作區及輸出保留。App 對 WpfChecks 加入 InternalsVisibleTo，僅限測試組裝，沒有公開 session setter。
+
+P3-T3 Solution build 0 warnings／0 errors，認證累積 48 組及 Phase2Checks／RegressionChecks／WpfChecks 通過。受限環境觀察到既有 WebView2 E_UNEXPECTED 且純文字備援通過。允許的提權環境則完成 Markdown DOM 檢查及渲染截圖，這是本機該環境的實際渲染證據，不擴張為發佈環境驗收。Windows ACL 真實部署及發佈 EXE 驗證仍待 Phase 4。

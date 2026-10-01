@@ -5,12 +5,14 @@ using ProgramMigrationAnalyzer.App.ViewModels;
 
 namespace ProgramMigrationAnalyzer.App;
 
-public partial class MainWindow : Window
+public partial class MainWindow : Window, IDisposable
 {
     private readonly MainViewModel _viewModel;
     private bool _webViewReady;
     private bool _webViewUnavailable;
     private Task? _webViewInitialization;
+    private bool _disposed;
+    internal bool IsDisposed => _disposed;
 
     public MainWindow(MainViewModel viewModel)
     {
@@ -44,6 +46,8 @@ public partial class MainWindow : Window
 
     private async Task UpdateMarkdownPreviewAsync()
     {
+        var generation = _viewModel.SessionGeneration;
+        if (_disposed || !_viewModel.IsSessionCurrent(generation)) return;
         if (_webViewUnavailable)
         {
             ShowMarkdownFallback();
@@ -56,6 +60,7 @@ public partial class MainWindow : Window
             {
                 _webViewInitialization ??= MarkdownWebView.EnsureCoreWebView2Async();
                 await _webViewInitialization;
+                if (_disposed || !_viewModel.IsSessionCurrent(generation)) return;
                 _webViewReady = true;
             }
 
@@ -65,6 +70,7 @@ public partial class MainWindow : Window
         }
         catch (Exception exception)
         {
+            if (_disposed || !_viewModel.IsSessionCurrent(generation)) return;
             ShowMarkdownFallback();
             if (!_webViewUnavailable)
             {
@@ -80,10 +86,17 @@ public partial class MainWindow : Window
         MarkdownFallback.Visibility = Visibility.Visible;
     }
 
-    private void OnClosed(object? sender, EventArgs e)
+    private void OnClosed(object? sender, EventArgs e) => Dispose();
+
+    public void Dispose()
     {
+        if (_disposed) return;
+        _disposed = true;
+        Closed -= OnClosed;
         _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
         PreviewTabs.SelectionChanged -= OnPreviewTabChanged;
         MarkdownWebView.Dispose();
+        _viewModel.Dispose();
+        DataContext = null;
     }
 }

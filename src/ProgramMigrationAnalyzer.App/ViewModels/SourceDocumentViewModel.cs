@@ -5,7 +5,7 @@ namespace ProgramMigrationAnalyzer.App.ViewModels;
 
 public partial class SourceDocumentViewModel(SourceDocument model) : ObservableObject
 {
-    public SourceDocument Model { get; } = model;
+    public SourceDocument Model { get; private set; } = model;
     public string FileName => Model.FileName;
     public string FilePath => Model.FilePath;
     public string SourceText => Model.Content;
@@ -70,6 +70,18 @@ public partial class SourceDocumentViewModel(SourceDocument model) : ObservableO
         RenderedMarkdownHtml = string.Empty;
         AnalysisOutputPath = string.Empty;
         ClearTranslation();
+    }
+
+    internal void ClearWorkspace()
+    {
+        ClearAnalysis();
+        Model = new SourceDocument { FilePath = "", FileName = "", Content = "", Language = SourceLanguage.Unknown };
+        Status = AnalysisStatus.Loaded;
+        OnPropertyChanged(nameof(Model));
+        OnPropertyChanged(nameof(FileName));
+        OnPropertyChanged(nameof(FilePath));
+        OnPropertyChanged(nameof(SourceText));
+        OnPropertyChanged(nameof(LanguageName));
     }
 
     public void BeginTranslation() => ClearTranslation();

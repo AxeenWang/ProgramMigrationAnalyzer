@@ -130,7 +130,7 @@ public sealed class ApplicationSessionCoordinator : IDisposable
     public void RequestLogout()
     {
         _app.Dispatcher.VerifyAccess();
-        if (_disposed || State != ApplicationSessionState.Main) return;
+        if (_disposed || State != ApplicationSessionState.Main || _main?.DataContext is MainViewModel { IsBusy: true }) return;
         State = ApplicationSessionState.ReturningToLogin;
         _diagnostics.Record(AuthenticationDiagnosticKind.LoggedOut, _session.CurrentUser?.UserId);
         _session.Clear();
@@ -170,6 +170,7 @@ public sealed class ApplicationSessionCoordinator : IDisposable
         _main = null;
         if (window is null) return;
         window.Closed -= OnMainClosed;
+        window.Dispose();
         window.Close();
     }
     public void Shutdown()

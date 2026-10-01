@@ -36,9 +36,10 @@ internal static class StartupChecks
         using var fixture = new AccountFixture();
         fixture.Policy.IsElevatedAdministrator = scenario != "admin-denied";
         var service = new FakeAuthentication { Handler = (_, _) => Task.FromResult(AuthenticationResult.Succeeded(LoginChecks.User)) };
-        var app = new AuthenticationTestApp(service, session => {
+        AuthenticationTestApp? app = null;
+        app = new AuthenticationTestApp(service, session => {
             Check(session.IsAuthenticated, "Factory can only receive an authenticated session.");
-            return new MainWindowFactory().Create(session);
+            return new MainWindowFactory(() => app!.Coordinator!.RequestLogout(), Path.Combine(fixture.DirectoryPath, "output")).Create(session);
         }, () => new LocalAccountConfigurationWindow(new LocalAccountConfigurationViewModel(
             new ProgramMigrationAnalyzer.Infrastructure.Authentication.LocalAccountAdministrationService(fixture.Store, new(), fixture.Policy))));
         app.FailFirstMain = scenario == "retry";

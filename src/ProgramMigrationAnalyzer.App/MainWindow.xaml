@@ -25,6 +25,10 @@
 
         <Border Grid.Row="0" Background="#17365D" Padding="18,13">
             <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="22" />
@@ -69,6 +73,21 @@
                 <StackPanel Grid.Column="10" Width="170" VerticalAlignment="Center">
                     <TextBlock Text="{Binding StatusMessage}" Foreground="White" TextAlignment="Right" />
                     <ProgressBar Height="3" Margin="0,6,0,0" IsIndeterminate="{Binding IsBusy}" />
+                </StackPanel>
+                <StackPanel Grid.Row="1" Grid.ColumnSpan="11" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+                    <TextBlock Text="工作中，請等待完成後再登出" Foreground="#BDD3EC" Margin="0,0,16,0" VerticalAlignment="Center">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsBusy}" Value="True"><Setter Property="Visibility" Value="Visible" /></DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <TextBlock x:Name="CurrentUserText" Text="{Binding CurrentUserDisplayName}" Foreground="White"
+                               MaxWidth="260" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" Margin="0,0,16,0" />
+                    <Button Content="登出" Command="{Binding LogoutCommand}" Style="{StaticResource ToolbarButtonStyle}" />
                 </StackPanel>
             </Grid>
         </Border>
