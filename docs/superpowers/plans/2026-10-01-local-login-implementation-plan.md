@@ -10,7 +10,7 @@
 
 **Spec:** [ProgramMigrationAnalyzer_Codex_Spec.md](../../ProgramMigrationAnalyzer_Codex_Spec.md)，第 37 節及第 7、19、22、24～27、32～34 節相關更新。
 
-**日期／狀態:** 2026-10-01／Phase 1 已合併並清理分支，Phase 2 兩個 Task 已逐一完成及推送，Phase 審查與驗證通過，PR 追蹤見下方。Phase 3～4 尚未開始，產品登入與發佈驗收尚未完成。原專案範圍為 `D:/AxeenWorld/CodeLab/Projects/ProgramMigrationAnalyzer`，檔案路徑均相對於各 Phase 的 Git root，Phase 1 隔離路徑見開工決議。
+**日期／狀態:** 2026-10-01／Phase 1 已合併並清理分支，Phase 2 兩個 Task 已逐一完成及推送，Phase 審查與驗證通過，ready PR #7 已建立並附加 chat，目前已送審、尚未合併。Phase 3～4 尚未開始，產品登入與發佈驗收尚未完成。原專案範圍為 `D:/AxeenWorld/CodeLab/Projects/ProgramMigrationAnalyzer`，檔案路徑均相對於各 Phase 的 Git root，Phase 1 隔離路徑見開工決議。
 
 ## Phase 與分支總覽
 
@@ -205,7 +205,7 @@ Phase 內依 Task ID 順序執行，Phase 之間依合併順序開始。每項�
 
 - [x] P2-T1、P2-T2 全部步驟完成，Solution build 與 contracts／crypto／store／admin suite 通過，既有三組 checks 通過。
 - [x] 缺檔、格式、ACL、停用帳號、管理權限及寫入失敗皆有隔離測試證據，沒有建立真實 ProgramData 帳號。
-- [ ] commit／push 完成，worktree 乾淨，upstream 同步，建立並確認此分支的唯一 PR，記錄 URL，註明正式啟動入口待 Phase 3。
+- [x] commit／push 完成，worktree 乾淨，upstream 同步，建立並確認此分支的唯一 PR，記錄 URL，註明正式啟動入口待 Phase 3。
 - [ ] 前述 PR 確認合併後，才允許開始 Phase 3。
 
 ## Phase 3：桌面登入整合
@@ -357,7 +357,7 @@ dotnet run --no-build --project tests/ProgramMigrationAnalyzer.WpfChecks
 | Phase | Task 狀態 | 分支狀態 | 驗證 | PR URL／狀態 | 合併狀態 |
 | --- | --- | --- | --- | --- | --- |
 | 1 | 2／2 完成並逐一推送 | 已清理，原 `codex/login-phase-1-foundation` | contracts 5 組、crypto 7 組及既有回歸通過 | [PR #6](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/6)，MERGED | `e33e33f` |
-| 2 | 2／2 完成並逐一推送 | codex/login-phase-2-local-accounts | contracts 5、crypto 7、store 11、admin 6 及既有回歸通過 | 驗證通過，待建立 ready PR | 未合併 |
+| 2 | 2／2 完成並逐一推送 | codex/login-phase-2-local-accounts | contracts 5、crypto 7、store 11、admin 6 及既有回歸通過 | [PR #7](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/7)，OPEN／ready | 未合併 |
 | 3 | 0／3 完成 | 未建立 | 未執行 | 未建立 | 未合併 |
 | 4 | 0／3 完成 | 未建立 | 未執行 | 未建立 | 未合併 |
 
@@ -391,6 +391,8 @@ Phase 的正常狀態依序為「未開始 → 實作中 → 驗證通過 → �
 | P2-T2 | 8a3a7430833dd0d6604af0af78d5685f3c283902 已推送，0／0 後才開始 Phase 審查 | admin 初始 6／6 失敗，完成後 6／6 通過，包含 STA 設定視窗及取消檢查 |
 
 Phase 自審另以三個失敗檢查修正鎖檔開啟前驗證、4 MiB 帳號檔大小門檻及替換後驗證失敗的舊檔還原。更新用同目錄受保護備份保留舊資料，排他鎖涵蓋替換、還原及清理，成功後清理備份。還原期間的鎖保留另以實際隔離檔案的競爭開啟斷言確認，先失敗再修正。若作業系統連還原也拒絕，保留受保護備份供管理者復原，不宣稱能克服磁碟或作業系統故障。
+
+Phase 審查修正已提交並推送 40ba222348b7133c6ebe3aff227be88f301cae6b。PR #7 已查證為 OPEN、isDraft=false，base main、head codex/login-phase-2-local-accounts，已附加目前 chat，狀態為已送審，尚未合併。
 
 最終 Solution build 為 0 warnings／0 errors，AuthenticationChecks 為 contracts 5／5、crypto 7／7、store 11／11、admin 6／6，共 29 組，Phase2Checks、RegressionChecks、WpfChecks 通過。WpfChecks 仍觀察到既有 WebView2 E_UNEXPECTED，純文字備援路徑通過，完整 WebView2 呈現未驗證。
 
