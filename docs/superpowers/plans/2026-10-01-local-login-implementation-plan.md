@@ -10,7 +10,7 @@
 
 **Spec:** [ProgramMigrationAnalyzer_Codex_Spec.md](../../ProgramMigrationAnalyzer_Codex_Spec.md)，第 37 節及第 7、19、22、24～27、32～34 節相關更新。
 
-**日期／狀態:** 2026-10-01／待實作。本文件只規劃開發，不代表登入、測試或發佈已完成。以下檔案均相對於 Active Target `D:/AxeenWorld/CodeLab/Projects/ProgramMigrationAnalyzer`。
+**日期／狀態:** 2026-10-01／Phase 1 已送審。Phase 1 基礎元件及檢查完成，Phase 2～4 尚未開始，產品登入與發佈驗收尚未完成。原專案範圍為 `D:/AxeenWorld/CodeLab/Projects/ProgramMigrationAnalyzer`，檔案路徑均相對於各 Phase 的 Git root，Phase 1 隔離路徑見開工決議。
 
 ## Phase 與分支總覽
 
@@ -53,9 +53,11 @@ PR 內容至少列出本 Phase 目標、完成的 Task ID、實際驗證結果�
 
 2026-10-01 開工決議：使用者同意在專案內 `.codex-tmp/2026-10-01_login-phase-1/worktree` 建立隔離 worktree，以該目錄作為 Phase 1 Git root，原工作區內容保留，登入規格與本計畫帶入 P1-T1 作為基線文件。隔離 worktree 完成乾淨狀態檢查後可開始，不要求清理原工作區。
 
+此隔離 checkout 的 optional bootstrap 無法透過相對路徑確認 CodeLab anchor，依專案規則採 standalone 模式，使用者指定的原專案範圍與隔離限制仍適用。僅將原工作區的登入規格與計畫作為已授權的外部文件，不擴張至其他目錄。
+
 ## Global Constraints
 
-- Active Target 為 `Projects/ProgramMigrationAnalyzer`，Target Lock 啟用，CodeLab-managed 模式，適用專案 `AGENTS.md`，不讀取兄弟專案。
+- 原專案 `Projects/ProgramMigrationAnalyzer` 使用 CodeLab-managed 模式，Target Lock 啟用。Phase 1 隔離 Git root 採用開工決議所載的 standalone 模式，適用該 checkout 的 `AGENTS.md`，不讀取兄弟專案。
 - App Target Framework Moniker：`net10.0-windows`，Core／Infrastructure 維持現有 `net10.0`，Windows API 集中於有平台標註的 adapter。
 - 「先使用本機帳號與密碼，之後再接正式認證。」本階段只選擇 Local provider，不實作正式 API／Entra adapter。
 - 帳號檔固定為 `%ProgramData%/ProgramMigrationAnalyzer/auth/users.json`，`schemaVersion` 為 1，正常登入不能寫入帳號資料。
@@ -108,7 +110,7 @@ Phase 內依 Task ID 順序執行，Phase 之間依合併順序開始。每項�
 
 ### Task P1-T1：認證契約、登入狀態與檢查宿主
 
-**進度:** 實作與驗證完成：contracts 5 項及既有三組回歸通過，Build 0 warning／0 error，接著提交並推送，確認同步後才開始 P1-T2。
+**進度:** contracts 5 項及既有三組回歸通過，Build 0 warning／0 error。已提交並推送 `55c5b17`，確認 upstream ahead／behind 為 0／0 後才開始 P1-T2。
 
 **Files:** Create Core 的兩個 Authentication 檔案、App 的 `Services/AuthenticatedSession.cs`，以及測試 csproj、`Program.cs`、`CheckSupport.cs`、`ContractChecks.cs`，Modify Solution 與 App 的 `AssemblyInfo.cs`。
 
@@ -129,6 +131,8 @@ Phase 內依 Task ID 順序執行，Phase 之間依合併順序開始。每項�
 
 ### Task P1-T2：帳號驗證規則與密碼雜湊
 
+**進度:** crypto 7 項及累積回歸通過，Build 0 warning／0 error。已提交並推送 `e008a54`，確認 upstream ahead／behind 為 0／0，接著完成 Phase 審查及 PR。
+
 **Files:** Create Infrastructure 的 `LocalAccountModels.cs`、`LocalAccountValidation.cs`、`LocalPasswordHasher.cs`，Create `CryptoChecks.cs`。
 
 **Interfaces:**
@@ -147,9 +151,9 @@ Phase 內依 Task ID 順序執行，Phase 之間依合併順序開始。每項�
 
 ### Phase 1 驗證與 PR
 
-- [ ] P1-T1、P1-T2 全部步驟完成，Solution build 與 contracts／crypto suite 通過，既有 Phase2Checks／RegressionChecks／WpfChecks 回歸通過。
-- [ ] PR 差異只含 Phase 1 契約、session、雜湊、規則、測試宿主與必要文件，沒有未完成功能的假驗證。
-- [ ] commit／push 完成，worktree 乾淨，upstream 同步，建立並確認此分支的唯一 PR，記錄 URL。
+- [x] P1-T1、P1-T2 全部步驟完成，Solution build 與 contracts／crypto suite 通過，既有 Phase2Checks／RegressionChecks／WpfChecks 回歸通過。
+- [x] PR 差異只含 Phase 1 契約、session、雜湊、規則、測試宿主與必要文件，沒有未完成功能的假驗證。
+- [x] commit／push 完成，worktree 乾淨，upstream 同步，建立並確認此分支的唯一 PR，記錄 URL。
 - [ ] 前述 PR 確認合併後，才允許開始 Phase 2。
 
 ## Phase 2：本機帳號管理
@@ -348,12 +352,30 @@ dotnet run --no-build --project tests/ProgramMigrationAnalyzer.WpfChecks
 
 | Phase | Task 狀態 | 分支狀態 | 驗證 | PR URL／狀態 | 合併狀態 |
 | --- | --- | --- | --- | --- | --- |
-| 1 | 2／2 實作與 Task 驗證完成 | 已建立 | contracts 5 組、crypto 7 組及既有回歸通過 | 未建立，待 Phase 審查 | 未合併 |
+| 1 | 2／2 完成並逐一推送 | `codex/login-phase-1-foundation` | contracts 5 組、crypto 7 組及既有回歸通過 | [PR #6](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/6)，OPEN、ready | 未合併 |
 | 2 | 0／2 完成 | 未建立 | 未執行 | 未建立 | 未合併 |
 | 3 | 0／3 完成 | 未建立 | 未執行 | 未建立 | 未合併 |
 | 4 | 0／3 完成 | 未建立 | 未執行 | 未建立 | 未合併 |
 
 Phase 的正常狀態依序為「未開始 → 實作中 → 驗證通過 → 已送審 → 已合併」。Task 全部完成且必要檢查通過，才可標記「驗證通過」，PR URL 與遠端狀態查證成功，才可標記「已送審」。未能送 PR 時仍是未交付，不能略過此狀態。下一 Phase 的開工條件為前一 Phase「已合併」。
+
+### Phase 1 執行紀錄
+
+| Task | commit／push | 驗證 |
+| --- | --- | --- |
+| P1-T1 | `55c5b17f17839b9cf908299498aa42b69b3050b2` 已推送 | 編譯成功的初始實作有 4／5 行為檢查失敗，完成後 contracts 5／5 及既有回歸通過 |
+| P1-T2 | `e008a54c4964d82f9caf446522775220640c6a29` 已推送 | 初始實作 crypto 7／7 失敗，完成後 7／7 通過，另以失敗測試修正 Unicode 帳號轉小寫邊界 |
+
+最終 Solution build 為 0 warnings／0 errors，contracts／crypto 合計 12 項通過，既有 Phase2Checks／RegressionChecks／WpfChecks 均通過。PBKDF2 另外對照獨立產生的測試向量，store 尚未實作而以 exit code 2 拒絕執行，沒有假通過。WpfChecks 觀察到既有 WebView2 E_UNEXPECTED，純文字備援路徑通過，本輪不作完整 WebView2 呈現驗證。
+
+整個分支由實作者自審，未發現需修正的問題。依本計畫的代理分工限制，本次未使用獨立代理審查，獨立審查留待 PR。原工作區的既有截圖及簡報均保留，沒有提交 agent temp、真實帳號檔或建置產物。
+
+執行調整與成本：
+
+- 手動建立已授權位置的 worktree，因 App API 無法從此 chat 指定該 repo 與路徑，成本為不會自動登錄至 App 的 managed worktree 清單。
+- 暫存進度使用 `.codex-tmp` 人工紀錄，遵守專案暫存規則及 Phase／Task 標題，成本為需人工維護，未使用 skill 的自動 ledger helpers。
+- 隔離 checkout 採 standalone bootstrap，原因見開工決議，成本為不自動匯入外部治理 anchor，仍遵守使用者已指定的隔離規則。
+- 使用作者自審，遵守本計畫對代理分工的授權限制，成本為沒有獨立代理的第二次檢查，仍須由 PR 審查確認是否可合併。
 
 ## 完成與交接條件
 
