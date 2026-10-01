@@ -10,20 +10,20 @@
 
 **Spec:** [ProgramMigrationAnalyzer_Codex_Spec.md](../../ProgramMigrationAnalyzer_Codex_Spec.md)，第 37 節及第 7、19、22、24～27、32～34 節相關更新。
 
-**日期／狀態:** 2026-10-01／Phase 1 已送審。Phase 1 基礎元件及檢查完成，Phase 2～4 尚未開始，產品登入與發佈驗收尚未完成。原專案範圍為 `D:/AxeenWorld/CodeLab/Projects/ProgramMigrationAnalyzer`，檔案路徑均相對於各 Phase 的 Git root，Phase 1 隔離路徑見開工決議。
+**日期／狀態:** 2026-10-01／Phase 1 已合併並清理分支。Phase 1 基礎元件及檢查完成，Phase 2～4 尚未開始，產品登入與發佈驗收尚未完成。原專案範圍為 `D:/AxeenWorld/CodeLab/Projects/ProgramMigrationAnalyzer`，檔案路徑均相對於各 Phase 的 Git root，Phase 1 隔離路徑見開工決議。
 
 ## Phase 與分支總覽
 
-**執行規則：一個 Phase 一個分支，依序執行 Task，每完成一個 Task 都須驗證、提交並推送一次，全部 Task 完成後，該 Phase 建立一個 PR。** 不按 Task 建立額外分支或 PR，也不能只完成本機實作就宣稱該 Phase 已交付。
+**執行規則：只有開始實作該 Phase 時才建立其分支，禁止在規劃或開工時一次建立所有 Phase 分支。一個 Phase 一個分支，依序執行 Task，每完成一個 Task 都須驗證、提交並推送一次，全部 Task 完成後，該 Phase 建立一個 PR。** 不按 Task 建立額外分支或 PR，也不能只完成本機實作就宣稱該 Phase 已交付。
 
-| Phase | 分支名稱 | Task | Phase 交付物 | PR 建議標題 |
+| Phase | 預定分支名稱 | Task | Phase 交付物 | PR 建議標題 |
 | --- | --- | --- | --- | --- |
 | 1：認證基礎 | `codex/login-phase-1-foundation` | P1-T1、P1-T2 | 認證契約、唯讀 session、測試宿主、密碼規則與雜湊 | `feat: add login contracts and password hashing` |
 | 2：本機帳號管理 | `codex/login-phase-2-local-accounts` | P2-T1、P2-T2 | 帳號儲存、ACL、實際驗證、管理服務與設定視窗 | `feat: add local account authentication and administration` |
 | 3：桌面登入整合 | `codex/login-phase-3-desktop-gate` | P3-T1、P3-T2、P3-T3 | 登入 UI、正式啟動門檻、命令保護、登出與測試調整 | `feat: require login before opening the analyzer` |
 | 4：驗證與交付 | `codex/login-phase-4-verification` | P4-T1、P4-T2、P4-T3 | 完整回歸、發佈 EXE 驗證、README 與交付紀錄 | `test: verify login workflows and document deployment` |
 
-分支名稱在正式建立前須檢查本機及遠端是否衝突，實際建立狀態見 Phase／PR 追蹤紀錄。基底使用實際遠端預設分支，目前本機 `origin/HEAD` 指向 `origin/main`，開工時仍須 fetch 並重新確認。
+表中的名稱僅供規劃，不是預先建立分支的指示。尚未開始的 Phase 保持「分支未建立」，前一 Phase 合併或清理後也不自動建立下一 Phase 分支。只有開始實作當前 Phase 時，才檢查名稱衝突並建立該分支，實際狀態見 Phase／PR 追蹤紀錄。基底使用實際遠端預設分支，目前本機 `origin/HEAD` 指向 `origin/main`，開工時仍須 fetch 並重新確認。
 
 **串行依賴：** Phase 1 PR 合併 → Phase 2 開分支 → Phase 2 PR 合併 → Phase 3 開分支 → Phase 3 PR 合併 → Phase 4 開分支。採用依序合併方式，不使用從前一個未合併主題分支開出的堆疊分支。
 
@@ -33,13 +33,13 @@ Phase 1／2 交付可測試的基礎元件，尚未替換正式啟動流程，�
 
 開始某個 Phase 即按本計畫執行該 Phase 的開分支、實作、驗證、提交、推送及 PR，正常且符合守門條件的步驟不需反覆詢問。此授權不包含 merge、force push、改寫歷史、刪除分支或部署到未授權電腦。開工授權與實際進度見本計畫的開工決議及 Phase／PR 追蹤紀錄。
 
-1. **開始：** 確認 Active Target 等於 Git root，讀取適用規範，確認 worktree／index 完全乾淨，前一 Phase PR 已合併，並取得最新遠端預設分支，使用 `repo-new-branch` 建立該 Phase 的專屬分支，初始不追蹤預設分支。若該 Phase 已開工，確認後續工作仍在原 Phase 分支，不另建分支或覆寫同名分支。
+1. **開始：** 只在開始實作當前 Phase 時開分支，確認 Active Target 等於 Git root，讀取適用規範，確認 worktree／index 完全乾淨，前一 Phase PR 已合併，並取得最新遠端預設分支，使用 `repo-new-branch` 建立該 Phase 的專屬分支，初始不追蹤預設分支。不得同時建立後續 Phase 分支。若該 Phase 已開工，確認後續工作仍在原 Phase 分支，不另建分支或覆寫同名分支。
 2. **實作 Task：** 只完成該 Phase 的當前 Task，保留測試先行步驟、必要修正及進度紀錄。不要提前加入下一 Task 或 Phase 的功能。
 3. **每 Task 驗證與推送：** 每完成一個 Task，先通過該 Task 的檢查及受影響回歸，再依 `repo-push` stage／commit／正常 push 一次，確認 HEAD 與同名 upstream 同步後，才開始下一 Task。首次 push 建立同名 upstream，後續 push 使用原 upstream。只能 stage 當前 Task 與必要文件，不能納入既有截圖、簡報、帳號資料或其他工作，本範圍限制優先於 skill 的廣泛 `git add -A`。
 4. **Phase 驗證：** 所有 Task 各自完成並推送後，執行該 Phase 的檢查與累積回歸，審查完整差異、機密、temp、產物與無關內容。若驗證或審查需要修正，在同一分支完成並推送修正，再重跑受影響檢查，不跳過任何 Task 的推送紀錄。
 5. **建立 PR：** worktree 乾淨、分支已推送、upstream 指向同名 `origin/<Phase 分支>`，ahead／behind 皆為 0，才使用 `repo-open-pr` 建立 ready PR，base 為遠端預設分支。同一 Phase 已有 open PR 時沿用該 PR，不重複建立。
 6. **確認與回報：** 查證 PR 的 head／base／URL 與狀態，附加 PR 至目前 Codex chat，回報已完成 Task、檢查結果、commit、分支、upstream、剩餘變更及 PR URL。
-7. **下一 Phase：** PR 建立後本 Phase 狀態為「已送審」，由使用者或既有審查流程完成合併。確認 merged 後才開始下一 Phase，不以「PR 已建立」代替「PR 已合併」。
+7. **下一 Phase：** PR 建立後本 Phase 狀態為「已送審」，由使用者或既有審查流程完成合併。確認 merged 後才具備下一 Phase 的開工條件，不以「PR 已建立」代替「PR 已合併」。合併後先完成清理，直到實際開始下一 Phase 時才建立其分支。
 
 PR 內容至少列出本 Phase 目標、完成的 Task ID、實際驗證結果、使用行為、限制及後續 Phase，不把下一 Phase 才完成的功能寫成已完成。審查修正繼續使用同一 Phase 分支與 PR。
 
@@ -154,7 +154,7 @@ Phase 內依 Task ID 順序執行，Phase 之間依合併順序開始。每項�
 - [x] P1-T1、P1-T2 全部步驟完成，Solution build 與 contracts／crypto suite 通過，既有 Phase2Checks／RegressionChecks／WpfChecks 回歸通過。
 - [x] PR 差異只含 Phase 1 契約、session、雜湊、規則、測試宿主與必要文件，沒有未完成功能的假驗證。
 - [x] commit／push 完成，worktree 乾淨，upstream 同步，建立並確認此分支的唯一 PR，記錄 URL。
-- [ ] 前述 PR 確認合併後，才允許開始 Phase 2。
+- [x] 前述 PR 已確認合併，Phase 2 開工前置條件已滿足，尚未開始 Phase 2 或建立其分支。
 
 ## Phase 2：本機帳號管理
 
@@ -352,12 +352,14 @@ dotnet run --no-build --project tests/ProgramMigrationAnalyzer.WpfChecks
 
 | Phase | Task 狀態 | 分支狀態 | 驗證 | PR URL／狀態 | 合併狀態 |
 | --- | --- | --- | --- | --- | --- |
-| 1 | 2／2 完成並逐一推送 | `codex/login-phase-1-foundation` | contracts 5 組、crypto 7 組及既有回歸通過 | [PR #6](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/6)，OPEN、ready | 未合併 |
+| 1 | 2／2 完成並逐一推送 | 已清理，原 `codex/login-phase-1-foundation` | contracts 5 組、crypto 7 組及既有回歸通過 | [PR #6](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/6)，MERGED | `e33e33f` |
 | 2 | 0／2 完成 | 未建立 | 未執行 | 未建立 | 未合併 |
 | 3 | 0／3 完成 | 未建立 | 未執行 | 未建立 | 未合併 |
 | 4 | 0／3 完成 | 未建立 | 未執行 | 未建立 | 未合併 |
 
 Phase 的正常狀態依序為「未開始 → 實作中 → 驗證通過 → 已送審 → 已合併」。Task 全部完成且必要檢查通過，才可標記「驗證通過」，PR URL 與遠端狀態查證成功，才可標記「已送審」。未能送 PR 時仍是未交付，不能略過此狀態。下一 Phase 的開工條件為前一 Phase「已合併」。
+
+2026-10-01 清理紀錄：PR #6 於 `2026-10-01T01:35:27Z` 合併，merge commit 為 `e33e33f7e07dc37aef8c162d368b119da0d8a38e`。依使用者指示，先清理全部主題分支，本機與遠端只保留 `main`。Phase 2～4 分支維持未建立。原工作區的未提交內容保留在相同 commit 的 detached HEAD，尚未合併的 `codex/ignore-references` 提交已保存並驗證專案暫存區的 Git bundle。其後才修正 `.references/` 忽略與分支建立時機，使用者明確授權此維護變更直接提交並推送到 `main`，不開始新的 Phase。
 
 ### Phase 1 執行紀錄
 
