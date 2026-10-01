@@ -1,7 +1,7 @@
 <Window x:Class="ProgramMigrationAnalyzer.App.LoginWindow" x:ClassModifier="internal"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="程式移植分析儀 - C#、4GL" Width="440" Height="360" MinWidth="420" MinHeight="360"
+        Title="程式移植分析儀 - C#、4GL" Width="440" Height="390" MinWidth="420" MinHeight="390"
         WindowStartupLocation="CenterScreen" ResizeMode="CanResize" Background="{DynamicResource CanvasBrush}"
         PreviewKeyDown="OnPreviewKeyDown">
     <Grid Margin="24">
@@ -19,6 +19,7 @@
             <PasswordBox x:Name="PasswordInput" IsEnabled="{Binding CanEdit}" MinHeight="32" Padding="6" TabIndex="1"/>
         </StackPanel>
         <TextBlock Grid.Row="3" Text="{Binding StatusMessage}" TextWrapping="Wrap" Margin="0,14,0,0" MinHeight="38" AutomationProperties.LiveSetting="Polite"/>
+        <Button Grid.Row="4" Content="匯入／更新公司授權 Key" Command="{Binding ImportAuthorizationCommand}" HorizontalAlignment="Left" Margin="0,4,0,10" Padding="8,4"/>
         <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right">
             <Button x:Name="LoginButton" Content="登入 (_L)" Click="OnLogin" IsDefault="True" TabIndex="2" MinWidth="86" Style="{DynamicResource PrimaryToolbarButtonStyle}">
             </Button>

@@ -10,7 +10,7 @@
 
 **Spec:** [核准規格](../specs/2026-10-01-offline-signed-authorization-design.md)，已於 2026-10-01 核准。兩份核准文件已在第一個 Task 納入正式 docs。
 
-**狀態:** 使用者已指示依本計畫作業。Phase 5 分支 `codex/offline-authorization-phase-5` 從 `7513324` 開工，P5-T1 已完成並推送 5a791c6，P5-T2 已完成並推送 52fcb92，P5-T3 已完成程式與驗證，待提交／推送，P5-T4～T6 尚未開始。Active Target 為 `Projects/ProgramMigrationAnalyzer`，Target Lock enabled。Git root 已依使用者授權移回 `D:/AxeenWorld/CodeLab/Projects/ProgramMigrationAnalyzer`，CodeLab-managed 模式。Phase 1～4 登入成果、T1／T2 及未提交 T3 已完整回到正式目錄，舊 worktree 保留為非作業用復原副本。
+**狀態:** 使用者已指示依本計畫作業。Phase 5 分支 `codex/offline-authorization-phase-5` 從 `7513324` 開工，P5-T1 已完成並推送 5a791c6，P5-T2 已完成並推送 52fcb92，P5-T3 已完成並推送 888c8f0，P5-T4 已完成實作與驗證，待提交／推送，P5-T5／T6 尚未開始。Active Target 為 `Projects/ProgramMigrationAnalyzer`，Target Lock enabled。Git root 已依使用者授權移回 `D:/AxeenWorld/CodeLab/Projects/ProgramMigrationAnalyzer`，CodeLab-managed 模式。Phase 1～4 登入成果、T1／T2 及未提交 T3 已完整回到正式目錄，舊 worktree 保留為非作業用復原副本。
 
 ## Global Constraints
 
@@ -140,7 +140,7 @@ CheckSupport.Check(!disabledUser.IsEnabled, "Disabled account must remain disabl
 - [x] 實作服務，私鑰 export 使用 PbeParameters 固定 AES-256-CBC／SHA256／600,000。SecureString 轉換的可清除 buffer 在 finally 清除，ECDsa 及密碼副本及時 Dispose，失敗訊息不含 PEM／hash／payload。
 - [x] 建 WPF 工具，提供產生金鑰、載入加密私鑰、開啟既有有效 Key、帳號清單與新增／重設／啟用／停用、匯出 Key。確認密碼由 code-behind 送短生命週期 submission，PBKDF2／簽章在背景。私鑰輸出位置需使用者確認，建立時停止 ACL 繼承，只授予目前公司 Windows 使用者及 SYSTEM FullControl，拒絕 reparse path，不存 ProgramData 或 repo。UI 不能無提示覆寫既有私鑰。
 - [x] 執行 build、signature、signed-store、issuer、crypto suites，exit 0。STA UI 檢查採 test host 注入記憶體 signing key，不透過正式 App 參數或環境變數造登入捷徑。不產生正式金鑰。
-- [ ] 更新計畫結果並 repo-push，建議 commit `feat: add company offline license issuer`，確認乾淨與 upstream 0／0。
+- [x] 更新計畫結果並 repo-push，commit `888c8f0`，確認無本 Task 未提交變更與 upstream 0／0，原未追蹤使用者簡報保留。
 
 ### Task P5-T4：公司公鑰內建、首次啟用、UAC 與移除客戶端管理
 
@@ -154,7 +154,7 @@ CheckSupport.Check(!disabledUser.IsEnabled, "Disabled account must remain disabl
 - `AuthorizationActivationViewModel.PreviewAsync(string path, CancellationToken ct): Task`、`ImportAsync(CancellationToken ct): Task`、`Cancel(): void`、`event Action Activated`／`Cancelled`。Preview 只存驗證後安全摘要與 fingerprint，匯入前重讀，子程序後重讀 installed store，核對 fingerprint。
 - Coordinator 移除舊 admin factory，接受 signed store 與 activation factory，新增 `InspectingAuthorization`／`Activation`／`ImportingAuthorization` 狀態。正常有效授權才 ShowLogin，Activated 僅返回 Login，Login 成功才建立 Main。
 
-- [ ] 寫 RED 檢查 `MissingAndUnsignedStartOnlyActivation`、`RealSignedProviderStartupAndReauthentication`、`StrictImportStartupModes`、`ImportModeNeverAuthenticates`、`CandidateChangedBeforeElevation`、`CanceledElevationAndLateCompletion`、`EmbeddedTrustCannotBeOverridden`。測試直接走正式 App.OnStartup，真實 signed provider、store、ECDSA 與 PBKDF2，只替換 ACL／UAC launcher。
+- [x] 寫 RED 檢查 `MissingAndUnsignedStartOnlyActivation`、`RealSignedProviderStartupAndReauthentication`、`StrictImportStartupModes`、`ImportModeNeverAuthenticates`、`CandidateChangedBeforeElevation`、`CanceledElevationAndLateCompletion`、`EmbeddedTrustCannotBeOverridden`。測試直接走正式 App.OnStartup，真實 signed provider、store、ECDSA 與 PBKDF2，只替換 ACL／UAC launcher。
 
 ```csharp
 CheckSupport.Check(!coordinator.Session.IsAuthenticated && mainCreationCount == 0, "Activation cannot authenticate.");
@@ -162,10 +162,10 @@ CheckSupport.Check(coordinator.State == ApplicationSessionState.Activation, "Mis
 CheckSupport.Throws<ArgumentException>(() => AuthorizationStartupRequest.Parse(["--configure-local-account"]));
 ```
 
-- [ ] 執行 build 與 `--suite activation`，確認新行為 RED。明確斷言舊 `--configure-local-account` 不再開管理視窗，無主工作區與帳號寫入。
-- [ ] 實作上述介面及 WPF 啟用畫面，合法參數逐一判斷。提升模式重讀驗章、顯示實際摘要並確認、要求 elevated token，store 匯入成功 exit 0，使用者取消／錯誤維持未登入。正常模式保留 UAC 取消提示與 generation 檢查，禁止晚到 Activated 開主畫面。
-- [ ] App csproj 條件式嵌入公鑰快照為 `ProgramMigrationAnalyzer.AuthorizationPublicKey` resource。缺失公鑰使用 None fail closed，正式組裝不引用 issuer。移除舊管理程式，Windows policy 用到的既有 configuration exception 移至 `LocalAccountConfigurationException.cs`，不保留舊可寫 store。現有 models 移除 obsolete LocalAccountFile，保留 LocalAccountRecord／PasswordHashRecord。
-- [ ] 將原 store／admin／local-startup fixtures 與 WpfChecks 遷移到簽章資料，suite registry 保留 contracts／crypto／login／startup／access 並加入 signature／signed-store／issuer／activation，移除失效的 unsigned admin／store 情境。跑全部 AuthenticationChecks、Phase2Checks、RegressionChecks、WpfChecks，exit 0，檢查登入／登出／取消／六個命令及忙碌／晚到結果。
+- [x] 執行 build 與 `--suite activation`，確認新行為 RED。明確斷言舊 `--configure-local-account` 不再開管理視窗，無主工作區與帳號寫入。
+- [x] 實作上述介面及 WPF 啟用畫面，合法參數逐一判斷。提升模式重讀驗章、顯示實際摘要並確認、要求 elevated token，store 匯入成功 exit 0，使用者取消／錯誤維持未登入。正常模式保留 UAC 取消提示與 generation 檢查，禁止晚到 Activated 開主畫面。
+- [x] App csproj 條件式嵌入公鑰快照為 `ProgramMigrationAnalyzer.AuthorizationPublicKey` resource。缺失公鑰使用 None fail closed，正式組裝不引用 issuer。移除舊管理程式，Windows policy 用到的既有 configuration exception 移至 `LocalAccountConfigurationException.cs`，不保留舊可寫 store。現有 models 移除 obsolete LocalAccountFile，保留 LocalAccountRecord／PasswordHashRecord。
+- [x] 將原 store／admin／local-startup fixtures 與 WpfChecks 遷移到簽章資料，suite registry 保留 contracts／crypto／login／startup／access 並加入 signature／signed-store／issuer／activation，移除失效的 unsigned admin／store 情境。跑全部 AuthenticationChecks、Phase2Checks、RegressionChecks、WpfChecks，exit 0，檢查登入／登出／取消／六個命令及忙碌／晚到結果。
 - [ ] 更新計畫結果並 repo-push，建議 commit `feat: activate signed accounts before desktop login`，確認乾淨與 upstream 0／0。
 
 ### Task P5-T5：公鑰發布守門、雙工具分離與原目錄 publish 更新
@@ -220,7 +220,7 @@ CheckSupport.Check(embeddedKeyId == snapshotKeyId, "Published trust must use the
 | O11 | T5 publish／snapshot／轉送 | T6 正式 public key publish |
 | O12 | T4 累積回歸、T6 完整 suites | T6 桌面／樣本／退出 |
 
-P5-T1 已完成並推送 5a791c6。P5-T2 已完成並推送 52fcb92。P5-T3 已完成程式與驗證，待提交／推送，P5-T4～T6 尚未開始。使用者已核准按本計畫開分支、逐 Task 驗證／commit／push，Phase 完成建立唯一 PR。分支只在實際開始當前 Phase 時建立，不預建後續 Phase。授權範圍不含 merge、force push、歷史覆寫或未指定電腦部署。
+P5-T1 已完成並推送 5a791c6。P5-T2 已完成並推送 52fcb92。P5-T3 已完成並推送 888c8f0，P5-T4 已完成實作與驗證，待提交／推送，P5-T5／T6 尚未開始。使用者已核准按本計畫開分支、逐 Task 驗證／commit／push，Phase 完成建立唯一 PR。分支只在實際開始當前 Phase 時建立，不預建後續 Phase。授權範圍不含 merge、force push、歷史覆寫或未指定電腦部署。
 
 ### P5-T1 執行紀錄
 
@@ -243,3 +243,11 @@ P5-T1 已完成並推送 5a791c6。P5-T2 已完成並推送 52fcb92。P5-T3 已�
 ## 計畫自審
 
 2026-10-01 計畫撰寫時：已依規格逐節對照六個 Task 與 O1～O12。確認 T1 型別／方法供 T2～T5 使用一致，沒有未定義的跨 Task function。五項 Review Focus 均有具名檢查，部署與正式私鑰操作保留使用者授權界線。撰寫時所有 checkbox 未勾選，沒有將計畫中的命令或預期結果記成已執行，後續完成項目以 Task 紀錄為準。
+
+### P5-T4 執行紀錄
+
+2026-10-01：先以正式 App.OnStartup 確認缺失授權仍開登入窗及舊管理入口仍接受的 2 組 RED。新增介面與檢查後，5 組新行為因未實作而 RED，再接入 signed store／provider、編譯資源公鑰、授權預覽與提升匯入。最終 activation 9 PASS，全部 AuthenticationChecks 74 PASS，Build 0 warnings／0 errors。Phase2Checks、RegressionChecks、WpfChecks 全部 exit 0，包含登入、登出、取消、節流、命令門檻與晚到結果。組數因移除 unsigned store／admin 檢查並遷移簽章情境而調整，歷史 87 組紀錄保持原版本結果。
+
+一般啟用只返回登入，提升匯入流程顯示重新驗章的實際摘要，要求管理員 token，成功只以 exit 0 結束。跨 authorizationId 替換確認綁定預覽時的現有 id，store 在鎖內重讀。候選檔變更、安裝內容不符、UAC 取消與父視窗關閉後的晚到成功均不自動登入。舊客戶端自行建帳／重設服務與 schema 1 store 已移除，ACL exception 與合法共用 hash record 保留。開發 build 無公鑰時保持未授權，外部檔案、工作目錄與環境變數不能提供信任根。
+
+測試經正式 App 啟動路徑使用真實 ECDSA／PBKDF2／signed store，ACL 與 UAC 在隔離 fixture 替換，提升模式以真實 WPF 匯入命令確認。啟用視窗截圖已檢視，不顯示 hash／salt。ProcessStartInfo.ArgumentList 依 [Microsoft 官方說明](https://learn.microsoft.com/en-us/dotnet/api/system.diagnostics.processstartinfo.argumentlist?view=net-10.0) 自動處理參數 quoting，未傳遞帳密。真實 UAC、正式公司金鑰及 ProgramData 尚未操作，發布守門待 T5。

@@ -23,7 +23,7 @@ internal static class SignedStoreChecks
     {
         using var f = new SignedAccountFixture();
         var store = new SignedLocalAccountStore(f.FilePath, new MissingAwarePolicy(f.Policy), f.Key.Verifier);
-        var missing = await StoreChecks.Expect<AuthorizationException>(() => store.ReadAsync());
+        var missing = await CheckSupport.Expect<AuthorizationException>(() => store.ReadAsync());
         CheckSupport.Check(missing.Failure == AuthorizationFailure.Missing, "Missing account path classification changed.");
         await store.ImportAsync(f.Issue());
         using var secret = CheckSupport.Password("Test@!#1");
@@ -66,13 +66,13 @@ internal static class SignedStoreChecks
     {
         using var f = new SignedAccountFixture(); var first = f.Issue(); await f.Store.ImportAsync(first);
         CheckSupport.Check(!(await f.Store.ImportAsync(first)).Changed, "Identical reimport should be idempotent.");
-        var sameRevision = await StoreChecks.Expect<AuthorizationException>(() => f.Store.ImportAsync(f.Issue()));
+        var sameRevision = await CheckSupport.Expect<AuthorizationException>(() => f.Store.ImportAsync(f.Issue()));
         CheckSupport.Check(sameRevision.Failure == AuthorizationFailure.StaleRevision, "Different payload at same revision admitted.");
         await f.Store.ImportAsync(f.Issue(2));
-        var older = await StoreChecks.Expect<AuthorizationException>(() => f.Store.ImportAsync(first));
+        var older = await CheckSupport.Expect<AuthorizationException>(() => f.Store.ImportAsync(first));
         CheckSupport.Check(older.Failure == AuthorizationFailure.StaleRevision, "Older revision admitted.");
         var currentId = (await f.Store.ReadAsync()).Payload.AuthorizationId; var newId = Guid.NewGuid(); var different = f.Issue(id: newId);
-        var confirmation = await StoreChecks.Expect<AuthorizationException>(() => f.Store.ImportAsync(different));
+        var confirmation = await CheckSupport.Expect<AuthorizationException>(() => f.Store.ImportAsync(different));
         CheckSupport.Check(confirmation.Failure == AuthorizationFailure.ReplacementConfirmationRequired, "Cross-authorization import skipped confirmation.");
         await f.Store.ImportAsync(different, currentId);
         CheckSupport.Check((await f.Store.ReadAsync()).Payload.AuthorizationId == newId, "Confirmed replacement failed.");
@@ -88,7 +88,7 @@ internal static class SignedStoreChecks
             CheckSupport.Check(!pending.IsCompleted, "Writer did not wait for target lock.");
             var changedId = Guid.NewGuid(); var changed = f.Issue(id: changedId); await File.WriteAllBytesAsync(f.FilePath, changed);
             held.Dispose();
-            var error = await StoreChecks.Expect<AuthorizationException>(() => pending);
+            var error = await CheckSupport.Expect<AuthorizationException>(() => pending);
             CheckSupport.Check(error.Failure == AuthorizationFailure.ReplacementConfirmationRequired
                 && (await f.Store.ReadAsync()).Payload.AuthorizationId == changedId, "Writer trusted stale replacement confirmation.");
         }
@@ -98,10 +98,10 @@ internal static class SignedStoreChecks
     {
         using var f = new SignedAccountFixture(); var original = f.Issue(); await f.Store.ImportAsync(original); f.Policy.ResetTemporaryState();
         f.Policy.FailSecuringTemporary = true;
-        await StoreChecks.Expect<AuthorizationException>(() => f.Store.ImportAsync(f.Issue(2)));
+        await CheckSupport.Expect<AuthorizationException>(() => f.Store.ImportAsync(f.Issue(2)));
         CheckSupport.Check((await File.ReadAllBytesAsync(f.FilePath)).SequenceEqual(original), "Interrupted import corrupted prior data.");
         f.Policy.FailSecuringTemporary = false; f.Policy.RejectFinalValidation = true; f.Policy.ProbeRollbackLock = true;
-        await StoreChecks.Expect<AuthorizationException>(() => f.Store.ImportAsync(f.Issue(2)));
+        await CheckSupport.Expect<AuthorizationException>(() => f.Store.ImportAsync(f.Issue(2)));
         CheckSupport.Check((await File.ReadAllBytesAsync(f.FilePath)).SequenceEqual(original) && f.Policy.RollbackWasLocked,
             "Rollback did not restore original data under writer lock.");
     }
@@ -109,22 +109,22 @@ internal static class SignedStoreChecks
     {
         using var f = new SignedAccountFixture(); var first = f.Issue(); await f.Store.ImportAsync(first);
         using var cancellation = new CancellationTokenSource(); cancellation.Cancel();
-        await StoreChecks.Expect<OperationCanceledException>(() => f.Store.ImportAsync(f.Issue(2), ct: cancellation.Token));
+        await CheckSupport.Expect<OperationCanceledException>(() => f.Store.ImportAsync(f.Issue(2), ct: cancellation.Token));
         f.Policy.IsElevatedAdministrator = false;
-        await StoreChecks.Expect<AuthorizationException>(() => f.Store.ImportAsync(f.Issue(2)));
+        await CheckSupport.Expect<AuthorizationException>(() => f.Store.ImportAsync(f.Issue(2)));
         CheckSupport.Check((await File.ReadAllBytesAsync(f.FilePath)).SequenceEqual(first), "Canceled/non-elevated import changed account data.");
     }
     private static async Task UnsafePathsLockAndBusy()
     {
         using var f = new SignedAccountFixture(); await f.Store.ImportAsync(f.Issue()); f.Policy.ResetTemporaryState();
         f.Policy.RejectLockPath = true;
-        var unsafePath = await StoreChecks.Expect<AuthorizationException>(() => f.Store.ImportAsync(f.Issue(2)));
+        var unsafePath = await CheckSupport.Expect<AuthorizationException>(() => f.Store.ImportAsync(f.Issue(2)));
         CheckSupport.Check(unsafePath.Failure == AuthorizationFailure.UnsafeAccess, "Unsafe lock path admitted.");
         f.Policy.RejectLockPath = false;
         using var held = new FileStream(f.FilePath + ".lock", FileMode.Open, FileAccess.ReadWrite, FileShare.None);
         using var cancel = new CancellationTokenSource(TimeSpan.FromMilliseconds(150));
-        await StoreChecks.Expect<OperationCanceledException>(() => f.Store.ImportAsync(f.Issue(2), ct: cancel.Token));
-        var busy = await StoreChecks.Expect<AuthorizationException>(() => f.Store.ImportAsync(f.Issue(2)));
+        await CheckSupport.Expect<OperationCanceledException>(() => f.Store.ImportAsync(f.Issue(2), ct: cancel.Token));
+        var busy = await CheckSupport.Expect<AuthorizationException>(() => f.Store.ImportAsync(f.Issue(2)));
         CheckSupport.Check(busy.Failure == AuthorizationFailure.Busy, "Locked store did not report bounded busy failure.");
     }
 }

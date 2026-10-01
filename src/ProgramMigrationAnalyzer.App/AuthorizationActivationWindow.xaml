@@ -1,0 +1,21 @@
+<Window x:Class="ProgramMigrationAnalyzer.App.AuthorizationActivationWindow" x:ClassModifier="internal"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="程式移植分析儀 - 離線授權" Width="620" Height="490" MinWidth="570" MinHeight="460"
+        WindowStartupLocation="CenterScreen" Background="{DynamicResource CanvasBrush}" PreviewKeyDown="OnPreviewKeyDown">
+    <Grid Margin="24">
+        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+        <StackPanel><TextBlock Text="公司離線授權" FontSize="22" FontWeight="SemiBold"/>
+            <TextBlock Text="請使用公司簽發的 Key 啟用或更新帳號。" Margin="0,8,0,16" TextWrapping="Wrap"/></StackPanel>
+        <Button x:Name="SelectKeyButton" Grid.Row="1" Content="選擇授權 Key" Click="OnSelectKey" IsEnabled="{Binding CanEdit}" HorizontalAlignment="Left" Padding="12,6"/>
+        <ScrollViewer Grid.Row="2" Margin="0,14" VerticalScrollBarVisibility="Auto">
+            <StackPanel><TextBlock Text="{Binding Summary}" TextWrapping="Wrap"/>
+                <TextBlock Text="{Binding ReplacementSummary}" TextWrapping="Wrap" Margin="0,12,0,4"/>
+                <CheckBox x:Name="ReplacementConfirmation" Content="我確認替換上述現有授權" IsChecked="{Binding ConfirmReplacement}" IsEnabled="{Binding RequiresReplacementConfirmation}"/></StackPanel>
+        </ScrollViewer>
+        <TextBlock Grid.Row="3" Text="{Binding StatusMessage}" TextWrapping="Wrap" MinHeight="44" AutomationProperties.LiveSetting="Polite"/>
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
+            <Button x:Name="ImportButton" Content="匯入 (_I)" Command="{Binding ImportCommand}" IsDefault="True" MinWidth="86" Style="{DynamicResource PrimaryToolbarButtonStyle}"/>
+            <Button Content="取消 (_C)" Command="{Binding CancelCommand}" MinWidth="86" Style="{DynamicResource ToolbarButtonStyle}"/>
+        </StackPanel>
+    </Grid>
+</Window>

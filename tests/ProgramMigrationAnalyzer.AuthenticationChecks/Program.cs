@@ -10,12 +10,9 @@ internal static class Program
             return scenario switch
             {
                 "logout" => AccessChecks.RunWindowChild(),
-                "local-lifecycle" => LocalStartupChecks.RunChild(configuration: false),
-                "local-configuration" => LocalStartupChecks.RunChild(configuration: true),
+                var signed when signed.StartsWith("signed-", StringComparison.Ordinal) => SignedStartupChecks.RunChild(signed),
                 _ => StartupChecks.RunChild(scenario)
             };
-        if (args is ["--admin-window-check"])
-            return AdministrationChecks.RunWindowChild();
         if (args is ["--issuer-window-check"])
             return IssuerChecks.RunWindowChild();
         if (args is ["--login-window-check"])
@@ -25,10 +22,11 @@ internal static class Program
             ["signature"] = AuthorizationSignatureChecks.Run,
             ["signed-store"] = SignedStoreChecks.Run,
             ["issuer"] = IssuerChecks.Run,
+            ["activation"] = SignedStartupChecks.Run,
             ["contracts"] = ContractChecks.Run,
             ["crypto"] = CryptoChecks.Run,
-            ["store"] = StoreChecks.Run,
-            ["admin"] = AdministrationChecks.Run,
+            ["acl"] = () => CheckSupport.Run(("VolumeRootDeleteCannotReplaceDeployment", WindowsAclChecks.VolumeRootDeleteCannotReplaceDeployment),
+                ("ReplacementAndRootControlRemainForbidden", WindowsAclChecks.ReplacementAndRootControlRemainForbidden)),
             ["login"] = LoginChecks.Run,
             ["startup"] = StartupChecks.Run,
             ["access"] = AccessChecks.Run

@@ -51,6 +51,8 @@ internal static class Program
         {
             try
             {
+                while (app.Coordinator?.State is null or ApplicationSessionState.Starting or ApplicationSessionState.InspectingAuthorization)
+                    await Task.Delay(10);
                 Check(app.Windows.OfType<MainWindow>().Count() == 0 && app.MainCalls == 0
                     && !Directory.Exists(Path.Combine(Scratch, "output")), "WpfChecks must start with only the login gate.");
                 var login = app.Windows.OfType<LoginWindow>().Single();
@@ -105,6 +107,7 @@ internal static class Program
 
     private sealed class TestApp(FakeAuthentication authentication, ScriptedDialogs dialogs) : ProgramMigrationAnalyzer.App.App
     {
+        private readonly ProgramMigrationAnalyzer.Infrastructure.Authentication.SignedLocalAccountStore _store = CreateStore();
         public ApplicationSessionCoordinator? Coordinator { get; private set; }
         public int MainCalls { get; private set; }
         protected override ApplicationSessionCoordinator CreateCoordinator() => Coordinator = new(this, authentication, session =>
@@ -115,7 +118,29 @@ internal static class Program
                 new OutputWriter(Path.Combine(Scratch, "output")), dialogs, session);
             viewModel.LogoutRequested += () => Coordinator!.RequestLogout();
             return new MainWindow(viewModel);
-        }, () => throw new InvalidOperationException("Administration is not used by WpfChecks."), TimeProvider.System, new AuthenticationDiagnosticLog());
+        }, _store, _ => throw new InvalidOperationException("Valid signed UI fixture must not require activation."), TimeProvider.System, new AuthenticationDiagnosticLog());
+        private static ProgramMigrationAnalyzer.Infrastructure.Authentication.SignedLocalAccountStore CreateStore()
+        {
+            using var key = System.Security.Cryptography.ECDsa.Create(System.Security.Cryptography.ECCurve.NamedCurves.nistP256);
+            var trust = ProgramMigrationAnalyzer.Infrastructure.Authentication.AuthorizationTrust.FromPublicKeyPem(key.ExportSubjectPublicKeyInfoPem());
+            var payload = new ProgramMigrationAnalyzer.Infrastructure.Authentication.AuthorizationPayload(2, "ProgramMigrationAnalyzer", Guid.NewGuid(), 1,
+                DateTimeOffset.UtcNow, [new(Guid.NewGuid(), "test.user", "WPF fixture", true, "PBKDF2-HMAC-SHA256", 600_000,
+                    Convert.ToBase64String(new byte[16]), Convert.ToBase64String(new byte[32]))]);
+            var raw = ProgramMigrationAnalyzer.Infrastructure.Authentication.AuthorizationPackageCodec.EncodePayload(payload);
+            var signature = key.SignData(ProgramMigrationAnalyzer.Infrastructure.Authentication.AuthorizationPackageCodec.BuildSigningInput(trust.KeyId!, raw),
+                System.Security.Cryptography.HashAlgorithmName.SHA256, System.Security.Cryptography.DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
+            var store = new ProgramMigrationAnalyzer.Infrastructure.Authentication.SignedLocalAccountStore(Path.Combine(Scratch, "auth", "users.json"),
+                new TestPolicy(), new(trust));
+            store.ImportAsync(ProgramMigrationAnalyzer.Infrastructure.Authentication.AuthorizationPackageCodec.EncodeEnvelope(trust.KeyId!, raw, signature)).GetAwaiter().GetResult();
+            return store;
+        }
+        private sealed class TestPolicy : ProgramMigrationAnalyzer.Infrastructure.Authentication.ILocalAccountAccessPolicy
+        {
+            public bool IsElevatedAdministrator => true;
+            public void ValidateReadAccess(string path) { }
+            public void PrepareWriteAccess(string path) => Directory.CreateDirectory(path);
+            public void SecureFile(string path) { }
+        }
     }
 
     private static async Task CheckUiAsync(MainWindow window, MainViewModel viewModel, ScriptedDialogs dialogs)

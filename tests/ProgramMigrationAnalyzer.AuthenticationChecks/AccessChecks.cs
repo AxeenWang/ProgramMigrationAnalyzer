@@ -140,7 +140,7 @@ internal static class AccessChecks
             var vm = fixture.CreateViewModel(session);
             vm.LogoutRequested += () => app!.Coordinator!.RequestLogout();
             return new MainWindow(vm);
-        }, () => throw new InvalidOperationException("No administration in logout checks."));
+        });
         app.Resources = (ResourceDictionary)Application.LoadComponent(
             new Uri("/ProgramMigrationAnalyzer.App;component/Resources/ApplicationResources.xaml", UriKind.Relative));
         var result = 0;
@@ -148,6 +148,7 @@ internal static class AccessChecks
         app.Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, new Action(async () => {
             try
             {
+                await AuthenticationTestApp.WaitForStartup(app);
                 var login = app.Windows.OfType<LoginWindow>().Single();
                 var loginVm = (LoginViewModel)login.DataContext;
                 loginVm.Username = "test.user";

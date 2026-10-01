@@ -41,7 +41,7 @@ internal static class IssuerChecks
         // Invalid marker-only fixture, never an exported private key.
         var marker = System.Text.Encoding.ASCII.GetBytes("-----BEGIN ENCRYPTED PRIVATE KEY-----\nAA==\n-----END ENCRYPTED PRIVATE KEY-----");
         await File.WriteAllBytesAsync(fixture.FilePath,marker);
-        await StoreChecks.Expect<IOException>(() => new ProtectedIssuerFileWriter().WriteAuthorizationAsync(fixture.FilePath,fixture.Key.Issue()));
+        await CheckSupport.Expect<IOException>(() => new ProtectedIssuerFileWriter().WriteAuthorizationAsync(fixture.FilePath,fixture.Key.Issue()));
         CheckSupport.Check((await File.ReadAllBytesAsync(fixture.FilePath)).SequenceEqual(marker),"Authorization export overwrote a private key destination.");
     }
     private static async Task SharingConflictKeepsPriorAuthorization()
@@ -50,7 +50,7 @@ internal static class IssuerChecks
         var writer = new ProtectedIssuerFileWriter(); var original = fixture.Key.Issue();
         await writer.WriteAuthorizationAsync(fixture.FilePath,original);
         using (var held = new FileStream(fixture.FilePath,FileMode.Open,FileAccess.Read,FileShare.Read))
-            await StoreChecks.Expect<IOException>(() => writer.WriteAuthorizationAsync(fixture.FilePath,fixture.Key.Issue(fixture.Key.Payload(2))));
+            await CheckSupport.Expect<IOException>(() => writer.WriteAuthorizationAsync(fixture.FilePath,fixture.Key.Issue(fixture.Key.Payload(2))));
         CheckSupport.Check((await File.ReadAllBytesAsync(fixture.FilePath)).SequenceEqual(original)
             && !Directory.EnumerateFiles(fixture.DirectoryPath,"*.tmp").Any(),"Failed issuer replacement damaged prior Key or left scratch files.");
     }
@@ -190,7 +190,7 @@ internal static class IssuerChecks
         var original = fixture.Key.Issue();
         await writer.WriteAuthorizationAsync(fixture.FilePath, original);
         using var canceled = new CancellationTokenSource(); canceled.Cancel();
-        await StoreChecks.Expect<OperationCanceledException>(() => writer.WriteAuthorizationAsync(fixture.FilePath,fixture.Key.Issue(),canceled.Token));
+        await CheckSupport.Expect<OperationCanceledException>(() => writer.WriteAuthorizationAsync(fixture.FilePath,fixture.Key.Issue(),canceled.Token));
         CheckSupport.Check((await System.IO.File.ReadAllBytesAsync(fixture.FilePath)).SequenceEqual(original),"Canceled issuer write changed prior Key.");
         await writer.WriteAuthorizationAsync(fixture.FilePath,fixture.Key.Issue(fixture.Key.Payload(2)));
         CheckSupport.Check(fixture.Key.Verifier.Verify(await System.IO.File.ReadAllBytesAsync(fixture.FilePath)).Payload.Revision == 2,

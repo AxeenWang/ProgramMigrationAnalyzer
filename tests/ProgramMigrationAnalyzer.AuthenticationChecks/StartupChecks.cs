@@ -16,30 +16,15 @@ internal static class StartupChecks
         ("SwitchAndExitLifetime", () => RunStaChild("", "retry")),
         ("CancelAndLateSuccess", () => RunStaChild("", "cancel")),
         ("ExistingMainCannotBypass", () => RunStaChild("", "existing")),
-        ("NonElevatedAdministration", () => RunStaChild("--configure-local-account", "admin-denied")),
-        ("AdministrationExitIsIsolated", () => RunStaChild("--configure-local-account", "admin")),
-        ("AdministrationInitializationFailsClosed", () => RunStaChild("--configure-local-account", "admin-error")),
         ("OpeningMainCancellationDisposesCandidate", () => RunStaChild("", "opening-cancel")),
         ("CountdownUsesUiDispatcher", () => RunStaChild("", "throttle")),
-        ("StrictStartupModes", StrictStartupModes),
         ("InvalidModeExits", () => RunStaChild("--skip-login", "invalid")),
-        ("LocalProviderStartupAndReauthentication", () => RunStaChild("", "local-lifecycle", "Local provider lifecycle checked.")),
-        ("LocalProviderConfigurationFailsClosed", () => RunStaChild("", "local-configuration", "Local provider configuration checked.")));
-
-    private static void StrictStartupModes()
-    {
-        Check(StartupModeParser.Parse([]) == StartupMode.Normal
-            && StartupModeParser.Parse(["--configure-local-account"]) == StartupMode.ConfigureLocalAccount,
-            "Only normal or the unique admin argument must be accepted.");
-        foreach (var arguments in new[] { new[] { "--skip-login" }, new[] { "--configure-local-account", "extra" },
-            new[] { "--CONFIGURE-LOCAL-ACCOUNT" }, new[] { "--configure-local-account", "--configure-local-account" } })
-            Throws<ArgumentException>(() => StartupModeParser.Parse(arguments));
-    }
+        ("LegacyAccountManagementRejected", () => RunStaChild("--configure-local-account", "invalid")));
 
     internal static int RunChild(string scenario)
     {
-        using var fixture = new AccountFixture();
-        fixture.Policy.IsElevatedAdministrator = scenario != "admin-denied";
+        using var fixture = new SignedAccountFixture();
+        fixture.Store.ImportAsync(fixture.Issue()).GetAwaiter().GetResult();
         var service = new FakeAuthentication { Handler = (_, _) => Task.FromResult(AuthenticationResult.Succeeded(LoginChecks.User)) };
         var time = new ManualTimeProvider();
         AuthenticationTestApp? app = null;
@@ -48,9 +33,7 @@ internal static class StartupChecks
             var candidate = new MainWindowFactory(() => app!.Coordinator!.RequestLogout(), Path.Combine(fixture.DirectoryPath, "output")).Create(session);
             if (scenario == "opening-cancel") app!.Windows.OfType<LoginWindow>().Single().Close();
             return candidate;
-        }, () => scenario == "admin-error" ? throw new InvalidOperationException("test-only secret startup failure")
-            : new LocalAccountConfigurationWindow(new LocalAccountConfigurationViewModel(
-                new ProgramMigrationAnalyzer.Infrastructure.Authentication.LocalAccountAdministrationService(fixture.Store, new(), fixture.Policy))), time);
+        }, time, fixture);
         app.FailFirstMain = scenario == "retry";
         app.Resources = (ResourceDictionary)Application.LoadComponent(
             new Uri("/ProgramMigrationAnalyzer.App;component/Resources/ApplicationResources.xaml", UriKind.Relative));
@@ -66,33 +49,8 @@ internal static class StartupChecks
             try
             {
                 var coordinator = app.Coordinator!;
-                if (scenario == "admin-error")
-                {
-                    Check(app.MainCalls == 0 && !coordinator.Session.IsAuthenticated && service.Calls == 0,
-                        "Failed administration initialization must not create a session or workspace.");
-                    var error = app.Windows.OfType<Window>().Single();
-                    Check(error.Content is System.Windows.Controls.TextBlock text && !text.Text.Contains("secret"),
-                        "Startup failure must show a safe error without exposing exception content.");
-                    error.Close();
-                    return;
-                }
-                if (scenario == "invalid")
-                {
-                    Check(!coordinator.Session.IsAuthenticated && app.MainCalls == 0, "Invalid mode must never create a session or workspace.");
-                    app.Windows.OfType<Window>().Single().Close();
-                    return;
-                }
-                if (scenario.StartsWith("admin"))
-                {
-                    Check(coordinator.State == ApplicationSessionState.Admin && app.MainCalls == 0
-                        && !coordinator.Session.IsAuthenticated && service.Calls == 0, "Admin mode must not authenticate or create a workspace.");
-                    var configuration = app.Windows.OfType<LocalAccountConfigurationWindow>().Single();
-                    var vm = (LocalAccountConfigurationViewModel)configuration.DataContext;
-                    Check(vm.CanEdit == (scenario == "admin"), "Non-elevated administration must be denied.");
-                    Check(!Directory.Exists(fixture.DirectoryPath), "Opening admin mode cannot initialize account storage.");
-                    configuration.Close();
-                    return;
-                }
+                if (scenario == "invalid") { Check(!coordinator.Session.IsAuthenticated && app.MainCalls == 0, "Invalid mode created a workspace."); app.MainWindow.Close(); return; }
+                await AuthenticationTestApp.WaitForStartup(app);
                 Check(app.ShutdownMode == ShutdownMode.OnExplicitShutdown && coordinator.State == ApplicationSessionState.Login
                     && app.MainCalls == 0 && !coordinator.Session.IsAuthenticated, "Normal startup must create only login and no authenticated session.");
                 Check(!Directory.Exists(Path.Combine(fixture.DirectoryPath, "output")), "Startup must not create output.");
@@ -152,7 +110,7 @@ internal static class StartupChecks
         app.Run();
         try
         {
-            Check(exited && app.MainCalls == (scenario is "admin" or "admin-denied" or "admin-error" or "cancel" or "invalid" or "throttle" ? 0 : scenario == "retry" ? 2 : 1),
+            Check(exited && app.MainCalls == (scenario is "cancel" or "invalid" or "throttle" ? 0 : scenario == "retry" ? 2 : 1),
                 "Every scenario must terminate without creating an unauthorized workspace.");
             Check(app.Coordinator is { Session.IsAuthenticated: false }, "Exit must leave no session.");
         }
@@ -176,17 +134,4 @@ internal static class StartupChecks
         using var stream = File.Create(Path.Combine(directory, "login.png"));
         encoder.Save(stream);
     }
-}
-
-internal sealed class AuthenticationTestApp(IAuthenticationService authentication, Func<IUserSession, MainWindow> mainFactory,
-    Func<LocalAccountConfigurationWindow> adminFactory, TimeProvider? timeProvider = null) : ProgramMigrationAnalyzer.App.App
-{
-    public ApplicationSessionCoordinator? Coordinator { get; private set; }
-    public int MainCalls { get; private set; }
-    public bool FailFirstMain { get; set; }
-    protected override ApplicationSessionCoordinator CreateCoordinator() => Coordinator = new(this, authentication, session => {
-        MainCalls++;
-        if (FailFirstMain && MainCalls == 1) throw new InvalidOperationException("test-only initialization failure");
-        return mainFactory(session);
-    }, adminFactory, timeProvider ?? TimeProvider.System, new AuthenticationDiagnosticLog());
 }

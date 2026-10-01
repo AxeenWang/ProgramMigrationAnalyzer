@@ -8,12 +8,14 @@ namespace ProgramMigrationAnalyzer.AuthenticationChecks;
 internal static class CheckSupport
 {
     public static void RunStaChild(string argument, string? scenario = null, string? expectedOutput = null)
+        => RunStaChild(argument.Length == 0 ? [] : [argument], scenario, expectedOutput);
+    public static void RunStaChild(string[] arguments, string? scenario = null, string? expectedOutput = null)
     {
         var start = new ProcessStartInfo(Environment.ProcessPath!) { UseShellExecute = false,
             RedirectStandardOutput = true, RedirectStandardError = true, CreateNoWindow = true };
         if (Path.GetFileNameWithoutExtension(start.FileName).Equals("dotnet", StringComparison.OrdinalIgnoreCase))
             start.ArgumentList.Add(Assembly.GetExecutingAssembly().Location);
-        if (argument.Length > 0) start.ArgumentList.Add(argument);
+        foreach (var argument in arguments) start.ArgumentList.Add(argument);
         if (scenario is not null) start.Environment["PMA_AUTH_CHECK_SCENARIO"] = scenario;
         using var child = Process.Start(start) ?? throw new InvalidOperationException("Could not launch STA check.");
         var output = child.StandardOutput.ReadToEndAsync();
@@ -55,6 +57,13 @@ internal static class CheckSupport
             return;
         }
 
+        throw new InvalidOperationException($"Expected {typeof(TException).Name}.");
+    }
+
+    internal static async Task<TException> Expect<TException>(Func<Task> action) where TException : Exception
+    {
+        try { await action(); }
+        catch (TException exception) { return exception; }
         throw new InvalidOperationException($"Expected {typeof(TException).Name}.");
     }
 

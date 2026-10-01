@@ -23,4 +23,7 @@
     <UseWPF>true</UseWPF>
   </PropertyGroup>
 
+  <ItemGroup Condition="'$(AuthorizationPublicKeySnapshot)' != '' and Exists('$(AuthorizationPublicKeySnapshot)')">
+    <EmbeddedResource Include="$(AuthorizationPublicKeySnapshot)" LogicalName="ProgramMigrationAnalyzer.AuthorizationPublicKey" />
+  </ItemGroup>
 </Project>
