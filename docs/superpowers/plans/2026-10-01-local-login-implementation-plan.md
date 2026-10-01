@@ -10,7 +10,7 @@
 
 **Spec:** [ProgramMigrationAnalyzer_Codex_Spec.md](../../ProgramMigrationAnalyzer_Codex_Spec.md)，第 37 節及第 7、19、22、24～27、32～34 節相關更新。
 
-**日期／狀態:** 2026-10-01／Phase 1 已合併並清理分支，Phase 2 兩個 Task 已逐一完成及推送，Phase 審查與驗證通過，ready PR #7 已建立並附加 chat，目前已送審、尚未合併。Phase 3～4 尚未開始，產品登入與發佈驗收尚未完成。原專案範圍為 `D:/AxeenWorld/CodeLab/Projects/ProgramMigrationAnalyzer`，檔案路徑均相對於各 Phase 的 Git root，Phase 1 隔離路徑見開工決議。
+**日期／狀態:** 2026-10-01／Phase 1 已合併並清理分支，Phase 2 PR #7 已合併並清理兩端分支。Phase 3 已從最新 origin/main 開工，P3-T1 登入元件與檢查完成，正式啟動門檻及操作保護待 P3-T2／P3-T3。Phase 4 尚未開始，發佈驗收尚未完成。原專案範圍為 `D:/AxeenWorld/CodeLab/Projects/ProgramMigrationAnalyzer`，檔案路徑均相對於各 Phase 的 Git root，Phase 1 隔離路徑見開工決議。
 
 ## Phase 與分支總覽
 
@@ -206,7 +206,7 @@ Phase 內依 Task ID 順序執行，Phase 之間依合併順序開始。每項�
 - [x] P2-T1、P2-T2 全部步驟完成，Solution build 與 contracts／crypto／store／admin suite 通過，既有三組 checks 通過。
 - [x] 缺檔、格式、ACL、停用帳號、管理權限及寫入失敗皆有隔離測試證據，沒有建立真實 ProgramData 帳號。
 - [x] commit／push 完成，worktree 乾淨，upstream 同步，建立並確認此分支的唯一 PR，記錄 URL，註明正式啟動入口待 Phase 3。
-- [ ] 前述 PR 確認合併後，才允許開始 Phase 3。
+- [x] PR #7 已確認合併，兩端 Phase 2 分支已清理，具備 Phase 3 開工條件。
 
 ## Phase 3：桌面登入整合
 
@@ -223,13 +223,13 @@ Phase 內依 Task ID 順序執行，Phase 之間依合併順序開始。每項�
 - `CancelLoginCommand` 呼叫 `Cancel()`，`event Action? Cancelled` 通知協調器退出，`Dispose()` 取消、解除倒數及清理。
 - 狀態為 Username、IsBusy、StatusMessage、RemainingCooldownSeconds，`AuthenticationDiagnosticLog` 只保存安全事件分類及選擇性的 UserId，程序內使用，不持久化 credential。
 
-- [ ] 寫 `EmptyAndDuplicateSubmission`：空欄不呼叫 service，快速兩次提交只有一次驗證，IsBusy 期間欄位與登入按鈕停用，取消可用。
-- [ ] 寫 `ThrottleAndRecovery`：失敗 5 次後 30 秒不驗證，用 CheckSupport 中自製的 ManualTimeProvider 推進至期限後恢復，成功重設計數，不新增時間測試套件，也不依靠真實 sleep 30 秒。
-- [ ] 寫 `CancelledLateSuccessIgnored`：fake service 延後成功，取消後不觸發 LoginSucceeded，例外時不 Crash、IsBusy 恢復，失敗／取消／成功都要求清空 PasswordBox。
-- [ ] 執行 login suite，確認失敗，再實作狀態機與視窗。
-- [ ] 視窗約 440 × 360 DIP，使用既有 brushes／button styles，Tab、Enter、Esc、關閉鈕符合規格。code-behind 僅負責 SecurePassword 複本交付、密碼清空及視窗事件，不做帳密驗證。
-- [ ] 登入流程維護 request generation 與 CancellationTokenSource，await 完成後再檢查取消／generation，只有目前有效請求可發成功事件。密碼錯誤／未知／停用統一文案，設定錯誤使用規格指定提示。
-- [ ] 重跑 `dotnet run --project tests/ProgramMigrationAnalyzer.AuthenticationChecks -- --suite login`，檢查 diagnostics 的 ToString／訊息不含 credential、hash、salt。
+- [x] 寫 `EmptyAndDuplicateSubmission`：空欄不呼叫 service，快速兩次提交只有一次驗證，IsBusy 期間欄位與登入按鈕停用，取消可用。
+- [x] 寫 `ThrottleAndRecovery`：失敗 5 次後 30 秒不驗證，用 CheckSupport 中自製的 ManualTimeProvider 推進至期限後恢復，成功重設計數，不新增時間測試套件，也不依靠真實 sleep 30 秒。
+- [x] 寫 `CancelledLateSuccessIgnored`：fake service 延後成功，取消後不觸發 LoginSucceeded，例外時不 Crash、IsBusy 恢復，失敗／取消／成功都要求清空 PasswordBox。
+- [x] 執行 login suite，確認失敗，再實作狀態機與視窗。
+- [x] 視窗約 440 × 360 DIP，使用既有 brushes／button styles，Tab、Enter、Esc、關閉鈕符合規格。code-behind 僅負責 SecurePassword 複本交付、密碼清空及視窗事件，不做帳密驗證。
+- [x] 登入流程維護 request generation 與 CancellationTokenSource，await 完成後再檢查取消／generation，只有目前有效請求可發成功事件。密碼錯誤／未知／停用統一文案，設定錯誤使用規格指定提示。
+- [x] 重跑 `dotnet run --project tests/ProgramMigrationAnalyzer.AuthenticationChecks -- --suite login`，檢查 diagnostics 的 ToString／訊息不含 credential、hash、salt。
 
 ### Task P3-T2：啟動協調器與視窗生命週期
 
@@ -357,8 +357,8 @@ dotnet run --no-build --project tests/ProgramMigrationAnalyzer.WpfChecks
 | Phase | Task 狀態 | 分支狀態 | 驗證 | PR URL／狀態 | 合併狀態 |
 | --- | --- | --- | --- | --- | --- |
 | 1 | 2／2 完成並逐一推送 | 已清理，原 `codex/login-phase-1-foundation` | contracts 5 組、crypto 7 組及既有回歸通過 | [PR #6](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/6)，MERGED | `e33e33f` |
-| 2 | 2／2 完成並逐一推送 | codex/login-phase-2-local-accounts | contracts 5、crypto 7、store 11、admin 6 及既有回歸通過 | [PR #7](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/7)，OPEN／ready | 未合併 |
-| 3 | 0／3 完成 | 未建立 | 未執行 | 未建立 | 未合併 |
+| 2 | 2／2 完成並逐一推送 | 已清理，原 `codex/login-phase-2-local-accounts` | contracts 5、crypto 7、store 11、admin 6 及既有回歸通過 | [PR #7](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/7)，MERGED | `d890707` |
+| 3 | P3-T1 驗證完成，1／3 | codex/login-phase-3-desktop-gate | login 5／5 及累積回歸通過 | 未建立 | 未合併 |
 | 4 | 0／3 完成 | 未建立 | 未執行 | 未建立 | 未合併 |
 
 Phase 的正常狀態依序為「未開始 → 實作中 → 驗證通過 → 已送審 → 已合併」。Task 全部完成且必要檢查通過，才可標記「驗證通過」，PR URL 與遠端狀態查證成功，才可標記「已送審」。未能送 PR 時仍是未交付，不能略過此狀態。下一 Phase 的開工條件為前一 Phase「已合併」。
@@ -392,7 +392,7 @@ Phase 的正常狀態依序為「未開始 → 實作中 → 驗證通過 → �
 
 Phase 自審另以三個失敗檢查修正鎖檔開啟前驗證、4 MiB 帳號檔大小門檻及替換後驗證失敗的舊檔還原。更新用同目錄受保護備份保留舊資料，排他鎖涵蓋替換、還原及清理，成功後清理備份。還原期間的鎖保留另以實際隔離檔案的競爭開啟斷言確認，先失敗再修正。若作業系統連還原也拒絕，保留受保護備份供管理者復原，不宣稱能克服磁碟或作業系統故障。
 
-Phase 審查修正已提交並推送 40ba222348b7133c6ebe3aff227be88f301cae6b。PR #7 已查證為 OPEN、isDraft=false，base main、head codex/login-phase-2-local-accounts，已附加目前 chat，狀態為已送審，尚未合併。
+Phase 審查修正已提交並推送 40ba222348b7133c6ebe3aff227be88f301cae6b。PR #7 建立時為 OPEN／ready 並已附加 chat。Phase 3 開工已重新查證為 MERGED，mergedAt `2026-10-01T03:32:13Z`，merge commit `d890707a55ec92096b5015162f667955164251da`。指定續作 worktree 曾切回 main 並 fast-forward 至此 commit，兩端 Phase 2 分支已刪除，2026-10-01 Phase 3 fetch 後 main 與 origin/main 仍為 0／0 且乾淨，從此基底建立 Phase 3 分支。原工作區未操作。
 
 最終 Solution build 為 0 warnings／0 errors，AuthenticationChecks 為 contracts 5／5、crypto 7／7、store 11／11、admin 6／6，共 29 組，Phase2Checks、RegressionChecks、WpfChecks 通過。WpfChecks 仍觀察到既有 WebView2 E_UNEXPECTED，純文字備援路徑通過，完整 WebView2 呈現未驗證。
 
@@ -415,3 +415,7 @@ Phase 審查修正已提交並推送 40ba222348b7133c6ebe3aff227be88f301cae6b。
 ## 技術依據
 
 密碼與視窗生命週期依據沿用規格第 37.11 節。Windows ACL 操作使用 [Microsoft FileSystemAclExtensions](https://learn.microsoft.com/en-us/dotnet/api/system.io.filesystemaclextensions?view=net-10.0)，提升權限檢查須依目前 Windows token，而非只判斷帳號是否屬於管理者群組，參考 [Microsoft 的 UAC／split token 說明](https://devblogs.microsoft.com/oldnewthing/20241003-00/?p=110336)。
+
+### Phase 3 執行紀錄
+
+P3-T1：先加入登入檢查，建置因缺少 LoginViewModel／LoginWindow／diagnostics 而失敗，完成後 login 5／5 通過。涵蓋空值、直接重複提交、假時間冷卻與成功重設、取消後晚到成功、安全例外分類及 STA PasswordBox 清理。Solution build 0 warnings／0 errors，contracts 5、crypto 7、store 11、admin 6、login 5，共 34 組，既有三組回歸通過。sandbox 原子替換限制重現，以相同隔離檔案及 fake policy 在允許的提權環境重跑通過，未操作真實 ProgramData。依使用者指示由同一實作者執行，未使用代理。

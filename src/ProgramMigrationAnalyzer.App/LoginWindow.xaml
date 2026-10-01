@@ -1,0 +1,28 @@
+<Window x:Class="ProgramMigrationAnalyzer.App.LoginWindow" x:ClassModifier="internal"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="程式移植分析儀 - C#、4GL" Width="440" Height="360" MinWidth="420" MinHeight="360"
+        WindowStartupLocation="CenterScreen" ResizeMode="CanResize" Background="{DynamicResource CanvasBrush}"
+        PreviewKeyDown="OnPreviewKeyDown">
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <TextBlock Text="程式移植分析儀 - C#、4GL" FontSize="20" FontWeight="SemiBold" Foreground="{DynamicResource AccentBrush}" Margin="0,0,0,18"/>
+        <StackPanel Grid.Row="1">
+            <Label Content="帳號 (_U)" Target="{Binding ElementName=UsernameInput}" Padding="0,0,0,4"/>
+            <TextBox x:Name="UsernameInput" Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding CanEdit}" MinHeight="32" Padding="6" TabIndex="0"/>
+        </StackPanel>
+        <StackPanel Grid.Row="2" Margin="0,12,0,0">
+            <Label Content="密碼 (_P)" Target="{Binding ElementName=PasswordInput}" Padding="0,0,0,4"/>
+            <PasswordBox x:Name="PasswordInput" IsEnabled="{Binding CanEdit}" MinHeight="32" Padding="6" TabIndex="1"/>
+        </StackPanel>
+        <TextBlock Grid.Row="3" Text="{Binding StatusMessage}" TextWrapping="Wrap" Margin="0,14,0,0" MinHeight="38" AutomationProperties.LiveSetting="Polite"/>
+        <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button x:Name="LoginButton" Content="登入 (_L)" Click="OnLogin" IsDefault="True" TabIndex="2" MinWidth="86" Style="{DynamicResource PrimaryToolbarButtonStyle}">
+            </Button>
+            <Button Content="取消 (_C)" Command="{Binding CancelLoginCommand}" TabIndex="3" MinWidth="86" Style="{DynamicResource ToolbarButtonStyle}"/>
+        </StackPanel>
+    </Grid>
+</Window>

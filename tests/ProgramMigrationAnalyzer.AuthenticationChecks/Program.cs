@@ -7,19 +7,22 @@ internal static class Program
     {
         if (args is ["--admin-window-check"])
             return AdministrationChecks.RunWindowChild();
+        if (args is ["--login-window-check"])
+            return LoginChecks.RunWindowChild();
         var suites = new Dictionary<string, Action>(StringComparer.OrdinalIgnoreCase)
         {
             ["contracts"] = ContractChecks.Run,
             ["crypto"] = CryptoChecks.Run,
             ["store"] = StoreChecks.Run,
-            ["admin"] = AdministrationChecks.Run
+            ["admin"] = AdministrationChecks.Run,
+            ["login"] = LoginChecks.Run
         };
         var selected = args.Length == 0 ? "all"
             : args.Length == 2 && args[0] == "--suite" ? args[1] : string.Empty;
 
         if (selected != "all" && !suites.ContainsKey(selected))
         {
-            Console.Error.WriteLine("Usage: AuthenticationChecks --suite contracts|crypto|store|admin|all. Unimplemented suites cannot pass.");
+            Console.Error.WriteLine("Usage: AuthenticationChecks --suite contracts|crypto|store|admin|login|all. Unimplemented suites cannot pass.");
             return 2;
         }
 
