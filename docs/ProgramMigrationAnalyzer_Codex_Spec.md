@@ -1,7 +1,7 @@
 # Codex 任務：完成 WPF「程式移植分析儀 - C#、4GL」
 
 > 2026-10-01 需求更新：新增「登入成功後才能開啟主程式」；登入設計與後續實作要求見第 37 節。
-> 本次更新是設計規格，尚未實作登入功能。第 37 節及相關驗收條件代表後續版本要求，不代表目前程式已具備這些能力。
+> 本機登入已完成 Phase 1～4。2026-10-01 新增公司簽章離線授權需求，見第 37.12 節，Phase 5 已開工但尚未接入正式客戶端或完成部署。
 
 ## 0. 執行原則
 
@@ -2086,3 +2086,11 @@ Parser、Analyzer 與 Translator 保持可獨立測試的元件，不在每個�
 - [Microsoft：Rfc2898DeriveBytes](https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.rfc2898derivebytes?view=net-10.0)
 - [OWASP：Password Storage Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html)
 - [Microsoft：Authorization code flow、PKCE 與 OIDC](https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-auth-code-flow)
+
+## 37.12 公司簽章離線授權（2026-10-01 新增）
+
+部署主機完全離線且由客戶管理，公司須持有簽章私鑰，客戶端只內建公鑰。公司端獨立工具簽發包含帳號、salt 與 PBKDF2 hash 的 Key，不含明文密碼。第一版不綁定電腦、不設定到期日，持有 Key 仍須正確帳密才能登入。
+
+新版本將以簽章 envelope 保存 users.json，每次登入重新驗章，封閉客戶端自行建帳、重設及停用入口，舊 unsigned schema 1 不自動沿用。公司端重新簽發後，由提升權限的獨立匯入流程原子安裝，匯入成功不能建立 session。8～128 字元密碼與特殊符號、既有 session、操作門檻及登出清理維持原規則。
+
+此節為已核准的新版本要求，取代第 37.3 節的客戶端本機管理設計。Phase 5 尚未完成接入，既有版本仍使用 schema 1，不能將目前簽章元件檢查視為正式部署已通過。完整格式、保護界線與驗收見[離線授權設計](superpowers/specs/2026-10-01-offline-signed-authorization-design.md)，實作進度見[Phase 5 計畫](superpowers/plans/2026-10-01-offline-signed-authorization-implementation-plan.md)。

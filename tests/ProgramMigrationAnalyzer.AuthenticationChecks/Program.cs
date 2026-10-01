@@ -20,6 +20,7 @@ internal static class Program
             return LoginChecks.RunWindowChild();
         var suites = new Dictionary<string, Action>(StringComparer.OrdinalIgnoreCase)
         {
+            ["signature"] = AuthorizationSignatureChecks.Run,
             ["contracts"] = ContractChecks.Run,
             ["crypto"] = CryptoChecks.Run,
             ["store"] = StoreChecks.Run,
