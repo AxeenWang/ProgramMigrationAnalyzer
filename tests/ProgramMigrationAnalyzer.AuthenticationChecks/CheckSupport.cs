@@ -7,7 +7,7 @@ namespace ProgramMigrationAnalyzer.AuthenticationChecks;
 
 internal static class CheckSupport
 {
-    public static void RunStaChild(string argument, string? scenario = null)
+    public static void RunStaChild(string argument, string? scenario = null, string? expectedOutput = null)
     {
         var start = new ProcessStartInfo(Environment.ProcessPath!) { UseShellExecute = false,
             RedirectStandardOutput = true, RedirectStandardError = true, CreateNoWindow = true };
@@ -20,6 +20,9 @@ internal static class CheckSupport
         var error = child.StandardError.ReadToEndAsync();
         if (!child.WaitForExit(45_000)) { child.Kill(); throw new InvalidOperationException("STA check timed out."); }
         Check(child.ExitCode == 0, $"STA check failed: {output.GetAwaiter().GetResult()} {error.GetAwaiter().GetResult()}");
+        if (expectedOutput is not null)
+            Check(output.GetAwaiter().GetResult().Contains(expectedOutput, StringComparison.Ordinal),
+                "STA child did not run the requested real-provider scenario.");
     }
     public static SecureString Password(string value)
     {

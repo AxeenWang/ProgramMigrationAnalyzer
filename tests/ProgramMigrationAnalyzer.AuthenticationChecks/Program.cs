@@ -7,7 +7,13 @@ internal static class Program
     {
         // Test-host routing only. App receives the actual normal/admin/invalid command line.
         if (Environment.GetEnvironmentVariable("PMA_AUTH_CHECK_SCENARIO") is { } scenario)
-            return scenario == "logout" ? AccessChecks.RunWindowChild() : StartupChecks.RunChild(scenario);
+            return scenario switch
+            {
+                "logout" => AccessChecks.RunWindowChild(),
+                "local-lifecycle" => LocalStartupChecks.RunChild(configuration: false),
+                "local-configuration" => LocalStartupChecks.RunChild(configuration: true),
+                _ => StartupChecks.RunChild(scenario)
+            };
         if (args is ["--admin-window-check"])
             return AdministrationChecks.RunWindowChild();
         if (args is ["--login-window-check"])

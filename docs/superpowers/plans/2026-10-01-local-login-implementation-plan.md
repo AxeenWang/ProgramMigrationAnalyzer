@@ -10,7 +10,7 @@
 
 **Spec:** [ProgramMigrationAnalyzer_Codex_Spec.md](../../ProgramMigrationAnalyzer_Codex_Spec.md)，第 37 節及第 7、19、22、24～27、32～34 節相關更新。
 
-**日期／狀態:** 2026-10-01／Phase 1 已合併並清理分支，Phase 2 PR #7 已合併並清理兩端分支。Phase 3 已從最新 origin/main 開工，P3-T1～P3-T3 實作與 Task 驗證完成，登入門檻、操作保護及登出已接入，Phase 審查與驗證已完成，唯一 ready PR #8 已建立並附加 chat，狀態為已送審、尚未合併。Phase 4 尚未開始，發佈驗收尚未完成。原專案範圍為 `D:/AxeenWorld/CodeLab/Projects/ProgramMigrationAnalyzer`，檔案路徑均相對於各 Phase 的 Git root，Phase 1 隔離路徑見開工決議。
+**日期／狀態:** 2026-10-01／Phase 1～3 已合併並清理各自兩端主題分支。Phase 4 已從最新 origin/main 的 `82474c8` 開工，P4-T1 完整回歸與驗收補強通過，P4-T2、P4-T3 尚未完成，發佈及真實部署驗收未完成，尚無 Phase 4 PR。原專案範圍為 `D:/AxeenWorld/CodeLab/Projects/ProgramMigrationAnalyzer`，檔案路徑均相對於各 Phase 的 Git root，既有隔離路徑見開工決議。
 
 ## Phase 與分支總覽
 
@@ -287,8 +287,10 @@ Phase 內依 Task ID 順序執行，Phase 之間依合併順序開始。每項�
 
 **Interfaces:** 不新增產品介面，all suite 順序執行各 suite，任何失敗令 exit code 非零。保留每項實際結果供 P4-T3 記錄。
 
-- [ ] 先執行 all suite，確認沒有 skipped case 或以 fake 成功掩蓋 LocalAuthenticationService／正式啟動入口，補齊下方 L1～L14 對應的缺漏檢查，再實作必要修正。
-- [ ] 在根目錄依序執行以下完整驗證，保存每步 exit code 與摘要，失敗先修正，不繼續宣稱完成：
+**進度:** 完整驗證通過，新增真實 Local provider 與正式 OnStartup 串接檢查，結果及部署缺口見本計畫的 Phase 4 執行紀錄。本 Task 不代表發佈 EXE 或 Windows ACL 已驗收。
+
+- [x] 先執行 all suite，確認沒有 skipped case 或以 fake 成功掩蓋 LocalAuthenticationService／正式啟動入口，補齊下方 L1～L14 對應的缺漏檢查，再實作必要修正。
+- [x] 在根目錄依序執行以下完整驗證，保存每步 exit code 與摘要，失敗先修正，不繼續宣稱完成：
 
 ```powershell
 dotnet restore ProgramMigrationAnalyzer.sln
@@ -358,8 +360,8 @@ dotnet run --no-build --project tests/ProgramMigrationAnalyzer.WpfChecks
 | --- | --- | --- | --- | --- | --- |
 | 1 | 2／2 完成並逐一推送 | 已清理，原 `codex/login-phase-1-foundation` | contracts 5 組、crypto 7 組及既有回歸通過 | [PR #6](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/6)，MERGED | `e33e33f` |
 | 2 | 2／2 完成並逐一推送 | 已清理，原 `codex/login-phase-2-local-accounts` | contracts 5、crypto 7、store 11、admin 6 及既有回歸通過 | [PR #7](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/7)，MERGED | `d890707` |
-| 3 | 3／3 完成並逐一推送，已送審 | codex/login-phase-3-desktop-gate | login 5／5、startup 11／11、access 6／6，累積 51 組及既有回歸通過 | [PR #8](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/8)，OPEN／ready | 未合併 |
-| 4 | 0／3 完成 | 未建立 | 未執行 | 未建立 | 未合併 |
+| 3 | 3／3 完成並逐一推送，已合併 | 已清理，原 `codex/login-phase-3-desktop-gate` | login 5／5、startup 11／11、access 6／6，累積 51 組及既有回歸通過 | [PR #8](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/8)，MERGED | `82474c8` |
+| 4 | P4-T1 驗證通過，P4-T2／P4-T3 未完成 | `codex/login-phase-4-verification` | 認證 53／53、Build 0 warnings／0 errors、三組既有回歸通過，部署待授權 | 未建立，ready 門檻未達 | 未合併 |
 
 Phase 的正常狀態依序為「未開始 → 實作中 → 驗證通過 → 已送審 → 已合併」。Task 全部完成且必要檢查通過，才可標記「驗證通過」，PR URL 與遠端狀態查證成功，才可標記「已送審」。未能送 PR 時仍是未交付，不能略過此狀態。下一 Phase 的開工條件為前一 Phase「已合併」。
 
@@ -416,7 +418,7 @@ Phase 審查修正已提交並推送 40ba222348b7133c6ebe3aff227be88f301cae6b。
 
 密碼與視窗生命週期依據沿用規格第 37.11 節。Windows ACL 操作使用 [Microsoft FileSystemAclExtensions](https://learn.microsoft.com/en-us/dotnet/api/system.io.filesystemaclextensions?view=net-10.0)，提升權限檢查須依目前 Windows token，而非只判斷帳號是否屬於管理者群組，參考 [Microsoft 的 UAC／split token 說明](https://devblogs.microsoft.com/oldnewthing/20241003-00/?p=110336)。
 
-### Phase 3 執行紀錄
+### Phase 3 執行紀錄（各步驟當時快照，最新合併狀態見 Phase 4 開工查證）
 
 P3-T1：先加入登入檢查，建置因缺少 LoginViewModel／LoginWindow／diagnostics 而失敗，完成後 login 5／5 通過。涵蓋空值、直接重複提交、假時間冷卻與成功重設、取消後晚到成功、安全例外分類及 STA PasswordBox 清理。Solution build 0 warnings／0 errors，contracts 5、crypto 7、store 11、admin 6、login 5，共 34 組，既有三組回歸通過。sandbox 原子替換限制重現，以相同隔離檔案及 fake policy 在允許的提權環境重跑通過，未操作真實 ProgramData。依使用者指示由同一實作者執行，未使用代理。
 
@@ -443,3 +445,38 @@ Phase 3 最終驗證：Solution build 0 warnings／0 errors。contracts 5／5、
 Phase 4 的發布 EXE、不同工作目錄及實際 ProgramData／Windows ACL 部署驗證仍未執行。沒有開始 Phase 4、建立其分支或合併 PR。已授權使用既有 worktree 及建立 ready PR，依使用者指示保留 worktree，未執行 skill 的重新選擇整合方式、暫存刪除或分支清理。
 
 Phase 3 自審修正已提交並推送 ca106d54f2f8477031a96dba10cfa00838fd3d14。唯一 [PR #8](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/8) 已查證為 OPEN、isDraft=false，base main、head codex/login-phase-3-desktop-gate，已附加目前 chat。狀態為已送審，尚未合併。此紀錄隨同一分支正常提交與推送，不另建 PR、不推送 main。
+
+### Phase 4 開工查證與 P4-T1 執行紀錄
+
+2026-10-01 重新向 GitHub 查證 PR #8 為 MERGED，mergedAt `2026-10-01T04:58:24Z`，merge commit `82474c877e0a5598e971963875033df3c77a2604`。指定續作 worktree 的 Git root、origin、main／origin/main、upstream 均符合接續範圍。fetch 後 ahead／behind 為 0／0，worktree／index 乾淨，遠端預設分支為 main。兩端 Phase 3 分支已不存在，兩端沒有同名 Phase 4 分支衝突，從 origin/main 建立 `codex/login-phase-4-verification`，初始不追蹤 main。未操作原工作區或另建 worktree。
+
+此 checkout 的 `../../AGENTS.md` 不存在，依 optional bootstrap 採 standalone 模式，使用自己的 AGENTS.md。由同一實作者順序執行與自審，未使用代理。Task 的 ledger、完整輸出與 exit code 保存在指定 Git root 的 `.codex-tmp/2026-10-01_login-phase-4/`，不提交暫存及帳號資料。
+
+P4-T1 基線先完成 restore、Build 0 warnings／0 errors、AuthenticationChecks 51／51 及三組既有回歸。檢查未發現 skipped case。既有 store／admin 使用真實 LocalAuthenticationService、LocalAccountStore、PBKDF2 與隔離帳號，startup／WpfChecks 的 fake authentication 保留作可控非同步與畫面回歸，不能獨自代表真實本機登入成功。
+
+新增 `LocalProviderStartupAndReauthentication` 與 `LocalProviderConfigurationFailsClosed`，經繼承的正式 App.OnStartup、LoginWindow 的 TextBox／PasswordBox／Click、真實 LocalAuthenticationService／LocalAccountStore／PBKDF2、正式 coordinator 與 MainWindowFactory。只有 Windows ACL／提升權限 policy 使用替身，所有帳號檔位於 Task 暫存區。涵蓋未知／錯誤／停用的統一 UI 提示、密碼清空、主視窗恰好一次、正常登入不改寫帳號、停用／重設於下次登入生效、同／不同帳號重新登入、新工作區、輸出保留，以及缺失／損壞／不支援 schema／拒絕讀取 policy 的失敗與修復後重試。
+
+新檢查先於舊 fake 宿主路由失敗，startup exit code 1，兩項均報告未執行指定真實 provider 情境。補上僅存在測試組裝的明確路由後，startup 13／13、exit code 0。正式產品程式未修改，未加入正式免登入參數或環境變數。
+
+P4-T1 最終驗證於 `2026-10-01T05:10:23Z` 開始，restore、build、authentication、Phase2Checks、RegressionChecks、WpfChecks 均為 exit code 0。Build 0 warnings／0 errors。contracts 5／5、crypto 7／7、store 11／11、admin 6／6、login 5／5、startup 13／13、access 6／6，共 53／53。RegressionChecks 的 10 個 sample 及空檔、損壞 C#、Big5、未支援副檔名通過，WpfChecks 保留分析、預覽、轉譯、Diff、儲存、登出與新工作區檢查。
+
+sandbox 的首次 restore 以空白輸出及 exit code 1 結束，相同既有依賴在允許執行環境 restore 通過。GitHub 連線及需要子程序的 checks 使用允許環境執行，不等同取得真實 Windows ACL／ProgramData 部署授權，沒有新增套件或讀写真實帳號檔。
+
+| 驗收 | P4-T1 實際自動化證據 | 尚待 P4-T2 的範圍 |
+| --- | --- | --- |
+| L1 | StartupCreatesOnlyLogin、LocalProviderStartupAndReauthentication、LocalProviderConfigurationFailsClosed | 發佈 EXE 正常入口 |
+| L2 | ValidEnabledAccountOnly、LocalProviderStartupAndReauthentication、WpfChecks 原功能回歸 | EXE 登入與 Scenario A／B／C |
+| L3 | ValidEnabledAccountOnly、LoginWindowClearsPasswords、LocalProviderStartupAndReauthentication | EXE 桌面互動 |
+| L4 | EmptyAndDuplicateSubmission、LoginWindowClearsPasswords | 實際快速 Enter／點擊 |
+| L5 | CancelledLateSuccessIgnored、CancelAndLateSuccess、OpeningMainCancellationDisposesCandidate | EXE 取消與關閉 |
+| L6 | InvalidAccountFileFailsClosed、AclAndInterruptedWrite、LocalProviderConfigurationFailsClosed | 真實部署 ACL，替身拒絕不代表 Windows ACL 通過 |
+| L7 | LogoutClearsWorkspaceButKeepsFiles、LocalProviderStartupAndReauthentication、WpfChecks | EXE 登出與再次登入 |
+| L8 | BusyLogoutRejected、LogoutClearsWorkspaceButKeepsFiles | EXE 忙碌互動 |
+| L9 | SignedOutCommandsHaveNoEffects、SessionChangesDuringDialog、SessionChangesDuringAwait | EXE 入口觀察 |
+| L10 | SwitchAndExitLifetime、LocalProviderStartupAndReauthentication，各 STA 子程序退出且無殘留視窗 | EXE 視窗切換與無殘留程序 |
+| L11 | NonElevatedCannotManage、ManageAccountLifecycle、NonElevatedAdministration、AdministrationExitIsIsolated | 真實一般／提升權限 Windows token、建帳與 ACL |
+| L12 | SaltAndResetSemantics、PasswordUnicodeAndWhitespace、ManageAccountLifecycle、LocalProviderStartupAndReauthentication | EXE 管理互動 |
+| L13 | ThrottleAndRecovery、CountdownUsesUiDispatcher，TimeProvider 控制 30 秒邊界 | EXE 倒數與桌面互動 |
+| L14 | StartupCreatesOnlyLogin、StrictStartupModes、InvalidModeExits，每個 STA 測試以新的程序啟動 | 已登入 EXE 重啟、不同工作目錄及發佈產物檢查 |
+
+P4-T1 已完成證據稽核及自動化補強，L1～L14 的部署部分未執行，不標記整體驗收通過。P4-T2 完整驗證、P4-T3 與唯一 ready PR 的門檻保留。此紀錄與補強測試隨 P4-T1 提交，Git commit／push 同步確認後才開始 P4-T2。
