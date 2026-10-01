@@ -10,7 +10,7 @@
 
 **Spec:** [ProgramMigrationAnalyzer_Codex_Spec.md](../../ProgramMigrationAnalyzer_Codex_Spec.md)，第 37 節及第 7、19、22、24～27、32～34 節相關更新。
 
-**日期／狀態:** 2026-10-01／Phase 1 已合併並清理分支，Phase 2 PR #7 已合併並清理兩端分支。Phase 3 已從最新 origin/main 開工，P3-T1 登入元件與檢查完成，正式啟動門檻及操作保護待 P3-T2／P3-T3。Phase 4 尚未開始，發佈驗收尚未完成。原專案範圍為 `D:/AxeenWorld/CodeLab/Projects/ProgramMigrationAnalyzer`，檔案路徑均相對於各 Phase 的 Git root，Phase 1 隔離路徑見開工決議。
+**日期／狀態:** 2026-10-01／Phase 1 已合併並清理分支，Phase 2 PR #7 已合併並清理兩端分支。Phase 3 已從最新 origin/main 開工，P3-T1 登入元件與 P3-T2 正式啟動門檻完成，操作保護與既有 WpfChecks 改造待 P3-T3。Phase 4 尚未開始，發佈驗收尚未完成。原專案範圍為 `D:/AxeenWorld/CodeLab/Projects/ProgramMigrationAnalyzer`，檔案路徑均相對於各 Phase 的 Git root，Phase 1 隔離路徑見開工決議。
 
 ## Phase 與分支總覽
 
@@ -242,13 +242,13 @@ Phase 內依 Task ID 順序執行，Phase 之間依合併順序開始。每項�
 - `ApplicationSessionCoordinator(Application app, IAuthenticationService authentication, Func<IUserSession, MainWindow> mainWindowFactory, Func<LocalAccountConfigurationWindow> configurationWindowFactory, TimeProvider timeProvider, AuthenticationDiagnosticLog diagnostics)`，`Start(StartupMode)`、`RequestLogout()`、`Shutdown()`、`Dispose()`，對外只提供 IUserSession。
 - `App` 增加 `protected virtual ApplicationSessionCoordinator CreateCoordinator()`，讓測試組裝的 TestApp 透過 override 注入 fake，正式 EXE 固定使用 Local adapter，不讀取測試旗標。
 
-- [ ] 寫 `StartupCreatesOnlyLogin`：經 App 正式 OnStartup 流程，main factory 呼叫次數 0、output 不存在，成功後 factory 恰好 1 次。
-- [ ] 寫 `SwitchAndExitLifetime`：成功關閉 LoginWindow 不退出，取消完全退出，主視窗初始化失敗清 session 並可重試，主視窗已存在不能自動放行。
-- [ ] 寫 `StartupModesAndLateResults`：管理模式未提升即拒絕、管理視窗關閉不開主視窗，取消與晚到成功交錯不留下主視窗。每案 STA 子程序，禁止測試以 app.Run(mainWindow) 繞過正常入口。
-- [ ] 執行 startup suite，確認行為缺失而失敗。
-- [ ] App.xaml 設定 OnExplicitShutdown，OnStartup 只建立協調器、解析模式及 Start。將原有 MainViewModel 組裝移至 MainWindowFactory，刪除原有 MainWindow 非 null 的直接返回邏輯。
-- [ ] 協調器採明確狀態 Starting／Login／OpeningMain／Main／ReturningToLogin／Closing／Admin，成功、取消、退出及登入／主視窗 Closed 事件都必須依目前狀態處理，初始化失敗 Dispose 已建立資源。
-- [ ] 重跑 `dotnet run --project tests/ProgramMigrationAnalyzer.AuthenticationChecks -- --suite startup`。P3-T3 前 RequestLogout 先不公開給主畫面按鈕，維持可建置的階段成果，必須完成 P3-T3 才能送本 Phase PR。
+- [x] 寫 `StartupCreatesOnlyLogin`：經 App 正式 OnStartup 流程，main factory 呼叫次數 0、output 不存在，成功後 factory 恰好 1 次。
+- [x] 寫 `SwitchAndExitLifetime`：成功關閉 LoginWindow 不退出，取消完全退出，主視窗初始化失敗清 session 並可重試，主視窗已存在不能自動放行。
+- [x] 寫 `StartupModesAndLateResults`：管理模式未提升即拒絕、管理視窗關閉不開主視窗，取消與晚到成功交錯不留下主視窗。每案 STA 子程序，禁止測試以 app.Run(mainWindow) 繞過正常入口。
+- [x] 執行 startup suite，確認行為缺失而失敗。
+- [x] App.xaml 設定 OnExplicitShutdown，OnStartup 只建立協調器、解析模式及 Start。將原有 MainViewModel 組裝移至 MainWindowFactory，刪除原有 MainWindow 非 null 的直接返回邏輯。
+- [x] 協調器採明確狀態 Starting／Login／OpeningMain／Main／ReturningToLogin／Closing／Admin，成功、取消、退出及登入／主視窗 Closed 事件都必須依目前狀態處理，初始化失敗 Dispose 已建立資源。
+- [x] 重跑 `dotnet run --project tests/ProgramMigrationAnalyzer.AuthenticationChecks -- --suite startup`。P3-T3 前 RequestLogout 先不公開給主畫面按鈕，維持可建置的階段成果，必須完成 P3-T3 才能送本 Phase PR。
 
 ### Task P3-T3：操作入口、目前使用者與登出清理
 
@@ -358,7 +358,7 @@ dotnet run --no-build --project tests/ProgramMigrationAnalyzer.WpfChecks
 | --- | --- | --- | --- | --- | --- |
 | 1 | 2／2 完成並逐一推送 | 已清理，原 `codex/login-phase-1-foundation` | contracts 5 組、crypto 7 組及既有回歸通過 | [PR #6](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/6)，MERGED | `e33e33f` |
 | 2 | 2／2 完成並逐一推送 | 已清理，原 `codex/login-phase-2-local-accounts` | contracts 5、crypto 7、store 11、admin 6 及既有回歸通過 | [PR #7](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/7)，MERGED | `d890707` |
-| 3 | P3-T1 驗證完成，1／3 | codex/login-phase-3-desktop-gate | login 5／5 及累積回歸通過 | 未建立 | 未合併 |
+| 3 | P3-T1／P3-T2 驗證完成，2／3 | codex/login-phase-3-desktop-gate | login 5／5、startup 8／8 及累積檢查通過 | 未建立 | 未合併 |
 | 4 | 0／3 完成 | 未建立 | 未執行 | 未建立 | 未合併 |
 
 Phase 的正常狀態依序為「未開始 → 實作中 → 驗證通過 → 已送審 → 已合併」。Task 全部完成且必要檢查通過，才可標記「驗證通過」，PR URL 與遠端狀態查證成功，才可標記「已送審」。未能送 PR 時仍是未交付，不能略過此狀態。下一 Phase 的開工條件為前一 Phase「已合併」。
@@ -419,3 +419,9 @@ Phase 審查修正已提交並推送 40ba222348b7133c6ebe3aff227be88f301cae6b。
 ### Phase 3 執行紀錄
 
 P3-T1：先加入登入檢查，建置因缺少 LoginViewModel／LoginWindow／diagnostics 而失敗，完成後 login 5／5 通過。涵蓋空值、直接重複提交、假時間冷卻與成功重設、取消後晚到成功、安全例外分類及 STA PasswordBox 清理。Solution build 0 warnings／0 errors，contracts 5、crypto 7、store 11、admin 6、login 5，共 34 組，既有三組回歸通過。sandbox 原子替換限制重現，以相同隔離檔案及 fake policy 在允許的提權環境重跑通過，未操作真實 ProgramData。依使用者指示由同一實作者執行，未使用代理。
+
+P3-T1 已提交並推送 afc89d6ed0b51d35af84389a3732fc7b4ec55c46，確認 upstream 0／0、工作區乾淨後才開始 P3-T2。
+
+P3-T2：startup 先因缺少 coordinator／App hook 失敗，完成後 startup 8／8 通過，涵蓋只建立登入、主畫面初始化失敗重試、取消後晚到成功、預先存在的 MainWindow 不放行、管理權限及隔離、唯一參數與非法參數安全退出。Solution build 0 warnings／0 errors，累積認證 42 組及 Phase2Checks／RegressionChecks 通過。既有 WpfChecks 的登入改造依計畫留至 P3-T3，本 Task 不將舊直接 app.Run(mainWindow) 當作門檻證據。
+
+P3-T2 調整：WPF 產生的 App.InitializeComponent 無法載入至衍生 TestApp，共用樣式移至編譯的 Resources/ApplicationResources.xaml，正式 App 與 TestApp 載入相同資源。測試宿主用自有程序路由選擇 STA 案例，正式 App 僅解析無參數或唯一管理參數，不讀測試環境變數。coordinator 型別為 public 以支援 protected CreateCoordinator，constructor 保持 internal。

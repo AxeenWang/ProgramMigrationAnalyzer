@@ -7,13 +7,14 @@ namespace ProgramMigrationAnalyzer.AuthenticationChecks;
 
 internal static class CheckSupport
 {
-    public static void RunStaChild(string argument)
+    public static void RunStaChild(string argument, string? scenario = null)
     {
         var start = new ProcessStartInfo(Environment.ProcessPath!) { UseShellExecute = false,
             RedirectStandardOutput = true, RedirectStandardError = true, CreateNoWindow = true };
         if (Path.GetFileNameWithoutExtension(start.FileName).Equals("dotnet", StringComparison.OrdinalIgnoreCase))
             start.ArgumentList.Add(Assembly.GetExecutingAssembly().Location);
-        start.ArgumentList.Add(argument);
+        if (argument.Length > 0) start.ArgumentList.Add(argument);
+        if (scenario is not null) start.Environment["PMA_AUTH_CHECK_SCENARIO"] = scenario;
         using var child = Process.Start(start) ?? throw new InvalidOperationException("Could not launch STA check.");
         var output = child.StandardOutput.ReadToEndAsync();
         var error = child.StandardError.ReadToEndAsync();
