@@ -10,7 +10,7 @@
 
 **Spec:** [ProgramMigrationAnalyzer_Codex_Spec.md](../../ProgramMigrationAnalyzer_Codex_Spec.md)，第 37 節及第 7、19、22、24～27、32～34 節相關更新。
 
-**日期／狀態:** 2026-10-01／Phase 1～3 已合併並清理各自兩端主題分支。Phase 4 已從最新 origin/main 的 `82474c8` 開工，P4-T1 已推送 `9d0e2d2`，P4-T2 部署修正及完成紀錄已推送 `a12b7a4`、`6d80a48`。同步 0／0 且工作區乾淨後才開始 P4-T3，README 與登入交付文件已完成檢查，等待本 Task 提交推送及唯一 ready PR。原專案範圍為 `D:/AxeenWorld/CodeLab/Projects/ProgramMigrationAnalyzer`，檔案路徑均相對於各 Phase 的 Git root，既有隔離路徑見開工決議。
+**日期／狀態:** 2026-10-01／Phase 1～3 已合併並清理各自兩端主題分支。Phase 4 已從最新 origin/main 的 `82474c8` 開工，P4-T1 已推送 `9d0e2d2`，P4-T2 部署修正及完成紀錄已推送 `a12b7a4`、`6d80a48`，P4-T3 已推送 `c7b0ea6`。各 Task 完成後確認同步 0／0 且工作區乾淨，唯一 [PR #9](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/9) 已查證為 OPEN／ready 並附加 chat，Phase 4 已送審，尚未合併。原專案範圍為 `D:/AxeenWorld/CodeLab/Projects/ProgramMigrationAnalyzer`，檔案路徑均相對於各 Phase 的 Git root，既有隔離路徑見開工決議。
 
 ## Phase 與分支總覽
 
@@ -325,17 +325,17 @@ dotnet run --no-build --project tests/ProgramMigrationAnalyzer.WpfChecks
 
 **Interfaces:** 不新增產品介面，文件使用實際驗證結果，不把尚未執行或未通過的情境寫成已通過。
 
-**進度:** README 與 [Login_Verification_and_Delivery.md](../../Login_Verification_and_Delivery.md) 已完成文件檢查，逐項區分自動化與正式 EXE 的實測，保留乾淨 VM、真實帳號管理邊界與早期 EXE 鍵盤觀察的限制。待 Task 提交推送，再建立唯一 ready PR。
+**進度:** README 與 [Login_Verification_and_Delivery.md](../../Login_Verification_and_Delivery.md) 已完成文件檢查，逐項區分自動化與正式 EXE 的實測，保留乾淨 VM、真實帳號管理邊界與早期 EXE 鍵盤觀察的限制。已提交並推送 `c7b0ea627b1b5afacb87e6b37763cfb5c50ca7bd`，確認工作區乾淨及 upstream 0／0，隨後建立唯一 ready PR #9。
 
 - [x] README 加入首次建帳、`--configure-local-account`、一般登入、重設／停用生效時點、登出及本機限制，不寫入實際密碼或帳號檔。交付文件保存 L1～L14 結果與已知限制。
-- [x] `git diff --check` 通過，預期修改只有 README、本計畫與登入交付文件，完整分支自審未發現機密或無關檔案。沒有 stage temp、既有截圖／簡報或 ProgramData 資料，目前分支為 `codex/login-phase-4-verification`，本 Task 三份文件待提交。
+- [x] `git diff --check` 通過，P4-T3 檢查時只有 README、本計畫與登入交付文件變更，完整分支自審未發現機密或無關檔案。沒有 stage temp、既有截圖／簡報或 ProgramData 資料，三份文件已隨 `c7b0ea6` 提交推送，分支為 `codex/login-phase-4-verification`。
 
 ### Phase 4 驗證與 PR
 
 - [x] P4-T1、P4-T2、P4-T3 實作與檢查全部完成，L1～L14 與 Scenario A／B／C 均有實際驗證證據，文件與發佈方式一致，未執行的桌面邊界及乾淨 VM 明確列為限制。
 - [x] 本 Phase 的 ACL 與最低 8 字元產品修正已重跑受影響測試及完整必需回歸，認證 56／56、Build 0 warnings／0 errors、三組既有回歸通過。此後僅修改文件。
-- [ ] commit／push 完成，worktree 乾淨，upstream 同步，建立並確認此分支的唯一 ready PR，記錄 URL，已有 open PR 則沿用，不能新增第二個。
-- [ ] 回報四個 Phase 的 Task、分支、PR 與驗證狀態，最終 PR 尚未合併時狀態為「已送審」，不宣稱已合併交付。
+- [x] 各 Task commit／push 完成，worktree 乾淨，upstream 同步，建立並確認此分支的唯一 ready PR #9，記錄 URL 並附加 chat，沒有新增第二個。
+- [x] 四個 Phase 的 Task、分支、PR 與驗證狀態已記錄，最終 PR #9 為 OPEN／ready，Phase 4 狀態為「已送審」，不宣稱已合併交付。
 
 ## 驗收對照
 
@@ -365,7 +365,7 @@ dotnet run --no-build --project tests/ProgramMigrationAnalyzer.WpfChecks
 | 1 | 2／2 完成並逐一推送 | 已清理，原 `codex/login-phase-1-foundation` | contracts 5 組、crypto 7 組及既有回歸通過 | [PR #6](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/6)，MERGED | `e33e33f` |
 | 2 | 2／2 完成並逐一推送 | 已清理，原 `codex/login-phase-2-local-accounts` | contracts 5、crypto 7、store 11、admin 6 及既有回歸通過 | [PR #7](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/7)，MERGED | `d890707` |
 | 3 | 3／3 完成並逐一推送，已合併 | 已清理，原 `codex/login-phase-3-desktop-gate` | login 5／5、startup 11／11、access 6／6，累積 51 組及既有回歸通過 | [PR #8](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/8)，MERGED | `82474c8` |
-| 4 | P4-T1、P4-T2 已推送，P4-T3 已驗證待推送 | `codex/login-phase-4-verification` | 最新認證 56／56、Build 0 warnings／0 errors、三組回歸通過，SWANG-PC 必要部署驗證完成，文件檢查通過 | 未建立，等待 P4-T3 推送 | 未合併 |
+| 4 | 3／3 完成並逐一推送，已送審 | `codex/login-phase-4-verification`，保留供審查 | 認證 56／56、Build 0 warnings／0 errors、三組回歸、SWANG-PC 必要部署及文件檢查通過 | [PR #9](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/9)，OPEN／ready | 未合併 |
 
 Phase 的正常狀態依序為「未開始 → 實作中 → 驗證通過 → 已送審 → 已合併」。Task 全部完成且必要檢查通過，才可標記「驗證通過」，PR URL 與遠端狀態查證成功，才可標記「已送審」。未能送 PR 時仍是未交付，不能略過此狀態。下一 Phase 的開工條件為前一 Phase「已合併」。
 
@@ -411,7 +411,7 @@ Phase 審查修正已提交並推送 40ba222348b7133c6ebe3aff227be88f301cae6b。
 ## 完成與交接條件
 
 - [x] 四個 Phase 共十個 Task 的實作與驗證完成，規格 L1～L14 有可追溯證據，既有分析／轉譯回歸通過，逐 Task 推送及最終 PR 狀態見追蹤紀錄。
-- [ ] 四個 Phase 各有一個專屬分支與一個經查證的 PR，Phase 追蹤紀錄完整，最終合併狀態據實回報。
+- [x] 四個 Phase 各有一個專屬分支與一個經查證的 PR，Phase 追蹤紀錄完整。PR #6、#7、#8 已合併，PR #9 為 OPEN／ready，最終尚未合併。
 - [x] README 與交付紀錄已提供新電腦建帳及登入操作，未驗證的部署與乾淨 VM 明確標示。
 - [x] 正式 EXE 只組裝 Local provider，日後正式認證工作另行提供契約並實作 adapter，不做自動 fallback。
 - [x] 不宣稱本機登入能抵抗 EXE 修改、加密 output 或提供集中停權。
@@ -561,4 +561,10 @@ P4-T2 必要發佈、真實部署與桌面流程已通過。未將自動化的�
 
 README 新增首次部署、提升權限管理入口、正常登入、8～128 Unicode scalar 密碼及符號、儲存提示、重設／停用的下次登入生效、登出清除與本機限制。新增交付紀錄列出 56 組自動化、L1～L14 的方法與界線、正式 EXE 指紋、真實 token／ACL、Scenario A／B／C、HTML／純文字、輸出保留及 exit code 0。沒有把未操作的部署邊界或乾淨 VM 寫成通過。
 
-本 Task 只修改 README、本計畫及交付文件，不改產品或發佈腳本。文件檢查核對 11 個本機連結、14 行驗收對照、56 個 PASS、六步 exit code 0、發佈指紋、保留六個 output 項目及正常退出證據，全部相符。確認 `a12b7a4` 之後的產品、測試及 publish.bat 無差異，不重複執行未受文件變更影響的產品回歸。完整產品與測試差異由同一實作者自審，未發現額外問題。Task 提交推送後再查證唯一 ready PR，最終合併由使用者審查決定。
+本 Task 只修改 README、本計畫及交付文件，不改產品或發佈腳本。文件檢查核對 11 個本機連結、14 行驗收對照、56 個 PASS、六步 exit code 0、發佈指紋、保留六個 output 項目及正常退出證據，全部相符。確認 `a12b7a4` 之後的產品、測試及 publish.bat 無差異，不重複執行未受文件變更影響的產品回歸。完整產品與測試差異由同一實作者自審，未發現額外問題。Task 已提交推送 `c7b0ea6`，最終合併由使用者審查決定。
+
+### Phase 4 唯一 ready PR 紀錄
+
+P4-T3 推送後，確認 Git root 為指定續作 worktree，分支及 upstream 同為 `codex/login-phase-4-verification`，工作區／index 乾淨，ahead／behind 0／0。重新 fetch origin，GitHub 預設分支為 main，查詢此 head 的所有 PR 結果為空。完整 Phase 差異只有預期的 17 個產品、測試及文件檔案，diff --check 通過，沒有帳號、temp、產物或無關工作。
+
+建立唯一 [PR #9](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/9)，標題為 `fix: unblock local account setup and document login deployment`。已查證 state OPEN、isDraft=false、base main、head codex/login-phase-4-verification，建立時 headRefOid 為 `c7b0ea627b1b5afacb87e6b37763cfb5c50ca7bd`，並已附加目前 chat。此 PR 紀錄隨同一分支另正常提交與推送，沿用 PR #9，不建立第二個 PR，不推送 main，不自動合併或清理分支。
