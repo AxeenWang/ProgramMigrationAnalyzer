@@ -184,6 +184,8 @@ Phase 內依 Task ID 順序執行，Phase 之間依合併順序開始。每項�
 
 ### Task P2-T2：管理者帳號設定模式
 
+**進度:** admin 6／6 行為檢查從失敗轉為通過，包含權限、生命週期、密碼確認、四種操作模式、取消及 STA 視窗隔離。重設保留 GUID 與停用狀態，關閉期間不提交晚到結果，密碼於送出、切換模式及關閉時清除。設定視窗影像已檢視。Solution build 0 warnings／0 errors，contracts 5、crypto 7、store 8、admin 6 及既有三組回歸通過。正式啟動入口尚未接入。驗證後逐 Task 提交、推送，再進行 Phase 審查。
+
 **Files:** Create `LocalAccountAdministrationService.cs`、`LocalAccountConfigurationWindow.xaml/.cs`、`ViewModels/LocalAccountConfigurationViewModel.cs`，Create `AdministrationChecks.cs`。
 
 **Interfaces:**
@@ -192,12 +194,12 @@ Phase 內依 Task ID 順序執行，Phase 之間依合併順序開始。每項�
 - `CreateOrResetAsync(string username, string displayName, SecureString password, CancellationToken) -> Task`，`SetEnabledAsync(string username, bool isEnabled, CancellationToken) -> Task`。
 - `LocalAccountConfigurationViewModel(LocalAccountAdministrationService administration)` 提供帳號、顯示名稱、模式（建立／重設／啟用／停用）、狀態與提交命令，視窗送出兩份短期 SecureString，不將密碼設為可觀察屬性。
 
-- [ ] 寫 `NonElevatedCannotManage`：fake policy 非提升時拒絕，沒有檔案寫入、沒有 session，`ManageAccountLifecycle`：建帳、重設保留 GUID、停用／啟用，錯誤時保留既有資料。
-- [ ] 寫 `ConfirmationAndModeIsolation`：兩密碼不一致不送出，僅切換啟用狀態不需要密碼，管理操作／關閉不顯示分析主視窗。
-- [ ] 執行 admin suite，確認服務及畫面缺少對應行為而失敗。
-- [ ] 實作建帳時以新 GUID、isEnabled=true 建立，重設時保留 GUID 與原 isEnabled，避免重設意外重新啟用停用帳號。未知帳號的啟用／停用回安全錯誤，不能隱式建帳。
-- [ ] 實作小型管理視窗、背景計算及清理，只接受互動遮罩密碼。啟動參數只允許選管理模式，不接受帳密，真正提升與否由 Windows token 檢查，不由工具 session 決定。
-- [ ] 重跑 `dotnet run --project tests/ProgramMigrationAnalyzer.AuthenticationChecks -- --suite admin`。實際接入啟動參數由 P3-T2 完成。
+- [x] 寫 `NonElevatedCannotManage`：fake policy 非提升時拒絕，沒有檔案寫入、沒有 session，`ManageAccountLifecycle`：建帳、重設保留 GUID、停用／啟用，錯誤時保留既有資料。
+- [x] 寫 `ConfirmationAndModeIsolation`：兩密碼不一致不送出，僅切換啟用狀態不需要密碼，管理操作／關閉不顯示分析主視窗。
+- [x] 執行 admin suite，確認服務及畫面缺少對應行為而失敗。
+- [x] 實作建帳時以新 GUID、isEnabled=true 建立，重設時保留 GUID 與原 isEnabled，避免重設意外重新啟用停用帳號。未知帳號的啟用／停用回安全錯誤，不能隱式建帳。
+- [x] 實作小型管理視窗、背景計算及清理，只接受互動遮罩密碼。啟動參數只允許選管理模式，不接受帳密，真正提升與否由 Windows token 檢查，不由工具 session 決定。
+- [x] 重跑 `dotnet run --project tests/ProgramMigrationAnalyzer.AuthenticationChecks -- --suite admin`。實際接入啟動參數由 P3-T2 完成。
 
 ### Phase 2 驗證與 PR
 
@@ -355,7 +357,7 @@ dotnet run --no-build --project tests/ProgramMigrationAnalyzer.WpfChecks
 | Phase | Task 狀態 | 分支狀態 | 驗證 | PR URL／狀態 | 合併狀態 |
 | --- | --- | --- | --- | --- | --- |
 | 1 | 2／2 完成並逐一推送 | 已清理，原 `codex/login-phase-1-foundation` | contracts 5 組、crypto 7 組及既有回歸通過 | [PR #6](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/6)，MERGED | `e33e33f` |
-| 2 | P2-T1 完成，P2-T2 尚未開始 | 已建立 codex/login-phase-2-local-accounts | store 8 組及累積回歸通過 | 未建立 | 未合併 |
+| 2 | 2／2 完成，待 Phase 審查 | codex/login-phase-2-local-accounts | contracts 5、crypto 7、store 8、admin 6 及既有回歸通過 | 待建立 | 未合併 |
 | 3 | 0／3 完成 | 未建立 | 未執行 | 未建立 | 未合併 |
 | 4 | 0／3 完成 | 未建立 | 未執行 | 未建立 | 未合併 |
 
