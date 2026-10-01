@@ -14,7 +14,7 @@ public partial class App : Application
         ShutdownMode = ShutdownMode.OnExplicitShutdown;
         _coordinator = CreateCoordinator();
         try { _coordinator.Start(StartupModeParser.Parse(e.Args)); }
-        catch (ArgumentException) { _coordinator.RejectStartup(); }
+        catch (Exception) { _coordinator.RejectStartup(); }
     }
     protected virtual ApplicationSessionCoordinator CreateCoordinator()
     {

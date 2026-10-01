@@ -10,7 +10,7 @@
 
 **Spec:** [ProgramMigrationAnalyzer_Codex_Spec.md](../../ProgramMigrationAnalyzer_Codex_Spec.md)，第 37 節及第 7、19、22、24～27、32～34 節相關更新。
 
-**日期／狀態:** 2026-10-01／Phase 1 已合併並清理分支，Phase 2 PR #7 已合併並清理兩端分支。Phase 3 已從最新 origin/main 開工，P3-T1～P3-T3 實作與 Task 驗證完成，登入門檻、操作保護及登出已接入，Phase 審查及唯一 PR 尚待完成。Phase 4 尚未開始，發佈驗收尚未完成。原專案範圍為 `D:/AxeenWorld/CodeLab/Projects/ProgramMigrationAnalyzer`，檔案路徑均相對於各 Phase 的 Git root，Phase 1 隔離路徑見開工決議。
+**日期／狀態:** 2026-10-01／Phase 1 已合併並清理分支，Phase 2 PR #7 已合併並清理兩端分支。Phase 3 已從最新 origin/main 開工，P3-T1～P3-T3 實作與 Task 驗證完成，登入門檻、操作保護及登出已接入，Phase 審查與驗證已完成，唯一 ready PR 尚待建立。Phase 4 尚未開始，發佈驗收尚未完成。原專案範圍為 `D:/AxeenWorld/CodeLab/Projects/ProgramMigrationAnalyzer`，檔案路徑均相對於各 Phase 的 Git root，Phase 1 隔離路徑見開工決議。
 
 ## Phase 與分支總覽
 
@@ -272,8 +272,8 @@ Phase 內依 Task ID 順序執行，Phase 之間依合併順序開始。每項�
 
 ### Phase 3 驗證與 PR
 
-- [ ] P3-T1、P3-T2、P3-T3 全部步驟完成，Solution build、AuthenticationChecks all suite 及既有三組 checks 通過。
-- [ ] L1～L13 的自動化情境通過，正式入口登入前不建立主畫面，直接命令不可繞過，已驗證設定模式、登出與視窗生命週期。
+- [x] P3-T1、P3-T2、P3-T3 全部步驟完成，Solution build、AuthenticationChecks all suite 及既有三組 checks 通過。
+- [x] L1～L13 的自動化情境通過，正式入口登入前不建立主畫面，直接命令不可繞過，已驗證設定模式、登出與視窗生命週期。
 - [ ] commit／push 完成，worktree 乾淨，upstream 同步，建立並確認此分支的唯一 PR，記錄 URL，列出發佈 EXE／實際部署驗證將於 Phase 4 完成。
 - [ ] 前述 PR 確認合併後，才允許開始 Phase 4。
 
@@ -358,7 +358,7 @@ dotnet run --no-build --project tests/ProgramMigrationAnalyzer.WpfChecks
 | --- | --- | --- | --- | --- | --- |
 | 1 | 2／2 完成並逐一推送 | 已清理，原 `codex/login-phase-1-foundation` | contracts 5 組、crypto 7 組及既有回歸通過 | [PR #6](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/6)，MERGED | `e33e33f` |
 | 2 | 2／2 完成並逐一推送 | 已清理，原 `codex/login-phase-2-local-accounts` | contracts 5、crypto 7、store 11、admin 6 及既有回歸通過 | [PR #7](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/7)，MERGED | `d890707` |
-| 3 | P3-T1～P3-T3 Task 驗證完成，3／3 | codex/login-phase-3-desktop-gate | login 5／5、startup 8／8、access 6／6，累積 48 組及既有回歸通過 | 未建立 | 未合併 |
+| 3 | 3／3 完成並逐一推送，Phase 驗證通過 | codex/login-phase-3-desktop-gate | login 5／5、startup 11／11、access 6／6，累積 51 組及既有回歸通過 | 待建立 | 未合併 |
 | 4 | 0／3 完成 | 未建立 | 未執行 | 未建立 | 未合併 |
 
 Phase 的正常狀態依序為「未開始 → 實作中 → 驗證通過 → 已送審 → 已合併」。Task 全部完成且必要檢查通過，才可標記「驗證通過」，PR URL 與遠端狀態查證成功，才可標記「已送審」。未能送 PR 時仍是未交付，不能略過此狀態。下一 Phase 的開工條件為前一 Phase「已合併」。
@@ -433,3 +433,11 @@ P3-T3：access 先因缺少 session constructor、LogoutCommand／Dispose 而失
 MainWindowFactory 訂閱 LogoutRequested，正常 composition root 使用回呼連至 coordinator。共用樣式及唯一 provider 維持一致。測試的 factory 接受隔離 output 路徑，不加入正式命令列旗標。WpfChecks 使用測試組裝的 TestApp override 經正式 OnStartup、fake authentication 及 coordinator 進入主畫面，保留所有原功能檢查，另驗證使用者名稱、登出、新工作區及輸出保留。App 對 WpfChecks 加入 InternalsVisibleTo，僅限測試組裝，沒有公開 session setter。
 
 P3-T3 Solution build 0 warnings／0 errors，認證累積 48 組及 Phase2Checks／RegressionChecks／WpfChecks 通過。受限環境觀察到既有 WebView2 E_UNEXPECTED 且純文字備援通過。允許的提權環境則完成 Markdown DOM 檢查及渲染截圖，這是本機該環境的實際渲染證據，不擴張為發佈環境驗收。Windows ACL 真實部署及發佈 EXE 驗證仍待 Phase 4。
+
+P3-T3 已提交並推送 56fe2eb986fdda6236c9a3e2d5421e58018fb222，確認 upstream 0／0、工作區乾淨後才進行 Phase 自審。
+
+Phase 3 自審：由同一實作者檢查完整分支，未使用代理。針對 Review Focus 的取消後晚到成功、直接命令與 generation、資料 schema／ACL、正式入口及管理模式逐項檢查。新增管理視窗初始化失敗檢查先失敗，修正一般啟動例外會清除 session 與半開視窗，顯示安全錯誤，關閉後退出。另驗證 OpeningMain 時取消會釋放未顯示主視窗，以及假時間 timer 從背景執行時以 UI dispatcher 更新倒數。
+
+Phase 3 最終驗證：Solution build 0 warnings／0 errors。contracts 5／5、crypto 7／7、store 11／11、admin 6／6、login 5／5、startup 11／11、access 6／6，共 51 組通過。Phase2Checks、RegressionChecks、WpfChecks 均通過。登入與主視窗截圖已在隔離暫存區檢查，使用者顯示、登入／登出按鈕及版面可讀。未追蹤 .codex-tmp／.claude-tmp／.references，未包含真實帳號檔、預設密碼或正式 bypass。
+
+Phase 4 的發布 EXE、不同工作目錄及實際 ProgramData／Windows ACL 部署驗證仍未執行。沒有開始 Phase 4、建立其分支或合併 PR。已授權使用既有 worktree 及建立 ready PR，依使用者指示保留 worktree，未執行 skill 的重新選擇整合方式、暫存刪除或分支清理。

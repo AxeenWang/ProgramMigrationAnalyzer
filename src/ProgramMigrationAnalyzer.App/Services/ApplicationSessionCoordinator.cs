@@ -67,7 +67,17 @@ public sealed class ApplicationSessionCoordinator : IDisposable
     }
     internal void RejectStartup()
     {
-        var message = new TextBlock { Text = "無法以此啟動方式開啟程式，請正常啟動或聯絡管理者。", TextWrapping = TextWrapping.Wrap, Margin = new Thickness(24) };
+        State = ApplicationSessionState.Closing;
+        _session.Clear();
+        CloseLogin();
+        CloseMain();
+        if (_adminOrError is { } previous)
+        {
+            previous.Closed -= OnAdminOrErrorClosed;
+            previous.Close();
+        }
+        _diagnostics.Record(AuthenticationDiagnosticKind.InitializationFailed);
+        var message = new TextBlock { Text = "程式無法啟動，請重新開啟或聯絡管理者。", TextWrapping = TextWrapping.Wrap, Margin = new Thickness(24) };
         _adminOrError = new Window { Title = "程式移植分析儀", Width = 440, SizeToContent = SizeToContent.Height,
             WindowStartupLocation = WindowStartupLocation.CenterScreen, Content = message };
         _adminOrError.Closed += OnAdminOrErrorClosed;
