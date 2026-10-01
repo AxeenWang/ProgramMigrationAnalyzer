@@ -4,6 +4,8 @@
 
 > 目前狀態：第一階段功能與第二階段可靠性修正已合併。第三階段的樣本回歸、WPF 畫面流程及實際桌面操作已通過，WebView2 HTML 預覽與失敗備援均已驗證。按鈕與頁籤的視覺設計仍待使用者確認。
 
+本機登入已接入正常啟動流程。登入 Phase 4 已完成回歸及 SWANG-PC 發佈部署驗證，新增／重設密碼最低 8 個字元，允許特殊符號。交付證據與未執行項目見 [登入驗證與交付紀錄](docs/Login_Verification_and_Delivery.md)，合併狀態以[實作計畫](docs/superpowers/plans/2026-10-01-local-login-implementation-plan.md)為準。
+
 ## Features
 
 - 開啟單一原始碼檔案或包含多個檔案的資料夾
@@ -15,6 +17,7 @@
 - 選擇 `.NET 8` 或 `.NET 10` 作為轉譯目標
 - 產生現代化 C# 程式碼草稿與簡易 Diff
 - 顯示分析、轉譯進度及執行 Log
+- 本機帳號登入、使用者顯示、登出與獨立管理入口
 
 ## Architecture
 
@@ -48,6 +51,7 @@ ProgramMigrationAnalyzer/
 │  ├─ 4gl/
 │  └─ csharp-framework/
 ├─ tests/
+│  ├─ ProgramMigrationAnalyzer.AuthenticationChecks/
 │  ├─ ProgramMigrationAnalyzer.Phase2Checks/
 │  ├─ ProgramMigrationAnalyzer.RegressionChecks/
 │  └─ ProgramMigrationAnalyzer.WpfChecks/
@@ -66,6 +70,8 @@ ProgramMigrationAnalyzer/
 - Microsoft WebView2
 
 ## Requirements
+
+以下為建置環境需求。發佈 EXE 的收件端需 Windows x64，首次使用前由 Windows 管理者設定本機帳號，HTML 預覽另需 WebView2 Runtime。
 
 - Windows operating system supported by the installed .NET 10 SDK and runtime
 - .NET 10 SDK
@@ -87,7 +93,7 @@ dotnet build ProgramMigrationAnalyzer.sln --no-restore -m:1 -nr:false -p:UseShar
 
 ### 發佈單一 EXE
 
-在專案根目錄執行 `publish.bat`，會發佈 Windows x64 自包含版本至 `publish/win-x64-single-file/ProgramMigrationAnalyzer.App.exe`。將此 EXE 複製給 Windows x64 使用者即可，對方不需要安裝 .NET。建置電腦仍需 .NET 10 SDK。批次檔使用單一 MSBuild 節點並停用節點重用。重新發佈前請先關閉正在執行的舊版 EXE。
+在專案根目錄執行 `publish.bat`，會發佈 Windows x64 自包含版本至 `publish/win-x64-single-file/ProgramMigrationAnalyzer.App.exe`，內含 .NET runtime。收件端先複製 EXE，再依下方操作設定自己的本機帳號，無須安裝 .NET SDK 或另附 runtime。SWANG-PC 已確認啟動使用內含 runtime，未另測沒有任何 .NET 安裝的乾淨 VM。建置電腦仍需 .NET 10 SDK。批次檔使用單一 MSBuild 節點並停用節點重用。重新發佈前請先關閉正在執行的舊版 EXE。
 
 Markdown 的 HTML 預覽仍需要收件端安裝 Microsoft Edge WebView2 Runtime。若 WebView2 無法啟動，程式會改用純文字 Markdown 預覽。單檔 EXE 啟動時會在系統暫存目錄解開必要的原生程式庫。
 
@@ -96,6 +102,32 @@ Markdown 的 HTML 預覽仍需要收件端安裝 Microsoft Edge WebView2 Runtime
 ```powershell
 dotnet run --project .\src\ProgramMigrationAnalyzer.App\ProgramMigrationAnalyzer.App.csproj
 ```
+
+發佈版直接執行 `ProgramMigrationAnalyzer.App.exe`，不帶參數時先顯示登入視窗。成功後才建立分析主畫面，重新啟動仍須登入。
+
+## 本機帳號設定與登入
+
+首次部署由 Windows 管理者開啟「以系統管理員身分執行」的 PowerShell，切換到 EXE 所在目錄後執行：
+
+```powershell
+.\ProgramMigrationAnalyzer.App.exe --configure-local-account
+```
+
+1. 在「本機帳號設定」選擇「建立帳號」，輸入帳號、顯示名稱及兩欄一致的密碼。
+2. 按儲存，確認提示「帳號設定已儲存，下次登入生效」。送出後密碼欄會清空，請以狀態提示確認結果。
+3. 關閉管理視窗，使用一般權限、不帶參數重新開啟 EXE，以剛建立的帳密登入。
+
+帳號為 3～64 個 ASCII 字元，允許英文字母、數字、點、底線及連字號，會去除前後空白並轉為小寫。新建與重設密碼接受 8～128 個 Unicode scalar values，允許 `@`、`!`、`#` 等符號、空白及 Unicode，不要求特定字元組合，不去除空白、不改大小寫。密碼只在視窗的遮罩欄位輸入，沒有共用預設帳密，不使用命令列、環境變數或腳本傳入密碼。
+
+管理入口不會自動提升權限，也不會登入分析工具。一般權限開啟時無法編輯或儲存。已提升權限的管理者可選「重設密碼」、「啟用帳號」或「停用帳號」。建立／重設須提供顯示名稱與兩欄密碼，啟用／停用不更動密碼。每次登入都重新讀取帳號資料，因此重設或停用於下次登入生效，既有 session 會持續至登出或程序結束，需要立即停權時須結束現有程序。
+
+帳號檔固定為 `%ProgramData%\ProgramMigrationAnalyzer\auth\users.json`，與 EXE 或目前工作目錄無關。管理模式建立工具目錄、auth 目錄與帳號檔的受保護 ACL，SYSTEM 與 Administrators 可維護，一般 Users 只能讀取。密碼以獨立 salt 的 PBKDF2-HMAC-SHA256 雜湊保存，正常登入不改寫帳號檔。請透過管理視窗維護，部署包不包含帳號資料，每台收件電腦須各自建帳。
+
+設定缺漏、損壞或 ACL 不安全會提示聯絡管理者，不會自動建帳或放行。錯誤密碼、未知帳號與停用帳號顯示相同失敗提示。連續 5 次失敗後，此程序暫停提交 30 秒並顯示倒數，重啟程序會重設節流。
+
+登入後可在主畫面按「登出」。執行分析、轉譯、載入或儲存時，登出停用並提示等待工作完成。登出會清除 session、來源、報告、預覽及執行紀錄，保留已寫入 `output/` 的檔案，下次登入建立空白工作區。
+
+目前僅支援本機帳號，session 存於程序記憶體，沒有自動登入、記住密碼、SSO、角色權限矩陣或閒置逾時。本機登入保護桌面操作入口，不加密輸出、不抵抗 EXE 修改，也不提供集中停權或帳號同步。
 
 ## Sample Data
 
@@ -128,6 +160,14 @@ dotnet run --project .\src\ProgramMigrationAnalyzer.App\ProgramMigrationAnalyzer
 為避免不同目錄的同名來源檔互相覆寫，輸出名稱使用來源檔名加上完整來源路徑的 16 位雜湊，例如 `CustomerQuery.4gl.a1b2c3d4e5f60708.analysis.md` 與 `CustomerQuery.4gl.a1b2c3d4e5f60708.net10.cs`。同一路徑重新分析會更新同一組輸出檔。
 
 ## Validation
+
+登入檢查可在 Solution 建置後執行：
+
+```powershell
+dotnet run --no-build --project .\tests\ProgramMigrationAnalyzer.AuthenticationChecks -- --suite all
+```
+
+2026-10-01 登入 Phase 4 修正版通過 56／56，涵蓋 contracts 5、crypto 8、store 13、admin 6、login 5、startup 13、access 6。另完成 SWANG-PC 正式 EXE 的建帳與 ACL、一般權限登入、Scenario A／B／C、HTML／純文字預覽、忙碌登出、重登清空、不同工作目錄及正常退出。各項方法與限制見[登入驗證與交付紀錄](docs/Login_Verification_and_Delivery.md)。
 
 目前已驗證：
 
@@ -176,3 +216,5 @@ dotnet run --no-build --project .\tests\ProgramMigrationAnalyzer.WpfChecks\Progr
 ## Documentation
 
 完整需求與驗收條件請參閱 [`docs/ProgramMigrationAnalyzer_Codex_Spec.md`](docs/ProgramMigrationAnalyzer_Codex_Spec.md)。
+
+本機登入的 L1～L14 結果與發佈紀錄見 [`docs/Login_Verification_and_Delivery.md`](docs/Login_Verification_and_Delivery.md)。

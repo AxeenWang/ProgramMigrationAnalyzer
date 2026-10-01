@@ -10,7 +10,7 @@
 
 **Spec:** [ProgramMigrationAnalyzer_Codex_Spec.md](../../ProgramMigrationAnalyzer_Codex_Spec.md)，第 37 節及第 7、19、22、24～27、32～34 節相關更新。
 
-**日期／狀態:** 2026-10-01／Phase 1～3 已合併並清理各自兩端主題分支。Phase 4 已從最新 origin/main 的 `82474c8` 開工，P4-T1 完成並推送。P4-T2 的修正版發佈、SWANG-PC 建帳與 ACL、標準樣本、HTML／fallback、登出重登、不同工作目錄及退出驗證已完成，等待完成紀錄提交與推送。依逐 Task 規則，P4-T3 尚未開始，尚無 Phase 4 PR。原專案範圍為 `D:/AxeenWorld/CodeLab/Projects/ProgramMigrationAnalyzer`，檔案路徑均相對於各 Phase 的 Git root，既有隔離路徑見開工決議。
+**日期／狀態:** 2026-10-01／Phase 1～3 已合併並清理各自兩端主題分支。Phase 4 已從最新 origin/main 的 `82474c8` 開工，P4-T1 已推送 `9d0e2d2`，P4-T2 部署修正及完成紀錄已推送 `a12b7a4`、`6d80a48`。同步 0／0 且工作區乾淨後才開始 P4-T3，README 與登入交付文件已完成檢查，等待本 Task 提交推送及唯一 ready PR。原專案範圍為 `D:/AxeenWorld/CodeLab/Projects/ProgramMigrationAnalyzer`，檔案路徑均相對於各 Phase 的 Git root，既有隔離路徑見開工決議。
 
 ## Phase 與分支總覽
 
@@ -275,7 +275,7 @@ Phase 內依 Task ID 順序執行，Phase 之間依合併順序開始。每項�
 - [x] P3-T1、P3-T2、P3-T3 全部步驟完成，Solution build、AuthenticationChecks all suite 及既有三組 checks 通過。
 - [x] L1～L13 的自動化情境通過，正式入口登入前不建立主畫面，直接命令不可繞過，已驗證設定模式、登出與視窗生命週期。
 - [x] commit／push 完成，worktree 乾淨，upstream 同步，唯一 ready PR #8 已確認及附加 chat，發佈 EXE／實際部署驗證仍待 Phase 4。
-- [ ] 前述 PR 確認合併後，才允許開始 Phase 4。
+- [x] 前述 PR #8 已確認合併，Phase 4 開工查證見後續紀錄。
 
 ## Phase 4：驗證與交付
 
@@ -311,7 +311,7 @@ dotnet run --no-build --project tests/ProgramMigrationAnalyzer.WpfChecks
 
 **Interfaces:** 沿用同一 Local provider、正常啟動及管理入口，不新增部署用免登入開關。
 
-**進度:** 必要發佈與 SWANG-PC 部署驗證通過，最新證據見本計畫末尾的 P4-T2 完成紀錄。根目錄 ACL 與最低 8 字元密碼修正已隨 `a12b7a4` 提交並推送，認證 56／56 及完整回歸通過。此 Task 的完成紀錄提交、推送及同步確認後才開始 P4-T3。乾淨 VM 未實測，免安裝 .NET 證據為自包含產物及隔離 host 環境確實使用內含 runtime。
+**進度:** 必要發佈與 SWANG-PC 部署驗證通過，最新證據見本計畫末尾的 P4-T2 完成紀錄。根目錄 ACL 與最低 8 字元密碼修正已隨 `a12b7a4` 提交並推送，認證 56／56 及完整回歸通過。完成紀錄已提交並推送 `6d80a48`，確認 upstream 0／0、工作區乾淨後才開始 P4-T3。乾淨 VM 未實測，免安裝 .NET 證據為自包含產物及隔離 host 環境確實使用內含 runtime。
 
 - [x] 以既有 `publish.bat` 發佈 Windows x64 自包含 EXE，確認仍可免安裝 .NET 使用，不要改為全程要求管理者的 application manifest，只有帳號設定需要提升權限。
 - [x] 在已授權的測試電腦／VM 驗證部署：管理者互動建帳 → 一般權限 EXE 登入 → Scenario A／B／C → 登出 → 重新登入 → 退出，另從不同工作目錄啟動 EXE，確認認證路徑仍為同一 ProgramData。未獲部署授權時，記錄此驗證未執行，不碰真實帳號檔。
@@ -325,13 +325,15 @@ dotnet run --no-build --project tests/ProgramMigrationAnalyzer.WpfChecks
 
 **Interfaces:** 不新增產品介面，文件使用實際驗證結果，不把尚未執行或未通過的情境寫成已通過。
 
-- [ ] README 加入首次建帳、`--configure-local-account`、一般登入、重設／停用生效時點、登出及本機限制，不寫入實際密碼或帳號檔。交付文件保存 L1～L14 結果與已知限制。
-- [ ] 執行 `git diff --check`、檢查預期檔案清單及敏感資料，不 stage temp、既有截圖／簡報或任何 ProgramData 資料，記錄目前分支及未提交狀態。
+**進度:** README 與 [Login_Verification_and_Delivery.md](../../Login_Verification_and_Delivery.md) 已完成文件檢查，逐項區分自動化與正式 EXE 的實測，保留乾淨 VM、真實帳號管理邊界與早期 EXE 鍵盤觀察的限制。待 Task 提交推送，再建立唯一 ready PR。
+
+- [x] README 加入首次建帳、`--configure-local-account`、一般登入、重設／停用生效時點、登出及本機限制，不寫入實際密碼或帳號檔。交付文件保存 L1～L14 結果與已知限制。
+- [x] `git diff --check` 通過，預期修改只有 README、本計畫與登入交付文件，完整分支自審未發現機密或無關檔案。沒有 stage temp、既有截圖／簡報或 ProgramData 資料，目前分支為 `codex/login-phase-4-verification`，本 Task 三份文件待提交。
 
 ### Phase 4 驗證與 PR
 
-- [ ] P4-T1、P4-T2、P4-T3 全部步驟完成，L1～L14 與 Scenario A／B／C 均有實際驗證證據，文件與發佈方式一致。
-- [ ] 若本 Phase 修改產品程式，重新跑受影響測試及完整必需回歸，結果通過後才送 ready PR。
+- [x] P4-T1、P4-T2、P4-T3 實作與檢查全部完成，L1～L14 與 Scenario A／B／C 均有實際驗證證據，文件與發佈方式一致，未執行的桌面邊界及乾淨 VM 明確列為限制。
+- [x] 本 Phase 的 ACL 與最低 8 字元產品修正已重跑受影響測試及完整必需回歸，認證 56／56、Build 0 warnings／0 errors、三組既有回歸通過。此後僅修改文件。
 - [ ] commit／push 完成，worktree 乾淨，upstream 同步，建立並確認此分支的唯一 ready PR，記錄 URL，已有 open PR 則沿用，不能新增第二個。
 - [ ] 回報四個 Phase 的 Task、分支、PR 與驗證狀態，最終 PR 尚未合併時狀態為「已送審」，不宣稱已合併交付。
 
@@ -363,7 +365,7 @@ dotnet run --no-build --project tests/ProgramMigrationAnalyzer.WpfChecks
 | 1 | 2／2 完成並逐一推送 | 已清理，原 `codex/login-phase-1-foundation` | contracts 5 組、crypto 7 組及既有回歸通過 | [PR #6](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/6)，MERGED | `e33e33f` |
 | 2 | 2／2 完成並逐一推送 | 已清理，原 `codex/login-phase-2-local-accounts` | contracts 5、crypto 7、store 11、admin 6 及既有回歸通過 | [PR #7](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/7)，MERGED | `d890707` |
 | 3 | 3／3 完成並逐一推送，已合併 | 已清理，原 `codex/login-phase-3-desktop-gate` | login 5／5、startup 11／11、access 6／6，累積 51 組及既有回歸通過 | [PR #8](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/8)，MERGED | `82474c8` |
-| 4 | P4-T1 已推送，P4-T2 驗證完成待紀錄推送，P4-T3 未開始 | `codex/login-phase-4-verification` | 最新認證 56／56、Build 0 warnings／0 errors、三組回歸通過，SWANG-PC 必要部署驗證完成 | 未建立，交付文件尚未完成 | 未合併 |
+| 4 | P4-T1、P4-T2 已推送，P4-T3 已驗證待推送 | `codex/login-phase-4-verification` | 最新認證 56／56、Build 0 warnings／0 errors、三組回歸通過，SWANG-PC 必要部署驗證完成，文件檢查通過 | 未建立，等待 P4-T3 推送 | 未合併 |
 
 Phase 的正常狀態依序為「未開始 → 實作中 → 驗證通過 → 已送審 → 已合併」。Task 全部完成且必要檢查通過，才可標記「驗證通過」，PR URL 與遠端狀態查證成功，才可標記「已送審」。未能送 PR 時仍是未交付，不能略過此狀態。下一 Phase 的開工條件為前一 Phase「已合併」。
 
@@ -408,11 +410,11 @@ Phase 審查修正已提交並推送 40ba222348b7133c6ebe3aff227be88f301cae6b。
 
 ## 完成與交接條件
 
-- [ ] 四個 Phase 共十個 Task 完成，規格 L1～L14 有可追溯證據，既有分析／轉譯回歸通過。
+- [x] 四個 Phase 共十個 Task 的實作與驗證完成，規格 L1～L14 有可追溯證據，既有分析／轉譯回歸通過，逐 Task 推送及最終 PR 狀態見追蹤紀錄。
 - [ ] 四個 Phase 各有一個專屬分支與一個經查證的 PR，Phase 追蹤紀錄完整，最終合併狀態據實回報。
-- [ ] README 與交付紀錄可讓另一位工程師在新電腦完成建帳及登入，未驗證的真實部署明確標示。
-- [ ] 正式 EXE 只組裝 Local provider，日後正式認證工作另行提供契約並實作 adapter，不做自動 fallback。
-- [ ] 不宣稱本機登入能抵抗 EXE 修改、加密 output 或提供集中停權。
+- [x] README 與交付紀錄已提供新電腦建帳及登入操作，未驗證的部署與乾淨 VM 明確標示。
+- [x] 正式 EXE 只組裝 Local provider，日後正式認證工作另行提供契約並實作 adapter，不做自動 fallback。
+- [x] 不宣稱本機登入能抵抗 EXE 修改、加密 output 或提供集中停權。
 
 下一步由使用者開始指定 Phase 後，依本計畫執行該 Phase 的所有 Task、驗證及 commit／push／PR。建議在同一個 Active Target 由同一實作者依序使用 `superpowers:executing-plans`，因各 Task 共用認證、session 與視窗生命週期介面，每完成一個 Phase 並建立 PR 即回報，不跨越前一 PR 的合併條件。Phase 1 已依開工決議開始，帳號與正式登入入口仍依後續 Phase 交付。
 
@@ -553,4 +555,10 @@ Task 暫存工作目錄及 EXE 目錄兩種入口均成功以同一 ProgramData 
 
 P4-T2 必要發佈、真實部署與桌面流程已通過。未將自動化的替身 ACL 當成部署證據，真實 ACL 由 SWANG-PC 的目錄／檔案檢查、一般 write handle 拒絕及正式 EXE 登入佐證。L1～L14 的完整可控情境由 56 組實際執行的自動化與上述桌面觀察共同佐證，不宣稱所有邊界案例都在 SWANG-PC 手動重做。乾淨 VM、真實帳號的重設／停用與 30 秒節流桌面操作未另執行，相應管理與節流行為的自動化證據及限制須在 P4-T3 如實列出。
 
-本 Task 的 RED／GREEN、publish、host trace、實際 UI 樹、帳號安全 metadata、output 指紋及退出紀錄留在忽略的 `.codex-tmp/2026-10-01_login-phase-4/`。來源修正已推送 `a12b7a4`，本完成紀錄將另提交並推送，確認同步後才開始交付文件 Task。
+本 Task 的 RED／GREEN、publish、host trace、實際 UI 樹、帳號安全 metadata、output 指紋及退出紀錄留在忽略的 `.codex-tmp/2026-10-01_login-phase-4/`。來源修正已推送 `a12b7a4`，本完成紀錄已提交並推送 `6d80a48983f69e296348629bad830528e85c962b`，確認同步 0／0 且工作區乾淨後才開始交付文件 Task。
+
+### P4-T3 交付文件與 Phase 自審
+
+README 新增首次部署、提升權限管理入口、正常登入、8～128 Unicode scalar 密碼及符號、儲存提示、重設／停用的下次登入生效、登出清除與本機限制。新增交付紀錄列出 56 組自動化、L1～L14 的方法與界線、正式 EXE 指紋、真實 token／ACL、Scenario A／B／C、HTML／純文字、輸出保留及 exit code 0。沒有把未操作的部署邊界或乾淨 VM 寫成通過。
+
+本 Task 只修改 README、本計畫及交付文件，不改產品或發佈腳本。文件檢查核對 11 個本機連結、14 行驗收對照、56 個 PASS、六步 exit code 0、發佈指紋、保留六個 output 項目及正常退出證據，全部相符。確認 `a12b7a4` 之後的產品、測試及 publish.bat 無差異，不重複執行未受文件變更影響的產品回歸。完整產品與測試差異由同一實作者自審，未發現額外問題。Task 提交推送後再查證唯一 ready PR，最終合併由使用者審查決定。
