@@ -10,7 +10,7 @@
 
 **Spec:** [ProgramMigrationAnalyzer_Codex_Spec.md](../../ProgramMigrationAnalyzer_Codex_Spec.md)，第 37 節及第 7、19、22、24～27、32～34 節相關更新。
 
-**日期／狀態:** 2026-10-01／Phase 1～3 已合併並清理各自兩端主題分支。Phase 4 已從最新 origin/main 的 `82474c8` 開工，P4-T1 完整回歸與驗收補強通過，P4-T2、P4-T3 尚未完成，發佈及真實部署驗收未完成，尚無 Phase 4 PR。原專案範圍為 `D:/AxeenWorld/CodeLab/Projects/ProgramMigrationAnalyzer`，檔案路徑均相對於各 Phase 的 Git root，既有隔離路徑見開工決議。
+**日期／狀態:** 2026-10-01／Phase 1～3 已合併並清理各自兩端主題分支。Phase 4 已從最新 origin/main 的 `82474c8` 開工，P4-T1 完成並推送，P4-T2 已產出 EXE 及靜態核對，真實部署待指定電腦／VM 授權，Task 維持未完成。依逐 Task 規則，P4-T3 尚未開始，整體驗收未完成，尚無 Phase 4 PR。原專案範圍為 `D:/AxeenWorld/CodeLab/Projects/ProgramMigrationAnalyzer`，檔案路徑均相對於各 Phase 的 Git root，既有隔離路徑見開工決議。
 
 ## Phase 與分支總覽
 
@@ -311,6 +311,8 @@ dotnet run --no-build --project tests/ProgramMigrationAnalyzer.WpfChecks
 
 **Interfaces:** 沿用同一 Local provider、正常啟動及管理入口，不新增部署用免登入開關。
 
+**進度:** publish.bat exit code 0，EXE、x64 PE、asInvoker manifest 與自包含 runtime 設定已核對。尚未執行 EXE 或讀写真實 ProgramData。免安裝 .NET 的乾淨 VM 實測與所有部署／桌面驗收待授權，以下完整步驟仍未完成，不能開始 P4-T3 或送 ready PR。準備證據見 Phase 4 執行紀錄。
+
 - [ ] 以既有 `publish.bat` 發佈 Windows x64 自包含 EXE，確認仍可免安裝 .NET 使用，不要改為全程要求管理者的 application manifest，只有帳號設定需要提升權限。
 - [ ] 在已授權的測試電腦／VM 驗證部署：管理者互動建帳 → 一般權限 EXE 登入 → Scenario A／B／C → 登出 → 重新登入 → 退出，另從不同工作目錄啟動 EXE，確認認證路徑仍為同一 ProgramData。未獲部署授權時，記錄此驗證未執行，不碰真實帳號檔。
 - [ ] 桌面檢查 Enter／Tab／Esc、取消及視窗切換，確認視窗沒有短暫洩露主畫面、無殘留程序，既有 Markdown HTML／fallback 行為正常。
@@ -361,7 +363,7 @@ dotnet run --no-build --project tests/ProgramMigrationAnalyzer.WpfChecks
 | 1 | 2／2 完成並逐一推送 | 已清理，原 `codex/login-phase-1-foundation` | contracts 5 組、crypto 7 組及既有回歸通過 | [PR #6](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/6)，MERGED | `e33e33f` |
 | 2 | 2／2 完成並逐一推送 | 已清理，原 `codex/login-phase-2-local-accounts` | contracts 5、crypto 7、store 11、admin 6 及既有回歸通過 | [PR #7](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/7)，MERGED | `d890707` |
 | 3 | 3／3 完成並逐一推送，已合併 | 已清理，原 `codex/login-phase-3-desktop-gate` | login 5／5、startup 11／11、access 6／6，累積 51 組及既有回歸通過 | [PR #8](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/8)，MERGED | `82474c8` |
-| 4 | P4-T1 驗證通過，P4-T2／P4-T3 未完成 | `codex/login-phase-4-verification` | 認證 53／53、Build 0 warnings／0 errors、三組既有回歸通過，部署待授權 | 未建立，ready 門檻未達 | 未合併 |
+| 4 | 1／3 完成並推送，P4-T2 部分準備，P4-T3 未開始 | `codex/login-phase-4-verification` | 認證 53／53、Build 0 warnings／0 errors、三組回歸、publish 及產物靜態檢查通過，部署待授權 | 未建立，ready 門檻未達 | 未合併 |
 
 Phase 的正常狀態依序為「未開始 → 實作中 → 驗證通過 → 已送審 → 已合併」。Task 全部完成且必要檢查通過，才可標記「驗證通過」，PR URL 與遠端狀態查證成功，才可標記「已送審」。未能送 PR 時仍是未交付，不能略過此狀態。下一 Phase 的開工條件為前一 Phase「已合併」。
 
@@ -480,3 +482,15 @@ sandbox 的首次 restore 以空白輸出及 exit code 1 結束，相同既有�
 | L14 | StartupCreatesOnlyLogin、StrictStartupModes、InvalidModeExits，每個 STA 測試以新的程序啟動 | 已登入 EXE 重啟、不同工作目錄及發佈產物檢查 |
 
 P4-T1 已完成證據稽核及自動化補強，L1～L14 的部署部分未執行，不標記整體驗收通過。P4-T2 完整驗證、P4-T3 與唯一 ready PR 的門檻保留。此紀錄與補強測試隨 P4-T1 提交，Git commit／push 同步確認後才開始 P4-T2。
+
+P4-T1 已提交並推送 `9d0e2d231d55038481b53c98655722d6765a09b4`，工作區乾淨，upstream 為 `origin/codex/login-phase-4-verification`，ahead／behind 0／0，確認後才開始 P4-T2。
+
+### P4-T2 發佈準備及阻礙
+
+使用既有 `publish.bat`，未修改腳本或產品程式，Windows x64 Release、自包含、PublishSingleFile 與 IncludeNativeLibrariesForSelfExtract 的發佈 exit code 為 0。publish 目錄只有 `publish/win-x64-single-file/ProgramMigrationAnalyzer.App.exe`，192,741,661 bytes，來源為 P4-T1 commit `9d0e2d2`。
+
+2026-10-01 `05:14:42Z` 以唯讀 PE／resource 檢查，Machine 為 AMD64／`0x8664`，manifest 的 requestedExecutionLevel 為 `asInvoker`。只將 EXE 載入為資料檔，沒有執行入口。對應 runtimeconfig 的 includedFrameworks 包含 Microsoft.NETCore.App 10.0.12 與 Microsoft.WindowsDesktop.App 10.0.12。SHA-256 為 `9352D2ED480D83762BF23C56B29C503F941B9C1B1699D791C12C546A4CB33C9B`。這是發佈與靜態證據，乾淨 VM 上免安裝 .NET 的實測仍待部署驗證。
+
+產物、publish 完整輸出、`publish-inspection.json`、EXE manifest 及 `deployment-verification-checklist.md` 均保留在此 Git root 的 publish／`.codex-tmp/2026-10-01_login-phase-4/`，不提交產物或暫存。部署清單按規格列出 Windows token／ACL、登入、取消、鍵盤、登出、重設／停用、重啟、不同工作目錄、Scenario A／B／C、Markdown HTML／fallback 與退出程序觀察，結果全為未執行。
+
+目前沒有使用者指定的測試電腦／VM 及真實 ProgramData、帳號、Windows ACL 的部署授權。本次未執行發佈 EXE，未讀寫或檢查真實帳號檔，也未更改 Windows ACL。P4-T2 真實部署與桌面驗證未完成，Phase 4 未驗收且不建立 ready PR。依逐 Task 驗證與推送規則，P4-T3 的 README 與 `docs/Login_Verification_and_Delivery.md` 尚未開始，待 P4-T2 完整完成後接續。此準備進度隨同一 Phase 分支保存與推送，不將部分準備記為 Task 完成。
