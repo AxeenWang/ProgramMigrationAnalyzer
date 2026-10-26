@@ -1,6 +1,7 @@
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
@@ -23,7 +24,8 @@ namespace ProgramMigrationAnalyzer.WpfChecks;
 internal static class Program
 {
     private static readonly string Root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../../"));
-    private static readonly string Scratch = Path.Combine(Root, ".camp_codex", "2026-10-26_remove-authentication", "wpf", Guid.NewGuid().ToString("N"));
+    private static readonly string TaskRoot = Path.Combine(Root, ".camp_codex", "2026-10-26_file-list-layout");
+    private static readonly string Scratch = Path.Combine(TaskRoot, "wpf", Guid.NewGuid().ToString("N"));
 
     [STAThread]
     private static int Main()
@@ -62,6 +64,7 @@ internal static class Program
                     "The direct-access workspace must not retain an account toolbar.");
                 CheckDefaultOutputDirectory();
                 await CheckUiAsync(window, viewModel, dialogs);
+                await CheckFileListLayoutAsync();
                 viewModel.ReportMarkdownPreviewFailure(new InvalidOperationException("synthetic HTML load failure"), initializationFailure: false);
                 Check(dialogs.Errors.Last().Title == "Markdown 報告載入失敗" && !dialogs.Errors.Last().Message.Contains("啟動失敗", StringComparison.Ordinal), "HTML load failure was mislabeled as WebView2 initialization failure.");
                 if (Environment.GetEnvironmentVariable("PMA_WPF_CAPTURE") == "1") CaptureWindow(window);
@@ -138,7 +141,7 @@ internal static class Program
     private static async Task CheckUiAsync(MainWindow window, MainViewModel viewModel, ScriptedDialogs dialogs)
     {
         await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
-        var tabs = FindVisual<TabControl>(window).Single();
+        var tabs = (TabControl)window.FindName("PreviewTabs");
         Check(tabs.Items.Count == 5, "The main window does not contain all five preview tabs.");
         Check(FindButton(window, "開啟檔案").Command is IAsyncRelayCommand, "Open file button is not bound.");
         Check(FindButton(window, "開啟資料夾").Command is IAsyncRelayCommand, "Open folder button is not bound.");
@@ -336,7 +339,7 @@ internal static class Program
                 {
                     if (Environment.GetEnvironmentVariable("PMA_WPF_CAPTURE") == "1")
                     {
-                        var path = Path.Combine(Root, ".camp_codex", "2026-10-26_remove-authentication", "markdown.png");
+                        var path = Path.Combine(TaskRoot, "markdown.png");
                         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
                         await using var stream = File.Create(path);
                         await browser.CoreWebView2.CapturePreviewAsync(CoreWebView2CapturePreviewImageFormat.Png, stream);
@@ -391,16 +394,142 @@ internal static class Program
         }
     }
 
-    private static void CaptureWindow(Window window)
+    private static async Task CheckFileListLayoutAsync()
     {
-        SelectTab(FindVisual<TabControl>(window).Single(), "分析結果");
+        var folder = Path.Combine(Scratch, "layout-input");
+        Directory.CreateDirectory(folder);
+        for (var index = 0; index < 300; index++)
+            await File.WriteAllTextAsync(Path.Combine(folder, $"long_inventory_program_name_for_layout_{index:000}.4gl"), "MAIN\n DISPLAY \"layout fixture\"\nEND MAIN\n");
+        var dialogs = new ScriptedDialogs();
+        using var viewModel = new MainViewModel(new SourceFileService(), [new Informix4GlParser()], new MigrationAnalyzer(),
+            new MarkdownReportGenerator(), new MigrationSourceTranslator(), new OutputWriter(Path.Combine(Scratch, "layout-output")), dialogs);
+        using var window = new MainWindow(viewModel);
+        window.Show();
+        dialogs.Folders.Enqueue(folder);
+        await viewModel.OpenFolderCommand.ExecuteAsync(null);
+        await viewModel.AnalyzeCommand.ExecuteAsync(null);
+        var document = viewModel.SelectedDocument!;
+        var analysis = document.Analysis!;
+        for (var index = 0; index < 120; index++) analysis.Tags.Add(new AnalysisTag("Layout", $"Tag {index:000}"));
+        document.ApplyAnalysis(analysis, document.Markdown, document.RenderedMarkdownHtml, document.AnalysisOutputPath);
+        for (var index = 0; index < 200; index++) viewModel.BatchFailures.Add(new BatchFailure($"synthetic-{index:000}.4gl", "Synthetic failure detail"));
+        viewModel.BatchFailed = 200;
+        viewModel.BatchSummary = "版面檢查：300 支來源，200 筆合成失敗明細";
+        var tabs = (TabControl)window.FindName("PreviewTabs");
+        var list = FindVisual<ListBox>(window).Single(item => ReferenceEquals(item.ItemsSource, viewModel.Documents));
+        var sidebar = (FrameworkElement)list.Parent;
+        try
+        {
+            foreach (var size in new[] { (Width: 1440d, Height: 920d), (Width: 1100d, Height: 720d) })
+            {
+                window.Width = size.Width;
+                window.Height = size.Height;
+                SelectTab(tabs, "分析結果");
+                await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
+                window.UpdateLayout();
+                Check(list.ActualHeight >= sidebar.ActualHeight * 0.75,
+                    $"File list was squeezed by controls/tags at {size.Width}x{size.Height}: list={list.ActualHeight:F1}, sidebar={sidebar.ActualHeight:F1}.");
+                Console.WriteLine($"PASS layout {size.Width}x{size.Height}: file list {list.ActualHeight:F0}/{sidebar.ActualHeight:F0} px ({list.ActualHeight / sidebar.ActualHeight:P0}), 120 tags and 200 failures.");
+                Check(!FindVisual<Button>(sidebar).Any(button => Equals(button.Content, "分析勾選項目") || Equals(button.Content, "設定輸出目錄")),
+                    "Batch/output actions still consume the file sidebar.");
+                Check(!FindVisual<ItemsControl>(sidebar).Any(item => ReferenceEquals(item.ItemsSource, document.AnalysisView!.Tags)) &&
+                    FindVisual<ItemsControl>(tabs).Any(item => ReferenceEquals(item.ItemsSource, document.AnalysisView!.Tags)),
+                    "Tags did not move to the analysis preview.");
+                foreach (var title in new[] { "開啟檔案", "開啟資料夾", "開始分析", "開始轉譯", "儲存報告", "開啟 Output", "分析勾選項目", "取消批次", "設定輸出目錄" })
+                {
+                    var button = FindButton(window, title);
+                    var position = button.TranslatePoint(new Point(0, 0), window);
+                    Check(position.X >= 0 && position.Y >= 0 && position.X + button.ActualWidth <= window.ActualWidth &&
+                        position.Y + button.ActualHeight <= window.ActualHeight, $"Action clipped outside the window: {title} at {size.Width}x{size.Height}.");
+                }
+                var diagnostics = FindVisual<TabControl>(window).Single(item => !ReferenceEquals(item, tabs));
+                var height = list.ActualHeight;
+                diagnostics.SelectedItem = diagnostics.Items.OfType<TabItem>().Single(item => Equals(item.Header, "批次失敗明細"));
+                await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
+                Check(Math.Abs(list.ActualHeight - height) < 1 && FindVisual<ItemsControl>(diagnostics).Any(item => ReferenceEquals(item.ItemsSource, viewModel.BatchFailures)),
+                    "Opening failure details squeezed the file list or lost the details.");
+                if (Environment.GetEnvironmentVariable("PMA_WPF_CAPTURE") == "1")
+                {
+                    window.UpdateLayout();
+                    CaptureWindow(window, $"layout-{(int)size.Width}x{(int)size.Height}");
+                }
+            }
+            window.Width = 1440;
+            window.Height = 920;
+            await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
+            list.ScrollIntoView(document);
+            window.UpdateLayout();
+            var name = FindVisual<TextBlock>(list).First(item => item.Text == document.FileName);
+            var initialNameWidth = name.ActualWidth;
+            var initialListWidth = list.ActualWidth;
+            var splitter = FindVisual<GridSplitter>(window).Single(item => !IsDescendantOf(item, tabs));
+            DragDivider(splitter, 100);
+            window.UpdateLayout();
+            Check(list.ActualWidth >= initialListWidth + 80 && name.ActualWidth >= initialNameWidth + 70,
+                "Dragging the divider did not widen both the file list and the file-name column.");
+            Check(tabs.ActualWidth >= 620, "Dragging the divider made the preview unusably narrow.");
+            DragDivider(splitter, 400);
+            window.UpdateLayout();
+            Check(list.ActualWidth >= 500, "Resize regression did not exercise a substantially widened sidebar.");
+            window.Width = 1100;
+            window.Height = 720;
+            await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
+            window.UpdateLayout();
+            var previewRight = tabs.TranslatePoint(new Point(tabs.ActualWidth, 0), (FrameworkElement)window.Content).X;
+            Check(previewRight <= ((FrameworkElement)window.Content).ActualWidth && tabs.ActualWidth >= 620,
+                $"Widening then shrinking clipped the preview: right={previewRight:F0}, content={((FrameworkElement)window.Content).ActualWidth:F0}.");
+            window.Width = 1440;
+            window.Height = 920;
+            await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
+            if (Environment.GetEnvironmentVariable("PMA_WPF_CAPTURE") == "1")
+            {
+                DragDivider(splitter, 400 - list.ActualWidth);
+                window.UpdateLayout();
+                analysis.Tags.RemoveRange(20, analysis.Tags.Count - 20);
+                viewModel.BatchFailures.Clear();
+                viewModel.BatchFailed = 0;
+                viewModel.BatchSummary = string.Empty;
+                viewModel.SelectedDocument = null;
+                viewModel.SelectedDocument = document;
+                var diagnostics = FindVisual<TabControl>(window).Single(item => !ReferenceEquals(item, tabs));
+                diagnostics.SelectedIndex = 0;
+                await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
+                CaptureWindow(window, "layout-preview");
+            }
+            Console.WriteLine("PASS file-list layout: 300 sources, many tags/failures, 1440x920 and 1100x720, visible commands and draggable file-name width.");
+        }
+        finally { window.Close(); }
+    }
+
+    private static void DragDivider(GridSplitter splitter, double change)
+    {
+        splitter.RaiseEvent(new DragStartedEventArgs(0, 0) { RoutedEvent = Thumb.DragStartedEvent });
+        splitter.RaiseEvent(new DragDeltaEventArgs(change, 0) { RoutedEvent = Thumb.DragDeltaEvent });
+        splitter.RaiseEvent(new DragCompletedEventArgs(change, 0, false) { RoutedEvent = Thumb.DragCompletedEvent });
+    }
+
+    private static bool IsDescendantOf(DependencyObject element, DependencyObject ancestor)
+    {
+        for (var parent = VisualTreeHelper.GetParent(element); parent is not null; parent = VisualTreeHelper.GetParent(parent))
+            if (ReferenceEquals(parent, ancestor)) return true;
+        return false;
+    }
+
+    private static void CaptureWindow(Window window, string name = "window")
+    {
+        SelectTab((TabControl)window.FindName("PreviewTabs"), "分析結果");
         window.UpdateLayout();
-        var bitmap = new RenderTargetBitmap((int)window.ActualWidth, (int)window.ActualHeight,
+        var content = (FrameworkElement)window.Content;
+        var bitmap = new RenderTargetBitmap((int)Math.Ceiling(content.ActualWidth), (int)Math.Ceiling(content.ActualHeight),
             96, 96, PixelFormats.Pbgra32);
-        bitmap.Render(window);
+        var background = new DrawingVisual();
+        using (var drawing = background.RenderOpen())
+            drawing.DrawRectangle(window.Background, null, new Rect(0, 0, content.ActualWidth, content.ActualHeight));
+        bitmap.Render(background);
+        bitmap.Render(content);
         var encoder = new PngBitmapEncoder();
         encoder.Frames.Add(BitmapFrame.Create(bitmap));
-        var path = Path.Combine(Root, ".camp_codex", "2026-10-26_remove-authentication", "window.png");
+        var path = Path.Combine(TaskRoot, name + ".png");
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         using var stream = File.Create(path);
         encoder.Save(stream);
