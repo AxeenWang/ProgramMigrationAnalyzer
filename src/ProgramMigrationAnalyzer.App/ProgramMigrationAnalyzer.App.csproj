@@ -21,11 +21,20 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <Version>1.0.1.0</Version>
+    <AssemblyVersion>$(Version)</AssemblyVersion>
+    <FileVersion>$(Version)</FileVersion>
+    <ApplicationIcon>Assets\ProgramMigrationAnalyzer.ico</ApplicationIcon>
     <PmaCredentialFile Condition="'$(PmaCredentialFile)' == ''">$(MSBuildThisFileDirectory)..\..\config\embedded-login.json</PmaCredentialFile>
   </PropertyGroup>
 
   <ItemGroup Condition="Exists('$(PmaCredentialFile)')">
     <EmbeddedResource Include="$(PmaCredentialFile)" LogicalName="ProgramMigrationAnalyzer.EmbeddedLogin.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="Assets\ProgramMigrationAnalyzer.ico" />
+    <Resource Include="Assets\ProgramMigrationAnalyzer.ico" />
   </ItemGroup>
 
   <Target Name="RequireEmbeddedLogin" BeforeTargets="PrepareForBuild" Condition="'$(DesignTimeBuild)' != 'true'">

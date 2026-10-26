@@ -6,6 +6,8 @@
 
 ## 功能
 
+- 主視窗與登入共用深藍自訂標題列，顯示程式名稱與組件版號，保留系統視窗操作
+- 專屬程式圖示套用至 EXE、視窗與標題列，檔案勾選工具使用圖形與圓角按鈕
 - 開啟單一原始碼或資料夾，辨識 `.cs`、`.4gl`、`.per`，支援 UTF-8 與 Big5
 - 分析程式結構、函式呼叫、SQL、資料表與已知相依性
 - 偵測舊版 .NET API 與移植問題，產生規則式評分
@@ -99,4 +101,4 @@ WpfChecks 會顯示真實視窗。PublishChecks 使用隔離建置替身，不�
 - Diff 為原碼與結果並排檢視，沒有逐行差異標示
 - 離線登入不能抵抗掌握主機權限的刻意反編譯或修改，也不能遠端撤銷舊 EXE。混淆目前只有相容性評估，尚未套用
 
-完整需求見 [專案規格](docs/ProgramMigrationAnalyzer_Codex_Spec.md)，功能與限制見 [4GL 單檔離線 Markdown 分析](docs/FourGl_Markdown_Analysis.md)，目前登入與建置流程見 [內嵌雜湊離線登入](docs/Embedded_Login.md)，另見 [混淆相容性評估](docs/Obfuscation_Compatibility.md)。先前直接啟動、本機帳號及 Key 授權文件均為歷史紀錄。
+完整需求見 [專案規格](docs/ProgramMigrationAnalyzer_Codex_Spec.md)，功能與限制見 [4GL 單檔離線 Markdown 分析](docs/FourGl_Markdown_Analysis.md)，目前登入與建置流程見 [內嵌雜湊離線登入](docs/Embedded_Login.md)，視窗操作見 [自訂標題列](docs/Custom_Window_Caption.md)，另見 [混淆相容性評估](docs/Obfuscation_Compatibility.md)。先前直接啟動、本機帳號及 Key 授權文件均為歷史紀錄。

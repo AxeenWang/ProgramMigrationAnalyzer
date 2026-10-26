@@ -7,6 +7,7 @@
         xmlns:behaviors="clr-namespace:ProgramMigrationAnalyzer.App.Behaviors"
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
         mc:Ignorable="d"
+        Style="{StaticResource CustomWindowStyle}"
         Title="程式移植分析儀 - C#、4GL"
         Width="1440"
         Height="920"
@@ -90,16 +91,21 @@
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
                     <StackPanel Grid.Row="0" Margin="10,10,10,8">
-                        <TextBlock Text="檔案 / 專案" FontWeight="SemiBold" FontSize="15" Margin="0,0,0,8" />
-                        <DockPanel>
-                            <TextBlock DockPanel.Dock="Right" VerticalAlignment="Center" Foreground="{StaticResource MutedTextBrush}" ToolTip="{Binding BatchSelectionText}" Margin="6,0,0,0" AutomationProperties.Name="已勾選檔案數">
-                                <TextBlock.Text><MultiBinding StringFormat="{}{0} / {1}"><Binding Path="CheckedFourGlCount" /><Binding Path="FourGlCount" /></MultiBinding></TextBlock.Text>
-                            </TextBlock>
-                            <StackPanel Orientation="Horizontal">
-                                <Button Content="全選 .4gl" Command="{Binding SelectAllFourGlCommand}" Padding="6,3" Margin="0,0,6,0" />
-                                <Button Content="全部取消" Command="{Binding ClearBatchSelectionCommand}" Padding="6,3" />
-                            </StackPanel>
+                        <DockPanel Margin="0,0,0,8">
+                            <Border DockPanel.Dock="Right" Background="#EFF4FA" CornerRadius="8" Padding="6,2"
+                                    ToolTip="{Binding BatchSelectionText}">
+                                <TextBlock VerticalAlignment="Center" FontSize="11" Foreground="{StaticResource MutedTextBrush}" AutomationProperties.Name="已勾選檔案數">
+                                    <TextBlock.Text><MultiBinding StringFormat="{}{0} / {1}"><Binding Path="CheckedFourGlCount" /><Binding Path="FourGlCount" /></MultiBinding></TextBlock.Text>
+                                </TextBlock>
+                            </Border>
+                            <TextBlock Text="檔案 / 專案" FontWeight="SemiBold" FontSize="15" VerticalAlignment="Center" />
                         </DockPanel>
+                        <WrapPanel VerticalAlignment="Center">
+                            <Button Content="全選 .4gl" Command="{Binding SelectAllFourGlCommand}" Style="{StaticResource FileSelectionButtonStyle}"
+                                    Margin="0,0,6,0" ToolTip="勾選清單中的所有 .4gl 檔案" />
+                            <Button Content="全部取消" Command="{Binding ClearBatchSelectionCommand}" Style="{StaticResource ClearFileSelectionButtonStyle}"
+                                    ToolTip="取消清單中所有 .4gl 的勾選" />
+                        </WrapPanel>
                     </StackPanel>
                     <ListBox Grid.Row="1" BorderThickness="0" ItemsSource="{Binding Documents}" SelectedItem="{Binding SelectedDocument}" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                         <ListBox.ItemContainerStyle><Style TargetType="ListBoxItem"><Setter Property="HorizontalContentAlignment" Value="Stretch" /></Style></ListBox.ItemContainerStyle>
