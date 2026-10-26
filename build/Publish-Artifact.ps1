@@ -23,6 +23,9 @@ function Invoke-PmaPublisher {
             !(Test-Path -LiteralPath (Join-Path $sourceRoot 'src/ProgramMigrationAnalyzer.App/App.xaml') -PathType Leaf)) {
             throw 'Publish from the formal ProgramMigrationAnalyzer project root.'
         }
+        if (!(Test-Path -LiteralPath (Join-Path $sourceRoot 'config/embedded-login.json') -PathType Leaf)) {
+            throw 'Embedded login configuration is missing. Run build/Set-EmbeddedLogin.ps1 before publishing.'
+        }
         if (Test-Path -LiteralPath $stage) { throw 'Publication staging already exists.' }
         New-Item -ItemType Directory -Path $stage -ErrorAction Stop | Out-Null
         $ownedStage = $true
@@ -56,7 +59,7 @@ function Invoke-PmaPublisher {
             [IO.File]::Replace($stagedExe,$destinationExe,(Join-Path $stage 'previous-executable.backup'))
         } else { [IO.File]::Move($stagedExe,$destinationExe) }
         Write-Host ('Ready: ' + $destinationExe)
-        Write-Host 'Ready for Windows x64. Open the EXE to use the analyzer. HTML preview requires WebView2 Runtime.'
+        Write-Host 'Ready for Windows x64. Sign in with the configured account. No external Key file is needed. HTML preview requires WebView2 Runtime.'
         return 0
     } catch {
         Write-Host ('Publish failed: ' + $_.Exception.Message)
