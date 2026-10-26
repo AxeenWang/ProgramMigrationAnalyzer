@@ -31,7 +31,8 @@ internal static class EmbeddedLoginUiChecks
         Check(error.Text == wrongPasswordMessage, "Unknown account and wrong password must have the same error.");
 
         await CheckRepeatedSubmissionAsync();
-        await CheckClosedWindowIgnoresSuccessAsync();
+        await CheckClosedWindowIgnoresSuccessAsync(false);
+        await CheckClosedWindowIgnoresSuccessAsync(true);
         await CheckVerifierFailureAsync();
 
         username.Text = EmbeddedLoginChecks.Username;
@@ -64,7 +65,7 @@ internal static class EmbeddedLoginUiChecks
         finally { verifier.Release(); window.Close(); }
     }
 
-    private static async Task CheckClosedWindowIgnoresSuccessAsync()
+    private static async Task CheckClosedWindowIgnoresSuccessAsync(bool useCaptionClose)
     {
         using var verifier = new ControlledVerifier();
         var window = new LoginWindow(verifier);
@@ -74,7 +75,8 @@ internal static class EmbeddedLoginUiChecks
         Fill(window);
         Click((Button)window.FindName("LoginButton"));
         await verifier.Started.Task.WaitAsync(TimeSpan.FromSeconds(5));
-        Click((Button)window.FindName("CancelButton"));
+        Click(useCaptionClose ? WindowChromeChecks.Button(window, "CloseButton") : (Button)window.FindName("CancelButton"));
+        await WaitUntilAsync(() => !window.IsVisible);
         Check(!window.IsVisible && ((PasswordBox)window.FindName("PasswordInput")).Password.Length == 0,
             "Cancel must close the window and clear password input.");
         verifier.Release();

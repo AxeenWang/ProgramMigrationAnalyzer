@@ -25,7 +25,7 @@ namespace ProgramMigrationAnalyzer.WpfChecks;
 internal static class Program
 {
     private static readonly string Root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../../"));
-    private static readonly string TaskRoot = Path.Combine(Root, ".camp_codex", "2026-10-26_embedded-login");
+    private static readonly string TaskRoot = Path.Combine(Root, ".camp_codex", "2026-10-26_app-icon-selection-ui");
     private static readonly string Scratch = Path.Combine(TaskRoot, "wpf", Guid.NewGuid().ToString("N"));
 
     [STAThread]
@@ -38,6 +38,7 @@ internal static class Program
         }
 
         Directory.CreateDirectory(Scratch);
+        ApplicationIconChecks.Run(Root, Scratch);
         EmbeddedLoginChecks.Run();
         EmbeddedLoginBuildChecks.Run(Root, Scratch);
         LoginStartupChecks.RunParent();
@@ -62,6 +63,8 @@ internal static class Program
             {
                 Check(app.Windows.Count == 1 && app.Windows.Cast<Window>().Single().GetType().Name == "LoginWindow"
                     && app.MainCalls == 0, "Unauthenticated startup must show only login and must not create the analysis workspace.");
+                WindowChromeChecks.AssertCaption(app.Windows.OfType<LoginWindow>().Single());
+                WindowChromeChecks.Capture(app.Windows.OfType<LoginWindow>().Single(), Path.Combine(TaskRoot, "login-caption.png"));
                 await EmbeddedLoginUiChecks.AuthenticateStartupAsync(app.Windows.OfType<LoginWindow>().Single());
                 var window = app.Windows.OfType<MainWindow>().Single();
                 var viewModel = (MainViewModel)window.DataContext;
@@ -71,12 +74,16 @@ internal static class Program
                 Check(!FindVisual<Button>(window).Any(button => Equals(button.Content, "登出")),
                     "The direct-access workspace must not retain an account toolbar.");
                 CheckDefaultOutputDirectory();
+                await WindowChromeChecks.CheckMainAsync(window);
                 await CheckUiAsync(window, viewModel, dialogs);
                 await CheckFileListLayoutAsync();
                 viewModel.ReportMarkdownPreviewFailure(new InvalidOperationException("synthetic HTML load failure"), initializationFailure: false);
                 Check(dialogs.Errors.Last().Title == "Markdown 報告載入失敗" && !dialogs.Errors.Last().Message.Contains("啟動失敗", StringComparison.Ordinal), "HTML load failure was mislabeled as WebView2 initialization failure.");
                 if (Environment.GetEnvironmentVariable("PMA_WPF_CAPTURE") == "1") CaptureWindow(window);
                 var oldOutput = viewModel.SelectedDocument!.AnalysisOutputPath;
+                SelectTab((TabControl)window.FindName("PreviewTabs"), "分析結果");
+                await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
+                WindowChromeChecks.Capture(window, Path.Combine(TaskRoot, "main-caption.png"));
                 window.Close();
                 var previewRoot = Path.Combine(viewModel.OutputDirectory, ".preview");
                 Check(!Directory.Exists(previewRoot) || !Directory.EnumerateFiles(previewRoot, "*.html", SearchOption.AllDirectories).Any(), "Window close retained owned preview HTML files.");

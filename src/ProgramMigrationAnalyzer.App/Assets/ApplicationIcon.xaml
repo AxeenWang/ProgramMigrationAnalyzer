@@ -1,0 +1,21 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Original 64-unit mark. Keep all raster icon sizes derived from this drawing. -->
+    <DrawingImage x:Key="ApplicationIconImage">
+        <DrawingImage.Drawing>
+            <DrawingGroup>
+                <GeometryDrawing Brush="#132A46">
+                    <GeometryDrawing.Geometry>
+                        <RectangleGeometry Rect="0,0,64,64" RadiusX="14" RadiusY="14" />
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+                <GeometryDrawing Brush="#FFFFFF"
+                                 Geometry="M 24,17 L 9,32 L 24,47 L 28,43 L 17,32 L 28,21 Z" />
+                <GeometryDrawing Brush="#FFFFFF"
+                                 Geometry="M 40,17 L 36,21 L 47,32 L 36,43 L 40,47 L 55,32 Z" />
+                <GeometryDrawing Brush="#43DEC7"
+                                 Geometry="M 24,29 L 33,29 L 33,23 L 43,32 L 33,41 L 33,35 L 24,35 Z" />
+            </DrawingGroup>
+        </DrawingImage.Drawing>
+    </DrawingImage>
+</ResourceDictionary>

@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using ProgramMigrationAnalyzer.App.ViewModels;
 using ProgramMigrationAnalyzer.App.Services;
 using Microsoft.Web.WebView2.Core;
+using ProgramMigrationAnalyzer.App.Behaviors;
 
 namespace ProgramMigrationAnalyzer.App;
 
@@ -24,6 +25,8 @@ public partial class MainWindow : Window, IDisposable
     public MainWindow(MainViewModel viewModel)
     {
         InitializeComponent();
+        Title = $"{Title} ({typeof(MainWindow).Assembly.GetName().Version})";
+        CustomWindowFrame.Attach(this);
         _viewModel = viewModel;
         _previewSession = new MarkdownPreviewSession(viewModel.OutputDirectory);
         DataContext = viewModel;

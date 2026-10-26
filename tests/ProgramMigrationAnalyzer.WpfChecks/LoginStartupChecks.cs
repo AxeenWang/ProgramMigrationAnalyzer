@@ -30,7 +30,7 @@ internal static class LoginStartupChecks
                 if (scenario == "cancel")
                 {
                     var login = app.Windows.OfType<LoginWindow>().Single();
-                    EmbeddedLoginUiChecks.Click((Button)login.FindName("CancelButton"));
+                    EmbeddedLoginUiChecks.Click(WindowChromeChecks.Button(login, "CloseButton"));
                     Console.WriteLine("Startup probe cancel closed window.");
                 }
                 else

@@ -1,5 +1,6 @@
 using System.Windows;
 using ProgramMigrationAnalyzer.App.Authentication;
+using ProgramMigrationAnalyzer.App.Behaviors;
 
 namespace ProgramMigrationAnalyzer.App;
 
@@ -17,6 +18,8 @@ public partial class LoginWindow : Window
     {
         this.verifier = verifier;
         InitializeComponent();
+        Title = $"{Title} ({typeof(LoginWindow).Assembly.GetName().Version})";
+        CustomWindowFrame.Attach(this);
         Loaded += (_, _) => UsernameBox.Focus();
         Closed += (_, _) =>
         {
