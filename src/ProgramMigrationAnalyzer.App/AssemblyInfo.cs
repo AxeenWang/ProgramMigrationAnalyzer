@@ -1,7 +1,6 @@
 using System.Windows;
 using System.Runtime.CompilerServices;
 
-[assembly: InternalsVisibleTo("ProgramMigrationAnalyzer.AuthenticationChecks")]
 [assembly: InternalsVisibleTo("ProgramMigrationAnalyzer.WpfChecks")]
 
 [assembly: ThemeInfo(

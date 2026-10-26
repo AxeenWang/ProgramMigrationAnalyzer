@@ -1,5 +1,7 @@
 # 本機帳號登入 Phase／Task Implementation Plan
 
+> 歷史紀錄：2026-10-26 已移除登入、帳號管理與離線授權。本文件保留過往決策與驗證證據，不作為目前實作、部署或驗收指引。現行行為以專案 README 為準。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. 本計畫建議由同一位實作者依序執行，只有另獲明確授權時才使用代理分工。
 
 **Goal:** 以本機帳號與密碼驗證使用者，登入成功才建立分析主畫面，登出後必須重新驗證。

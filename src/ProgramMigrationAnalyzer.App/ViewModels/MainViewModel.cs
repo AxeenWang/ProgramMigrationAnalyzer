@@ -8,7 +8,6 @@ using Markdig;
 using ProgramMigrationAnalyzer.App.Models;
 using ProgramMigrationAnalyzer.App.Services;
 using ProgramMigrationAnalyzer.Core;
-using ProgramMigrationAnalyzer.Core.Authentication;
 
 namespace ProgramMigrationAnalyzer.App.ViewModels;
 
@@ -21,8 +20,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private readonly ISourceTranslator _translator;
     private readonly IOutputWriter _outputWriter;
     private readonly IFileDialogService _dialogs;
-    private readonly IUserSession _session;
-    private readonly long _workspaceGeneration;
     private readonly CancellationTokenSource _lifetimeCancellation = new();
     private readonly CancellationToken _lifetimeToken;
     private bool _disposed;
@@ -36,8 +33,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         IMarkdownReportGenerator reportGenerator,
         ISourceTranslator translator,
         IOutputWriter outputWriter,
-        IFileDialogService dialogs,
-        IUserSession session)
+        IFileDialogService dialogs)
     {
         _fileService = fileService;
         _parsers = parsers.ToList();
@@ -46,8 +42,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _translator = translator;
         _outputWriter = outputWriter;
         _dialogs = dialogs;
-        _session = session;
-        _workspaceGeneration = session.Generation;
         _lifetimeToken = _lifetimeCancellation.Token;
         _emptyMarkdownHtml = BuildHtml(string.Empty);
 
@@ -64,7 +58,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
         ];
         SelectedLanguageOption = LanguageOptions[0];
         SelectedTargetOption = TargetOptions[1];
-        _session.Changed += OnSessionChanged;
     }
 
     public ObservableCollection<SourceDocumentViewModel> Documents { get; } = [];
@@ -72,11 +65,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     public IReadOnlyList<LanguageOption> LanguageOptions { get; }
     public IReadOnlyList<TargetOption> TargetOptions { get; }
     public string OutputDirectory => _outputWriter.OutputDirectory;
-    public string CurrentUserDisplayName => IsSessionCurrent(_workspaceGeneration) ? _session.CurrentUser!.DisplayName : "";
-    public event Action? LogoutRequested;
-    internal long SessionGeneration => _session.Generation;
-    internal bool IsSessionCurrent(long generation) => !_disposed && _session.IsAuthenticated
-        && generation == _workspaceGeneration && generation == _session.Generation && !_lifetimeToken.IsCancellationRequested;
+    internal bool IsWorkspaceActive => !_disposed && !_lifetimeToken.IsCancellationRequested;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(AnalyzeCommand))]
@@ -97,7 +86,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [NotifyCanExecuteChangedFor(nameof(OpenFileCommand))]
     [NotifyCanExecuteChangedFor(nameof(OpenFolderCommand))]
     [NotifyCanExecuteChangedFor(nameof(OpenOutputFolderCommand))]
-    [NotifyCanExecuteChangedFor(nameof(LogoutCommand))]
     private bool isBusy;
 
     [ObservableProperty]
@@ -112,25 +100,23 @@ public partial class MainViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(MarkdownHtml));
     }
 
-    private bool CanOpen() => IsSessionCurrent(_workspaceGeneration) && !IsBusy;
+    private bool CanOpen() => IsWorkspaceActive && !IsBusy;
     private bool CanAnalyze() => CanOpen() && SelectedDocument is not null;
     private bool CanTranslate() => CanOpen() && SelectedDocument?.Analysis is not null;
     private bool CanSaveMarkdown() => CanOpen() && !string.IsNullOrWhiteSpace(SelectedDocument?.Markdown);
-    private bool CanLogout() => CanOpen();
 
     [RelayCommand(CanExecute = nameof(CanOpen))]
     private async Task OpenFileAsync()
     {
         if (!CanOpen()) return;
-        var generation = _session.Generation;
-        await RunGuardedAsync("載入檔案", generation, async token =>
+        await RunGuardedAsync("載入檔案", async token =>
         {
             var path = _dialogs.SelectSourceFile();
-            EnsureCurrent(generation);
+            EnsureActive();
             if (path is null) return;
             AddLog("Loading source...");
             var document = await _fileService.LoadFileAsync(path, SelectedLanguageOption.Language, token);
-            EnsureCurrent(generation);
+            EnsureActive();
             AddOrSelect(document);
             AddLog($"Loaded {document.FileName} ({FormatLanguage(document.Language)}).");
         });
@@ -140,15 +126,14 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private async Task OpenFolderAsync()
     {
         if (!CanOpen()) return;
-        var generation = _session.Generation;
-        await RunGuardedAsync("載入資料夾", generation, async token =>
+        await RunGuardedAsync("載入資料夾", async token =>
         {
             var path = _dialogs.SelectSourceFolder();
-            EnsureCurrent(generation);
+            EnsureActive();
             if (path is null) return;
             AddLog("Scanning source folder...");
             var documents = await _fileService.LoadFolderAsync(path, SelectedLanguageOption.Language, token);
-            EnsureCurrent(generation);
+            EnsureActive();
             foreach (var document in documents) AddOrSelect(document, select: false);
             SelectedDocument ??= Documents.FirstOrDefault();
             AddLog($"Loaded {documents.Count} supported source file(s).");
@@ -160,9 +145,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private async Task AnalyzeAsync()
     {
         if (!CanAnalyze()) return;
-        var generation = _session.Generation;
         var viewModel = SelectedDocument!;
-        await RunGuardedAsync("分析", generation, async token =>
+        await RunGuardedAsync("分析", async token =>
         {
             viewModel.BeginAnalysis();
             RefreshDocumentCommands(viewModel);
@@ -171,14 +155,14 @@ public partial class MainViewModel : ObservableObject, IDisposable
             var target = SelectedTargetOption.Framework;
             var parser = _parsers.FirstOrDefault(candidate => candidate.CanParse(source))
                 ?? throw new NotSupportedException($"Unsupported source language for {source.FileName}.");
-            EnsureCurrent(generation);
+            EnsureActive();
             AddLog("Parsing...");
             var result = await Task.Run(() => parser.ParseAsync(source, token), token);
-            EnsureCurrent(generation);
+            EnsureActive();
             AddLog("Analyzing SQL...");
             AddLog("Checking legacy APIs...");
             result = await Task.Run(() => _analyzer.AnalyzeAsync(result, token), token);
-            EnsureCurrent(generation);
+            EnsureActive();
             AddLog("Generating Markdown...");
             var (markdown, html) = await Task.Run(() =>
             {
@@ -187,9 +171,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 token.ThrowIfCancellationRequested();
                 return (report, BuildHtml(report));
             }, token);
-            EnsureCurrent(generation);
+            EnsureActive();
             var outputPath = await _outputWriter.WriteAnalysisAsync(source, markdown, token);
-            EnsureCurrent(generation);
+            EnsureActive();
             viewModel.ApplyAnalysis(result, markdown, html, outputPath);
             RefreshDocumentCommands(viewModel);
             AddLog($"Completed. Report: {outputPath}");
@@ -200,18 +184,17 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private async Task TranslateAsync()
     {
         if (!CanTranslate()) return;
-        var generation = _session.Generation;
         var viewModel = SelectedDocument!;
         var analysis = viewModel.Analysis!;
-        await RunGuardedAsync("轉譯", generation, async token =>
+        await RunGuardedAsync("轉譯", async token =>
         {
             viewModel.BeginTranslation();
             var target = SelectedTargetOption;
             AddLog($"Translating to {target.Name}...");
             var result = await Task.Run(() => _translator.TranslateAsync(analysis, target.Framework, token), token);
-            EnsureCurrent(generation);
+            EnsureActive();
             var outputPath = await _outputWriter.WriteTranslationAsync(result, token);
-            EnsureCurrent(generation);
+            EnsureActive();
             viewModel.ApplyTranslation(result, outputPath);
             AddLog($"Translation completed. Output: {outputPath}");
         }, viewModel.MarkFailed);
@@ -221,16 +204,15 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private async Task SaveMarkdownAsync()
     {
         if (!CanSaveMarkdown()) return;
-        var generation = _session.Generation;
         var document = SelectedDocument!;
         var markdown = document.Markdown;
-        await RunGuardedAsync("儲存報告", generation, async token =>
+        await RunGuardedAsync("儲存報告", async token =>
         {
             var path = _dialogs.SelectMarkdownSavePath($"{document.FileName}.analysis.md");
-            EnsureCurrent(generation);
+            EnsureActive();
             if (path is null) return;
             await File.WriteAllTextAsync(path, markdown, new UTF8Encoding(false), token);
-            EnsureCurrent(generation);
+            EnsureActive();
             AddLog($"Markdown saved: {path}");
         });
     }
@@ -239,72 +221,51 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private void OpenOutputFolder()
     {
         if (!CanOpen()) return;
-        var generation = _session.Generation;
         IsBusy = true;
         try
         {
-            EnsureCurrent(generation);
+            EnsureActive();
             Directory.CreateDirectory(OutputDirectory);
-            EnsureCurrent(generation);
+            EnsureActive();
             Process.Start(new ProcessStartInfo(OutputDirectory) { UseShellExecute = true });
         }
-        catch (OperationCanceledException) when (!IsSessionCurrent(generation)) { }
+        catch (OperationCanceledException) when (!IsWorkspaceActive) { }
         catch (Exception exception)
         {
-            if (!IsSessionCurrent(generation)) return;
+            if (!IsWorkspaceActive) return;
             AddLog($"ERROR: {exception.Message}");
             _dialogs.ShowError("無法開啟 Output", exception.Message);
         }
-        finally { if (IsSessionCurrent(generation)) IsBusy = false; }
+        finally { if (IsWorkspaceActive) IsBusy = false; }
     }
 
-    [RelayCommand(CanExecute = nameof(CanLogout))]
-    private void Logout()
+    private void EnsureActive()
     {
-        if (!IsSessionCurrent(_workspaceGeneration)) return;
-        if (IsBusy) { StatusMessage = "請等待目前工作完成後再登出。"; return; }
-        LogoutRequested?.Invoke();
+        if (!IsWorkspaceActive) throw new OperationCanceledException(_lifetimeToken);
     }
 
-    private void EnsureCurrent(long generation)
+    private async Task RunGuardedAsync(string operation, Func<CancellationToken, Task> action, Action? onFailure = null)
     {
-        if (!IsSessionCurrent(generation)) throw new OperationCanceledException(_lifetimeToken);
-    }
-
-    private async Task RunGuardedAsync(string operation, long generation, Func<CancellationToken, Task> action, Action? onFailure = null)
-    {
-        if (!CanOpen() || !IsSessionCurrent(generation)) return;
+        if (!CanOpen() || !IsWorkspaceActive) return;
         IsBusy = true;
         StatusMessage = $"{operation}中...";
         try
         {
-            EnsureCurrent(generation);
+            EnsureActive();
             await action(_lifetimeToken);
-            EnsureCurrent(generation);
+            EnsureActive();
             StatusMessage = $"{operation}完成";
         }
-        catch (OperationCanceledException) when (!IsSessionCurrent(generation) || _lifetimeToken.IsCancellationRequested) { }
+        catch (OperationCanceledException) when (!IsWorkspaceActive || _lifetimeToken.IsCancellationRequested) { }
         catch (Exception exception)
         {
-            if (!IsSessionCurrent(generation)) return;
+            if (!IsWorkspaceActive) return;
             onFailure?.Invoke();
             StatusMessage = $"{operation}失敗";
             AddLog($"ERROR: {exception.Message}");
             _dialogs.ShowError($"{operation}失敗", exception.Message);
         }
-        finally { if (IsSessionCurrent(generation)) IsBusy = false; }
-    }
-
-    private void OnSessionChanged(object? sender, EventArgs args)
-    {
-        if (_disposed) return;
-        if (_session.Generation != _workspaceGeneration || !_session.IsAuthenticated)
-        {
-            _lifetimeCancellation.Cancel();
-            ClearWorkspace();
-        }
-        OnPropertyChanged(nameof(CurrentUserDisplayName));
-        NotifyCommands();
+        finally { if (IsWorkspaceActive) IsBusy = false; }
     }
 
     private void NotifyCommands()
@@ -315,7 +276,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
         TranslateCommand.NotifyCanExecuteChanged();
         SaveMarkdownCommand.NotifyCanExecuteChanged();
         OpenOutputFolderCommand.NotifyCanExecuteChanged();
-        LogoutCommand.NotifyCanExecuteChanged();
     }
 
     private void ClearWorkspace()
@@ -332,11 +292,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         if (_disposed) return;
         _disposed = true;
-        _session.Changed -= OnSessionChanged;
         _lifetimeCancellation.Cancel();
         ClearWorkspace();
-        LogoutRequested = null;
-        OnPropertyChanged(nameof(CurrentUserDisplayName));
         NotifyCommands();
         _lifetimeCancellation.Dispose();
     }
@@ -375,7 +332,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     public void ReportMarkdownPreviewFailure(Exception exception)
     {
-        if (!IsSessionCurrent(_workspaceGeneration)) return;
+        if (!IsWorkspaceActive) return;
         AddLog($"ERROR: WebView2 Markdown preview unavailable: {exception.Message}");
         _dialogs.ShowError("Markdown 預覽無法啟動", $"WebView2 啟動失敗，已改用純文字預覽。\n{exception.Message}");
     }

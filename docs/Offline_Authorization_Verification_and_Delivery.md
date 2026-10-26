@@ -1,5 +1,7 @@
 # 離線簽章授權驗證與交付紀錄
 
+> 歷史紀錄：2026-10-26 已移除登入、帳號管理與離線授權。本文件保留過往決策與驗證證據，不作為目前實作、部署或驗收指引。現行行為以專案 README 為準。
+
 更新日期：2026-10-01。Active Target：`Projects/ProgramMigrationAnalyzer`，Target Lock enabled，CodeLab-managed。正式來源、建置及發布均使用 `D:/AxeenWorld/CodeLab/Projects/ProgramMigrationAnalyzer`。
 
 Phase 5 的 T1～T6 已完成驗證及推送，唯一 [PR #11](https://github.com/AxeenWang/ProgramMigrationAnalyzer/pull/11) 已建立為 ready，目前 OPEN，等待人員審查與合併。正式公司金鑰、公司 Key 發布與帳號替換已完成，使用者已確認新版正式 EXE 的完整桌面驗收通過。
