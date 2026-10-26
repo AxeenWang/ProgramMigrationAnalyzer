@@ -1,5 +1,7 @@
 # 本機登入驗證與交付紀錄
 
+> 歷史紀錄：2026-10-26 已移除登入、帳號管理與離線授權。本文件保留過往決策與驗證證據，不作為目前實作、部署或驗收指引。現行行為以專案 README 為準。
+
 日期：2026-10-01。範圍為登入 Phase 4，分支 `codex/login-phase-4-verification`，基底 `82474c8`。P4-T1 的正式入口補強已推送 `9d0e2d2`，P4-T2 的部署修正已推送 `a12b7a4`，完成紀錄已推送 `6d80a48`。目前文件屬 P4-T3，最新 Task、PR 與合併狀態見[實作計畫](superpowers/plans/2026-10-01-local-login-implementation-plan.md)。
 
 規格依據為 [ProgramMigrationAnalyzer_Codex_Spec.md](ProgramMigrationAnalyzer_Codex_Spec.md) 第 37 節。同一實作者依 Task 順序執行、自審、提交與推送，未使用代理，獨立審查由 PR 進行。原 checkout 的既有資料保留。

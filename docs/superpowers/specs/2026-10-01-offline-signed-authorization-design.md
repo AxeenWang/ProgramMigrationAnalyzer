@@ -1,5 +1,7 @@
 # ProgramMigrationAnalyzer 離線簽章授權設計
 
+> 歷史紀錄：2026-10-26 已移除登入、帳號管理與離線授權。本文件保留過往決策與驗證證據，不作為目前實作、部署或驗收指引。現行行為以專案 README 為準。
+
 日期：2026-10-01。狀態：規格與實作計畫均已核准，Phase 5 已開工，尚未完成客戶端接入或部署。
 
 Active Target：`Projects/ProgramMigrationAnalyzer`。Target Lock：enabled。

@@ -3,7 +3,6 @@ using System.IO;
 using ProgramMigrationAnalyzer.App.Services;
 using ProgramMigrationAnalyzer.App.ViewModels;
 using ProgramMigrationAnalyzer.Core;
-using ProgramMigrationAnalyzer.Core.Authentication;
 using ProgramMigrationAnalyzer.Infrastructure;
 using static Fixtures;
 
@@ -13,7 +12,7 @@ if (!File.Exists(Path.Combine(root, "ProgramMigrationAnalyzer.sln")))
     throw new InvalidOperationException("Phase 2 checks must run from the ProgramMigrationAnalyzer project.");
 }
 
-var scratch = Path.Combine(root, ".camp_codex", "2026-09-23_phase2-checks", Guid.NewGuid().ToString("N"));
+var scratch = Path.Combine(root, ".camp_codex", "2026-10-26_remove-authentication", "phase2", Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(scratch);
 
 try
@@ -21,7 +20,7 @@ try
     await CheckFolderScanAsync();
     await CheckOutputNamesAsync();
     await CheckViewModelFlowAsync();
-    Console.WriteLine("Phase 2 checks passed: folder scan, output names, background analysis, document switch, reload, failure state, WebView2 notice.");
+    Console.WriteLine("Phase 2 checks passed: folder scan, output names, background analysis, document switch, reload, failure state, WebView2 notice, cancellation on disposal.");
 }
 finally
 {
@@ -75,7 +74,7 @@ async Task CheckViewModelFlowAsync()
     var parser = new FakeParser();
     var translator = new FakeTranslator();
     using var viewModel = new MainViewModel(files, [parser], new FakeAnalyzer(),
-        new FakeReport(), translator, new OutputWriter(Path.Combine(scratch, "vm-output")), dialogs, new FakeUserSession());
+        new FakeReport(), translator, new OutputWriter(Path.Combine(scratch, "vm-output")), dialogs);
 
     dialogs.NextFile = pathA;
     await viewModel.OpenFileCommand.ExecuteAsync(null);
@@ -137,6 +136,18 @@ async Task CheckViewModelFlowAsync()
     viewModel.ReportMarkdownPreviewFailure(new InvalidOperationException("runtime missing"));
     Check(dialogs.Errors.Any(item => item.Contains("WebView2")) &&
         viewModel.Logs.Any(item => item.Contains("WebView2")), "WebView2 failure was not shown and logged.");
+
+    var savedReport = reloaded.AnalysisOutputPath;
+    parser.Block();
+    var pendingAnalysis = viewModel.AnalyzeCommand.ExecuteAsync(null);
+    await parser.Entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
+    viewModel.Dispose();
+    parser.Release();
+    await pendingAnalysis;
+    Check(viewModel.Documents.Count == 0 && viewModel.SelectedDocument is null && viewModel.Logs.Count == 0
+        && reloaded.Analysis is null && reloaded.SourceText == string.Empty
+        && !viewModel.OpenFileCommand.CanExecute(null) && File.Exists(savedReport),
+        "Disposal during analysis must ignore late results, release source data and retain saved output.");
 }
 
 static void Check(bool condition, string message)
@@ -177,14 +188,6 @@ sealed class FakeFiles : ISourceFileService
     public Task<IReadOnlyList<SourceDocument>> LoadFolderAsync(string path,
         SourceLanguage languageOverride = SourceLanguage.Unknown, CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<SourceDocument>>([]);
-}
-
-sealed class FakeUserSession : IUserSession
-{
-    public bool IsAuthenticated => true;
-    public AuthenticatedUser CurrentUser { get; } = new(Guid.NewGuid(), "test.user", "Test user", "Local");
-    public long Generation => 1;
-    public event EventHandler? Changed { add { } remove { } }
 }
 
 sealed class FakeDialogs : IFileDialogService

@@ -46,8 +46,7 @@ public partial class MainWindow : Window, IDisposable
 
     private async Task UpdateMarkdownPreviewAsync()
     {
-        var generation = _viewModel.SessionGeneration;
-        if (_disposed || !_viewModel.IsSessionCurrent(generation)) return;
+        if (_disposed || !_viewModel.IsWorkspaceActive) return;
         if (_webViewUnavailable)
         {
             ShowMarkdownFallback();
@@ -60,7 +59,7 @@ public partial class MainWindow : Window, IDisposable
             {
                 _webViewInitialization ??= MarkdownWebView.EnsureCoreWebView2Async();
                 await _webViewInitialization;
-                if (_disposed || !_viewModel.IsSessionCurrent(generation)) return;
+                if (_disposed || !_viewModel.IsWorkspaceActive) return;
                 _webViewReady = true;
             }
 
@@ -70,7 +69,7 @@ public partial class MainWindow : Window, IDisposable
         }
         catch (Exception exception)
         {
-            if (_disposed || !_viewModel.IsSessionCurrent(generation)) return;
+            if (_disposed || !_viewModel.IsWorkspaceActive) return;
             ShowMarkdownFallback();
             if (!_webViewUnavailable)
             {

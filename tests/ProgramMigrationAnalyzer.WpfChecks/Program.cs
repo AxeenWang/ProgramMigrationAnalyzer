@@ -22,7 +22,7 @@ namespace ProgramMigrationAnalyzer.WpfChecks;
 internal static class Program
 {
     private static readonly string Root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../../"));
-    private static readonly string Scratch = Path.Combine(Root, ".camp_codex", "2026-10-01_login-phase-3", "wpf", Guid.NewGuid().ToString("N"));
+    private static readonly string Scratch = Path.Combine(Root, ".camp_codex", "2026-10-26_remove-authentication", "wpf", Guid.NewGuid().ToString("N"));
 
     [STAThread]
     private static int Main()
@@ -34,8 +34,7 @@ internal static class Program
 
         Directory.CreateDirectory(Scratch);
         var dialogs = new ScriptedDialogs();
-        var authentication = new FakeAuthentication();
-        var app = new TestApp(authentication, dialogs);
+        var app = new TestApp(dialogs);
         app.Resources = (ResourceDictionary)Application.LoadComponent(
             new Uri("/ProgramMigrationAnalyzer.App;component/Resources/ApplicationResources.xaml", UriKind.Relative));
         var exitCode = 0;
@@ -44,102 +43,52 @@ internal static class Program
             Console.Error.WriteLine(eventArgs.Exception);
             exitCode = 1;
             eventArgs.Handled = true;
-            app.Coordinator?.Shutdown();
+            app.Shutdown();
         };
 
         app.Dispatcher.BeginInvoke(DispatcherPriority.ApplicationIdle, new Action(async () =>
         {
             try
             {
-                while (app.Coordinator?.State is null or ApplicationSessionState.Starting or ApplicationSessionState.InspectingAuthorization)
-                    await Task.Delay(10);
-                Check(app.Windows.OfType<MainWindow>().Count() == 0 && app.MainCalls == 0
-                    && !Directory.Exists(Path.Combine(Scratch, "output")), "WpfChecks must start with only the login gate.");
-                var login = app.Windows.OfType<LoginWindow>().Single();
-                var loginVm = (LoginViewModel)login.DataContext;
-                loginVm.Username = "test.user";
-                using var password = new System.Security.SecureString();
-                foreach (var character in "Test-only WPF password") password.AppendChar(character);
-                password.MakeReadOnly();
-                await loginVm.LoginCommand.ExecuteAsync(password);
                 var window = app.Windows.OfType<MainWindow>().Single();
                 var viewModel = (MainViewModel)window.DataContext;
-                Check(app.MainCalls == 1 && ((TextBlock)window.FindName("CurrentUserText")).Text == "WPF test user"
-                    && FindButton(window, "登出").Command == viewModel.LogoutCommand, "Main must show the authenticated user and logout binding.");
+                Check(app.Windows.Count == 1 && app.MainCalls == 1
+                    && viewModel.OpenFileCommand.CanExecute(null) && viewModel.OpenFolderCommand.CanExecute(null),
+                    "Startup must open the usable main window directly without login or an authorization Key.");
+                Check(!FindVisual<Button>(window).Any(button => Equals(button.Content, "登出")),
+                    "The direct-access workspace must not retain an account toolbar.");
                 await CheckUiAsync(window, viewModel, dialogs);
                 if (Environment.GetEnvironmentVariable("PMA_WPF_CAPTURE") == "1") CaptureWindow(window);
                 var oldOutput = viewModel.SelectedDocument!.AnalysisOutputPath;
-                viewModel.LogoutCommand.Execute(null);
-                Check(!app.Coordinator!.Session.IsAuthenticated && viewModel.Documents.Count == 0
-                    && viewModel.Logs.Count == 0 && viewModel.SelectedDocument is null && window.IsDisposed
-                    && File.Exists(oldOutput), "UI logout must release the old workspace and retain generated files.");
-                var freshLogin = app.Windows.OfType<LoginWindow>().Single();
-                var freshLoginVm = (LoginViewModel)freshLogin.DataContext;
-                freshLoginVm.Username = "second.user";
-                authentication.User = new(Guid.NewGuid(), "second.user", "Second WPF user", "Local");
-                await freshLoginVm.LoginCommand.ExecuteAsync(password);
-                var freshMain = app.Windows.OfType<MainWindow>().Single();
-                var freshWorkspace = (MainViewModel)freshMain.DataContext;
-                Check(!ReferenceEquals(viewModel, freshWorkspace) && freshWorkspace.Documents.Count == 0
-                    && freshWorkspace.CurrentUserDisplayName == "Second WPF user", "Second login must create an empty workspace for the new user.");
-                freshMain.Close();
-                Console.WriteLine("Phase 3 WPF checks passed: login gate, user/logout binding, fresh workspace, retained output, opening files/folder, source and analysis bindings, Markdown preview, .NET 8/10 translation, diff, save, status and log.");
+                window.Close();
+                Check(viewModel.Documents.Count == 0 && viewModel.Logs.Count == 0
+                    && viewModel.SelectedDocument is null && window.IsDisposed && File.Exists(oldOutput)
+                    && !viewModel.OpenFileCommand.CanExecute(null),
+                    "Closing the main window must release its workspace and retain generated files.");
+                Console.WriteLine("WPF checks passed: direct startup, usable commands, close/disposal, retained output, opening files/folder, source and analysis bindings, Markdown preview, .NET 8/10 translation, diff, save, status and log.");
             }
             catch (Exception exception)
             {
                 Console.Error.WriteLine(exception);
                 exitCode = 1;
             }
-            finally { app.Coordinator?.Shutdown(); }
+            finally { app.Shutdown(); }
         }));
 
         try { app.Run(); return exitCode; }
         finally { Directory.Delete(Scratch, recursive: true); }
     }
 
-    private sealed class FakeAuthentication : ProgramMigrationAnalyzer.Core.Authentication.IAuthenticationService
+    private sealed class TestApp(ScriptedDialogs dialogs) : ProgramMigrationAnalyzer.App.App
     {
-        public ProgramMigrationAnalyzer.Core.Authentication.AuthenticatedUser User { get; set; } = new(Guid.NewGuid(), "test.user", "WPF test user", "Local");
-        public Task<ProgramMigrationAnalyzer.Core.Authentication.AuthenticationResult> AuthenticateAsync(
-            ProgramMigrationAnalyzer.Core.Authentication.LoginRequest request, CancellationToken cancellationToken = default) =>
-            Task.FromResult(ProgramMigrationAnalyzer.Core.Authentication.AuthenticationResult.Succeeded(User));
-    }
-
-    private sealed class TestApp(FakeAuthentication authentication, ScriptedDialogs dialogs) : ProgramMigrationAnalyzer.App.App
-    {
-        private readonly ProgramMigrationAnalyzer.Infrastructure.Authentication.SignedLocalAccountStore _store = CreateStore();
-        public ApplicationSessionCoordinator? Coordinator { get; private set; }
         public int MainCalls { get; private set; }
-        protected override ApplicationSessionCoordinator CreateCoordinator() => Coordinator = new(this, authentication, session =>
+        protected override MainWindow CreateMainWindow()
         {
             MainCalls++;
             var viewModel = new MainViewModel(new SourceFileService(), [new CSharpSourceParser(), new Informix4GlParser()],
                 new MigrationAnalyzer(), new MarkdownReportGenerator(), new MigrationSourceTranslator(),
-                new OutputWriter(Path.Combine(Scratch, "output")), dialogs, session);
-            viewModel.LogoutRequested += () => Coordinator!.RequestLogout();
+                new OutputWriter(Path.Combine(Scratch, "output")), dialogs);
             return new MainWindow(viewModel);
-        }, _store, _ => throw new InvalidOperationException("Valid signed UI fixture must not require activation."), TimeProvider.System, new AuthenticationDiagnosticLog());
-        private static ProgramMigrationAnalyzer.Infrastructure.Authentication.SignedLocalAccountStore CreateStore()
-        {
-            using var key = System.Security.Cryptography.ECDsa.Create(System.Security.Cryptography.ECCurve.NamedCurves.nistP256);
-            var trust = ProgramMigrationAnalyzer.Infrastructure.Authentication.AuthorizationTrust.FromPublicKeyPem(key.ExportSubjectPublicKeyInfoPem());
-            var payload = new ProgramMigrationAnalyzer.Infrastructure.Authentication.AuthorizationPayload(2, "ProgramMigrationAnalyzer", Guid.NewGuid(), 1,
-                DateTimeOffset.UtcNow, [new(Guid.NewGuid(), "test.user", "WPF fixture", true, "PBKDF2-HMAC-SHA256", 600_000,
-                    Convert.ToBase64String(new byte[16]), Convert.ToBase64String(new byte[32]))]);
-            var raw = ProgramMigrationAnalyzer.Infrastructure.Authentication.AuthorizationPackageCodec.EncodePayload(payload);
-            var signature = key.SignData(ProgramMigrationAnalyzer.Infrastructure.Authentication.AuthorizationPackageCodec.BuildSigningInput(trust.KeyId!, raw),
-                System.Security.Cryptography.HashAlgorithmName.SHA256, System.Security.Cryptography.DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
-            var store = new ProgramMigrationAnalyzer.Infrastructure.Authentication.SignedLocalAccountStore(Path.Combine(Scratch, "auth", "users.json"),
-                new TestPolicy(), new(trust));
-            store.ImportAsync(ProgramMigrationAnalyzer.Infrastructure.Authentication.AuthorizationPackageCodec.EncodeEnvelope(trust.KeyId!, raw, signature)).GetAwaiter().GetResult();
-            return store;
-        }
-        private sealed class TestPolicy : ProgramMigrationAnalyzer.Infrastructure.Authentication.ILocalAccountAccessPolicy
-        {
-            public bool IsElevatedAdministrator => true;
-            public void ValidateReadAccess(string path) { }
-            public void PrepareWriteAccess(string path) => Directory.CreateDirectory(path);
-            public void SecureFile(string path) { }
         }
     }
 
@@ -247,7 +196,7 @@ internal static class Program
                 {
                     if (Environment.GetEnvironmentVariable("PMA_WPF_CAPTURE") == "1")
                     {
-                        var path = Path.Combine(Root, ".camp_codex", "2026-10-01_login-phase-3", "markdown.png");
+                        var path = Path.Combine(Root, ".camp_codex", "2026-10-26_remove-authentication", "markdown.png");
                         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
                         await using var stream = File.Create(path);
                         await browser.CoreWebView2.CapturePreviewAsync(CoreWebView2CapturePreviewImageFormat.Png, stream);
@@ -310,7 +259,7 @@ internal static class Program
         bitmap.Render(window);
         var encoder = new PngBitmapEncoder();
         encoder.Frames.Add(BitmapFrame.Create(bitmap));
-        var path = Path.Combine(Root, ".camp_codex", "2026-10-01_login-phase-3", "window.png");
+        var path = Path.Combine(Root, ".camp_codex", "2026-10-26_remove-authentication", "window.png");
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         using var stream = File.Create(path);
         encoder.Save(stream);

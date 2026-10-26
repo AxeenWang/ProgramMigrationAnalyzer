@@ -1,5 +1,7 @@
 # 登入作業正式工作區復原
 
+> 歷史紀錄：2026-10-26 已移除登入、帳號管理與離線授權。本文件保留過往決策與驗證證據，不作為目前實作、部署或驗收指引。現行行為以專案 README 為準。
+
 日期：2026-10-01。Active Target：`Projects/ProgramMigrationAnalyzer`，Target Lock enabled。
 
 使用者明確授權將過往登入作業完整移回 `D:/AxeenWorld/CodeLab/Projects/ProgramMigrationAnalyzer`。本目錄現在持有 `codex/offline-authorization-phase-5`，HEAD 與同名 origin upstream 均為 `52fcb926f41239aeeb18cb005dc0d5373c77aa69`，ahead／behind 0／0。治理模式為 CodeLab-managed，適用專案 AGENTS.md 與 CodeLab anchors。

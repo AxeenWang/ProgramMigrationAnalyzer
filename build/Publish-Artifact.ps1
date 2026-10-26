@@ -2,43 +2,35 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 function Invoke-PmaPublisher {
-    param([ValidateSet('Client','Issuer')][string]$Kind, [string]$PublicKeyPath, [string]$PublicationRoot)
+    param([string]$PublicationRoot)
     $sourceRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
     if ([string]::IsNullOrWhiteSpace($PublicationRoot)) { $PublicationRoot = Join-Path $sourceRoot 'publish' }
     $publicationRoot = [IO.Path]::GetFullPath($PublicationRoot)
     if (!$publicationRoot.StartsWith($sourceRoot + [IO.Path]::DirectorySeparatorChar,[StringComparison]::OrdinalIgnoreCase)) {
         throw 'Publication output must remain inside the formal project root.'
     }
-    $stage = Join-Path $publicationRoot ('.stage-' + $Kind.ToLowerInvariant() + '-' + [Guid]::NewGuid().ToString('N'))
+    $stage = Join-Path $publicationRoot ('.stage-analyzer-' + [Guid]::NewGuid().ToString('N'))
     $ownedStage = $false
     $env:MSBUILDDISABLENODEREUSE = '1'
     $env:DOTNET_CLI_DO_NOT_USE_MSBUILD_SERVER = '1'
+    $previousConsoleEncoding = [Console]::OutputEncoding
+    $previousOutputEncoding = $OutputEncoding
     try {
-        if ($Kind -eq 'Client' -and !(Test-Path -LiteralPath (Join-Path $sourceRoot 'src/ProgramMigrationAnalyzer.App/LoginWindow.xaml') -PathType Leaf)) {
-            throw 'The formal project root does not contain the current login source.'
+        # Windows PowerShell must decode native UTF-8 output using the same encoding.
+        [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
+        $OutputEncoding = [Console]::OutputEncoding
+        if (!(Test-Path -LiteralPath (Join-Path $sourceRoot 'ProgramMigrationAnalyzer.sln') -PathType Leaf) -or
+            !(Test-Path -LiteralPath (Join-Path $sourceRoot 'src/ProgramMigrationAnalyzer.App/App.xaml') -PathType Leaf)) {
+            throw 'Publish from the formal ProgramMigrationAnalyzer project root.'
         }
         if (Test-Path -LiteralPath $stage) { throw 'Publication staging already exists.' }
         New-Item -ItemType Directory -Path $stage -ErrorAction Stop | Out-Null
         $ownedStage = $true
         $dotnet = (Get-Command dotnet -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
         $arguments = @('publish')
-        if ($Kind -eq 'Client') {
-            if ([string]::IsNullOrWhiteSpace($PublicKeyPath)) { $PublicKeyPath = Join-Path $sourceRoot 'config/authorization-public-key.pem' }
-            $publicInput = [IO.Path]::GetFullPath($PublicKeyPath)
-            $preparation = Join-Path $sourceRoot 'build/ProgramMigrationAnalyzer.PublishPreparation/ProgramMigrationAnalyzer.PublishPreparation.csproj'
-            $prepared = @(& $dotnet run --project $preparation --configuration Release --verbosity quiet -- --public-key $publicInput --staging (Join-Path $stage 'public'))
-            if ($LASTEXITCODE -ne 0 -or $prepared.Count -eq 0) { throw 'Company public key preparation failed.' }
-            $snapshot = [string]$prepared[-1]
-            if (!(Test-Path -LiteralPath $snapshot -PathType Leaf)) { throw 'No validated company public key snapshot.' }
-            $arguments += (Join-Path $sourceRoot 'src/ProgramMigrationAnalyzer.App/ProgramMigrationAnalyzer.App.csproj')
-            $arguments += ('-p:AuthorizationPublicKeyPath=' + $snapshot)
-            $destination = Join-Path $publicationRoot 'win-x64-single-file'
-            $exeName = 'ProgramMigrationAnalyzer.App.exe'
-        } else {
-            $arguments += (Join-Path $sourceRoot 'src/ProgramMigrationAnalyzer.LicenseIssuer/ProgramMigrationAnalyzer.LicenseIssuer.csproj')
-            $destination = Join-Path $publicationRoot 'company-license-issuer'
-            $exeName = 'ProgramMigrationAnalyzer.LicenseIssuer.exe'
-        }
+        $arguments += (Join-Path $sourceRoot 'src/ProgramMigrationAnalyzer.App/ProgramMigrationAnalyzer.App.csproj')
+        $destination = Join-Path $publicationRoot 'win-x64-single-file'
+        $exeName = 'ProgramMigrationAnalyzer.App.exe'
         $stagedOutput = Join-Path $stage 'artifact'
         $arguments += @('--configuration','Release','--runtime','win-x64','--self-contained','true','--output',$stagedOutput,
             '-p:PublishSingleFile=true','-p:IncludeNativeLibrariesForSelfExtract=true','-p:PublishTrimmed=false',
@@ -64,13 +56,14 @@ function Invoke-PmaPublisher {
             [IO.File]::Replace($stagedExe,$destinationExe,(Join-Path $stage 'previous-executable.backup'))
         } else { [IO.File]::Move($stagedExe,$destinationExe) }
         Write-Host ('Ready: ' + $destinationExe)
-        if ($Kind -eq 'Client') { Write-Host 'Share only the client EXE. Company authorization Key and credentials are required. HTML preview requires WebView2 Runtime.' }
-        else { Write-Host 'Company use only. Keep the issuer and encrypted private key outside customer delivery.' }
+        Write-Host 'Ready for Windows x64. Open the EXE to use the analyzer. HTML preview requires WebView2 Runtime.'
         return 0
     } catch {
         Write-Host ('Publish failed: ' + $_.Exception.Message)
         return 1
     } finally {
+        [Console]::OutputEncoding = $previousConsoleEncoding
+        $OutputEncoding = $previousOutputEncoding
         if ($ownedStage -and (Test-Path -LiteralPath $stage)) {
             $resolvedStage = [IO.Path]::GetFullPath($stage)
             if ($resolvedStage.StartsWith($publicationRoot + [IO.Path]::DirectorySeparatorChar,[StringComparison]::OrdinalIgnoreCase) -and

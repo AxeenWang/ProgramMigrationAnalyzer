@@ -1,5 +1,7 @@
 # 離線簽章授權 Phase 5 Implementation Plan
 
+> 歷史紀錄：2026-10-26 已移除登入、帳號管理與離線授權。本文件保留過往決策與驗證證據，不作為目前實作、部署或驗收指引。現行行為以專案 README 為準。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:executing-plans` to implement this plan task-by-task. Steps use checkbox syntax for tracking. 使用者已指定同一實作者順序執行，不使用代理分工。
 
 **Goal:** 以公司簽發的離線 Key 初始化及維護本機帳號，每次登入驗證公司簽章與帳密，阻止正常客戶端自行建帳或重設。
