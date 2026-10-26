@@ -2,6 +2,8 @@ using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using ProgramMigrationAnalyzer.App.ViewModels;
+using ProgramMigrationAnalyzer.App.Services;
+using Microsoft.Web.WebView2.Core;
 
 namespace ProgramMigrationAnalyzer.App;
 
@@ -12,16 +14,23 @@ public partial class MainWindow : Window, IDisposable
     private bool _webViewUnavailable;
     private Task? _webViewInitialization;
     private bool _disposed;
+    private readonly MarkdownPreviewSession _previewSession;
+    private Uri? _previewUri;
+    private ulong _navigationId;
+    private bool _previewFailureReported;
     internal bool IsDisposed => _disposed;
 
     public MainWindow(MainViewModel viewModel)
     {
         InitializeComponent();
         _viewModel = viewModel;
+        _previewSession = new MarkdownPreviewSession(viewModel.OutputDirectory);
         DataContext = viewModel;
         Closed += OnClosed;
         PreviewTabs.SelectionChanged += OnPreviewTabChanged;
         _viewModel.PropertyChanged += OnViewModelPropertyChanged;
+        MarkdownWebView.NavigationStarting += OnNavigationStarting;
+        MarkdownWebView.NavigationCompleted += OnNavigationCompleted;
     }
 
     private async void OnPreviewTabChanged(object sender, SelectionChangedEventArgs e)
@@ -60,23 +69,53 @@ public partial class MainWindow : Window, IDisposable
                 _webViewInitialization ??= MarkdownWebView.EnsureCoreWebView2Async();
                 await _webViewInitialization;
                 if (_disposed || !_viewModel.IsWorkspaceActive) return;
+                // Generated reports are static. Local-file navigation must not grant source text script access.
+                MarkdownWebView.CoreWebView2.Settings.IsScriptEnabled = false;
+                MarkdownWebView.CoreWebView2.Settings.IsWebMessageEnabled = false;
+                MarkdownWebView.CoreWebView2.Settings.AreHostObjectsAllowed = false;
+                MarkdownWebView.CoreWebView2.Settings.AreDefaultScriptDialogsEnabled = false;
                 _webViewReady = true;
             }
 
-            MarkdownWebView.NavigateToString(_viewModel.MarkdownHtml);
+            _previewUri = _previewSession.Write(_viewModel.MarkdownHtml);
+            MarkdownWebView.CoreWebView2.Navigate(_previewUri.AbsoluteUri);
             MarkdownWebView.Visibility = Visibility.Visible;
             MarkdownFallback.Visibility = Visibility.Collapsed;
         }
         catch (Exception exception)
         {
             if (_disposed || !_viewModel.IsWorkspaceActive) return;
-            ShowMarkdownFallback();
-            if (!_webViewUnavailable)
-            {
-                _webViewUnavailable = true;
-                _viewModel.ReportMarkdownPreviewFailure(exception);
-            }
+            ReportPreviewFailure(exception, initializationFailure: !_webViewReady);
         }
+    }
+
+    private void OnNavigationStarting(object? sender, CoreWebView2NavigationStartingEventArgs e)
+    {
+        if (_previewUri is not null && e.Uri == _previewUri.AbsoluteUri) _navigationId = e.NavigationId;
+    }
+
+    private void OnNavigationCompleted(object? sender, CoreWebView2NavigationCompletedEventArgs e)
+    {
+        if (_disposed || !_viewModel.IsWorkspaceActive || e.NavigationId != _navigationId ||
+            _previewUri is null || MarkdownWebView.CoreWebView2?.Source != _previewUri.AbsoluteUri) return;
+        if (!e.IsSuccess)
+        {
+            ReportPreviewFailure(new InvalidOperationException($"WebView2 navigation failed: {e.WebErrorStatus}"), false);
+            return;
+        }
+        _previewSession.Retain(_previewUri);
+        _previewFailureReported = false;
+        MarkdownWebView.Visibility = Visibility.Visible;
+        MarkdownFallback.Visibility = Visibility.Collapsed;
+    }
+
+    private void ReportPreviewFailure(Exception exception, bool initializationFailure)
+    {
+        ShowMarkdownFallback();
+        if (initializationFailure) _webViewUnavailable = true;
+        if (_previewFailureReported) return;
+        _previewFailureReported = true;
+        _viewModel.ReportMarkdownPreviewFailure(exception, initializationFailure);
     }
 
     private void ShowMarkdownFallback()
@@ -94,7 +133,10 @@ public partial class MainWindow : Window, IDisposable
         Closed -= OnClosed;
         _viewModel.PropertyChanged -= OnViewModelPropertyChanged;
         PreviewTabs.SelectionChanged -= OnPreviewTabChanged;
+        MarkdownWebView.NavigationStarting -= OnNavigationStarting;
+        MarkdownWebView.NavigationCompleted -= OnNavigationCompleted;
         MarkdownWebView.Dispose();
+        _previewSession.Dispose();
         _viewModel.Dispose();
         DataContext = null;
     }

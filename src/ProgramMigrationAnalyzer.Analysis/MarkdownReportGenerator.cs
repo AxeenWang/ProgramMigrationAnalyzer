@@ -7,6 +7,9 @@ public sealed class MarkdownReportGenerator : IMarkdownReportGenerator
 {
     public string Generate(AnalysisResult result, MigrationTargetFramework targetFramework)
     {
+        if (result.Language == SourceLanguage.Informix4Gl && result.FourGl is not null)
+            return new FourGlMarkdownFormatter(result).Generate();
+
         var builder = new StringBuilder();
         builder.AppendLine("# 程式分析報告");
         builder.AppendLine();

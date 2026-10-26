@@ -16,6 +16,7 @@ using ProgramMigrationAnalyzer.Core;
 using ProgramMigrationAnalyzer.Infrastructure;
 using ProgramMigrationAnalyzer.Parsers;
 using ProgramMigrationAnalyzer.Translation;
+using Markdig;
 
 namespace ProgramMigrationAnalyzer.WpfChecks;
 
@@ -33,6 +34,8 @@ internal static class Program
         }
 
         Directory.CreateDirectory(Scratch);
+        CheckFourGlMarkdownRenderingAsync().GetAwaiter().GetResult();
+        CheckPreviewSessionLifetime();
         var dialogs = new ScriptedDialogs();
         var app = new TestApp(dialogs);
         app.Resources = (ResourceDictionary)Application.LoadComponent(
@@ -58,9 +61,13 @@ internal static class Program
                 Check(!FindVisual<Button>(window).Any(button => Equals(button.Content, "登出")),
                     "The direct-access workspace must not retain an account toolbar.");
                 await CheckUiAsync(window, viewModel, dialogs);
+                viewModel.ReportMarkdownPreviewFailure(new InvalidOperationException("synthetic HTML load failure"), initializationFailure: false);
+                Check(dialogs.Errors.Last().Title == "Markdown 報告載入失敗" && !dialogs.Errors.Last().Message.Contains("啟動失敗", StringComparison.Ordinal), "HTML load failure was mislabeled as WebView2 initialization failure.");
                 if (Environment.GetEnvironmentVariable("PMA_WPF_CAPTURE") == "1") CaptureWindow(window);
                 var oldOutput = viewModel.SelectedDocument!.AnalysisOutputPath;
                 window.Close();
+                var previewRoot = Path.Combine(viewModel.OutputDirectory, ".preview");
+                Check(!Directory.Exists(previewRoot) || !Directory.EnumerateFiles(previewRoot, "*.html", SearchOption.AllDirectories).Any(), "Window close retained owned preview HTML files.");
                 Check(viewModel.Documents.Count == 0 && viewModel.Logs.Count == 0
                     && viewModel.SelectedDocument is null && window.IsDisposed && File.Exists(oldOutput)
                     && !viewModel.OpenFileCommand.CanExecute(null),
@@ -77,6 +84,24 @@ internal static class Program
 
         try { app.Run(); return exitCode; }
         finally { Directory.Delete(Scratch, recursive: true); }
+    }
+
+    private static async Task CheckFourGlMarkdownRenderingAsync()
+    {
+        var source = new SourceDocument
+        {
+            FilePath = Path.Combine(Root, "synthetic.4gl"),
+            FileName = "<img src=x onerror=alert(1)>#|.4gl",
+            Content = "MAIN\n DEFINE message CHAR(500)\n LET message = \"<script>alert(1)</script>|'quote' ```\"\n RUN message\n SELECT '<script>alert(1)</script>| ```' FROM harmless\nEND MAIN\n# ``` <img src=x onerror=alert(1)>\n",
+            Language = SourceLanguage.Informix4Gl
+        };
+        var parsed = await new MigrationAnalyzer().AnalyzeAsync(await new Informix4GlParser().ParseAsync(source));
+        var report = new MarkdownReportGenerator().Generate(parsed, MigrationTargetFramework.Net10);
+        var html = Markdig.Markdown.ToHtml(report, new Markdig.MarkdownPipelineBuilder().UseAdvancedExtensions().Build());
+        Check(!html.Contains("<script>", StringComparison.OrdinalIgnoreCase) && !html.Contains("<img ", StringComparison.OrdinalIgnoreCase), "4GL evidence escaped into executable Markdown HTML.");
+        Check(!html.Contains("&\\#39;", StringComparison.Ordinal) && System.Net.WebUtility.HtmlDecode(html).Contains("'quote'", StringComparison.Ordinal), "Escaping broke visible apostrophes.");
+        Check(html.Contains("<pre><code", StringComparison.Ordinal) && html.Contains("alert(1)", StringComparison.Ordinal), "Evidence code blocks were lost.");
+        Console.WriteLine("PASS 4GL report rendering with the production Markdig extensions, HTML payload, apostrophes, pipes and backtick fences.");
     }
 
     private sealed class TestApp(ScriptedDialogs dialogs) : ProgramMigrationAnalyzer.App.App
@@ -129,6 +154,7 @@ internal static class Program
 
         SelectTab(tabs, "Markdown");
         await CheckMarkdownPreviewAsync(tabs, viewModel, dialogs);
+        await CheckLargeMarkdownPreviewAsync(tabs, viewModel, dialogs);
 
         var targetPicker = FindVisual<ComboBox>(window).Single(box => ReferenceEquals(box.ItemsSource, viewModel.TargetOptions));
         targetPicker.SelectedItem = viewModel.TargetOptions.Single(option => option.Name == ".NET 8");
@@ -171,6 +197,55 @@ internal static class Program
             "The status or log did not show completion.");
         Check(dialogs.Errors.Count == 0 || dialogs.Errors.All(item => item.Title == "Markdown 預覽無法啟動"),
             "The UI displayed an unexpected error dialog.");
+    }
+
+    private static void CheckPreviewSessionLifetime()
+    {
+        var output = Path.Combine(Scratch, "preview-lifetime");
+        Directory.CreateDirectory(output);
+        var markdown = Path.Combine(output, "retained.md");
+        File.WriteAllText(markdown, "retain report");
+        var session = new MarkdownPreviewSession(output);
+        var first = session.Write("<html>first</html>");
+        var second = session.Write("<html>second</html>");
+        var foreign = Path.Combine(Path.GetDirectoryName(second.LocalPath)!, "foreign.txt");
+        File.WriteAllText(foreign, "not owned by the session");
+        session.Retain(second);
+        Check(!File.Exists(first.LocalPath) && File.Exists(second.LocalPath), "Old preview cleanup removed the current HTML or retained old HTML.");
+        session.Dispose();
+        Check(!File.Exists(second.LocalPath) && File.Exists(markdown) && File.Exists(foreign), "Preview disposal removed a deliverable/foreign file or retained its HTML.");
+        Console.WriteLine("PASS preview file ownership, replacement and cleanup without deleting deliverables.");
+    }
+
+    private static async Task CheckLargeMarkdownPreviewAsync(TabControl tabs, MainViewModel viewModel, ScriptedDialogs dialogs)
+    {
+        var browser = FindVisual<WebView2>(tabs).FirstOrDefault();
+        if (browser?.CoreWebView2 is null) { Console.WriteLine("SKIP large preview: WebView2 Runtime unavailable."); return; }
+        var document = viewModel.SelectedDocument!;
+        var analysis = document.Analysis!;
+        var originalReport = document.Markdown;
+        var originalHtml = document.RenderedMarkdownHtml;
+        var outputPath = document.AnalysisOutputPath;
+        var errorCount = dialogs.Errors.Count;
+        var large = "<html><body>" + new string('x', 2_200_000) + "LARGE_REPORT_END</body></html>";
+        document.ApplyAnalysis(analysis, originalReport, large, outputPath);
+        viewModel.SelectedDocument = null;
+        viewModel.SelectedDocument = document;
+        var loaded = false;
+        for (var i = 0; i < 100; i++)
+        {
+            await Task.Delay(50);
+            if (dialogs.Errors.Count > errorCount) break;
+            if (browser.CoreWebView2.Source.StartsWith("file:", StringComparison.OrdinalIgnoreCase) &&
+                await browser.CoreWebView2.ExecuteScriptAsync("document.body.textContent.endsWith('LARGE_REPORT_END')") == "true") { loaded = true; break; }
+        }
+        Check(loaded && dialogs.Errors.Count == errorCount, "Large HTML preview failed or entered text fallback.");
+        Check(File.Exists(new Uri(browser.CoreWebView2.Source).LocalPath), "Local preview document was not created.");
+        document.ApplyAnalysis(analysis, originalReport, originalHtml, outputPath);
+        viewModel.SelectedDocument = null;
+        viewModel.SelectedDocument = document;
+        await CheckMarkdownPreviewAsync(tabs, viewModel, dialogs);
+        Console.WriteLine("PASS real WebView2 large HTML file navigation and document replacement.");
     }
 
     private static async Task CheckMarkdownPreviewAsync(TabControl tabs, MainViewModel viewModel, ScriptedDialogs dialogs)

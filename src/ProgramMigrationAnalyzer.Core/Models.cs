@@ -44,6 +44,9 @@ public sealed class SourceDocument
     public required string FileName { get; init; }
     public required string Content { get; init; }
     public SourceLanguage Language { get; set; }
+    public string EncodingName { get; init; } = "未提供，使用記憶體文字";
+    public string? ByteSha256 { get; init; }
+    public long? ByteLength { get; init; }
 }
 
 public sealed class ProgramUnit
@@ -132,6 +135,7 @@ public sealed class AnalysisResult
     public List<string> ObjectCreations { get; } = [];
     public List<string> DetectedBehaviors { get; } = [];
     public MigrationAssessment Assessment { get; set; } = new();
+    public FourGlEvidence? FourGl { get; set; }
 }
 
 public sealed class TranslationResult

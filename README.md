@@ -10,6 +10,8 @@
 - 分析程式結構、函式呼叫、SQL、資料表與已知相依性
 - 偵測舊版 .NET API 與移植問題，產生規則式評分
 - 產生 Markdown 報告，提供 HTML 預覽及純文字備援
+- 4GL 單檔離線分析保留完整 SQL、條件與命令路徑、變數資料流、註解證據及解析診斷，不需要資料庫或 LLM
+- Markdown 以處理階段、商業規則與例外為正文，完整 SQL 各列一次。大型報告以本機 HTML 檔預覽，關閉視窗後清理該視窗的預覽檔
 - 選擇 `.NET 8` 或 `.NET 10` 產生 C# 草稿，提供原碼並排檢視
 - 顯示執行狀態及 Log，儲存報告與開啟輸出資料夾
 
@@ -25,7 +27,7 @@ Source -> Parser -> AnalysisResult -> Analyzer -> Markdown Report / Source Trans
 | --- | --- |
 | `App` | WPF、MVVM、直接啟動主視窗、操作與文件生命週期 |
 | `Core` | 共用模型與服務介面 |
-| `Parsers` | Roslyn C# 解析與規則式 Informix 4GL 解析 |
+| `Parsers` | Roslyn C# 解析與 Informix 4GL 詞彙、結構及 SQL 證據解析 |
 | `Analysis` | 相依性、移植問題、標籤、評分與 Markdown |
 | `Translation` | C# 移植提醒與 4GL 的 C# 骨架 |
 | `Infrastructure` | 來源載入與輸出 |
@@ -79,7 +81,7 @@ dotnet run --no-build --project tests/ProgramMigrationAnalyzer.PublishChecks
 ```
 
 - Phase2Checks：掃描排除、同名輸出、背景分析、文件切換、重新載入、失敗狀態與預覽錯誤提示
-- RegressionChecks：10 份樣本、Scenario A/B/C、.NET 8/10、4GL 草稿編譯與邊界輸入
+- RegressionChecks：10 份樣本、Scenario A/B/C、.NET 8/10、4GL 草稿編譯、完整 SQL 與條件資料流合成回歸、編碼與邊界輸入
 - WpfChecks：真實 WPF 直接啟動、可操作命令、畫面綁定、分析轉譯、預覽、儲存、關閉釋放及輸出保留
 - PublishChecks：無 Key 發布、替換 EXE、保留 WebView2 資料，以及失敗或異常輸出時保留原 EXE
 
@@ -88,9 +90,9 @@ WpfChecks 會顯示真實視窗。PublishChecks 使用隔離建置替身，不�
 ## 已知限制
 
 - C# 為語法層級分析，沒有整個 Solution 的跨檔語意解析
-- 4GL 與 SQL 解析使用規則，並非完整 compiler-grade parser
+- 4GL 採詞彙與結構解析及有界符號分析，保留未知與原文診斷，並非完整編譯器或跨檔語意分析
 - C# 轉譯保留原碼並插入提醒，4GL 產生待人工補完的骨架，不保證語意等價
 - 型別、SQL、交易、UI 與商業邏輯仍需人工審查，評分不代表實際工時或成功率
 - Diff 為原碼與結果並排檢視，沒有逐行差異標示
 
-完整需求見 [專案規格](docs/ProgramMigrationAnalyzer_Codex_Spec.md)，本次結果見 [直接啟動驗證與交付紀錄](docs/Direct_Startup_Verification_and_Delivery.md)。舊登入及授權文件已標示為歷史資料，不作為現行部署要求。
+完整需求見 [專案規格](docs/ProgramMigrationAnalyzer_Codex_Spec.md)，功能與限制見 [4GL 單檔離線 Markdown 分析](docs/FourGl_Markdown_Analysis.md)，啟動流程見 [直接啟動驗證與交付紀錄](docs/Direct_Startup_Verification_and_Delivery.md)。舊登入及授權文件已標示為歷史資料，不作為現行部署要求。

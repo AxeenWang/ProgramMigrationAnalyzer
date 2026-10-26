@@ -13,11 +13,12 @@ if (!File.Exists(Path.Combine(root, "ProgramMigrationAnalyzer.sln")))
     throw new InvalidOperationException("Regression checks must run from the ProgramMigrationAnalyzer project.");
 }
 
-var scratch = Path.Combine(root, ".camp_codex", "2026-10-26_remove-authentication", "regression", Guid.NewGuid().ToString("N"));
+var scratch = Path.Combine(root, ".camp_codex", "2026-10-26_4gl-markdown-implementation", "regression", Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(scratch);
 
 try
 {
+    await FourGlChecks.RunAsync(scratch);
     await RunRegressionAsync();
     Console.WriteLine("Phase 3 regression passed.");
 }

@@ -330,11 +330,13 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
     }
 
-    public void ReportMarkdownPreviewFailure(Exception exception)
+    public void ReportMarkdownPreviewFailure(Exception exception, bool initializationFailure = true)
     {
         if (!IsWorkspaceActive) return;
-        AddLog($"ERROR: WebView2 Markdown preview unavailable: {exception.Message}");
-        _dialogs.ShowError("Markdown 預覽無法啟動", $"WebView2 啟動失敗，已改用純文字預覽。\n{exception.Message}");
+        var stage = initializationFailure ? "WebView2 初始化" : "Markdown 報告載入";
+        AddLog($"ERROR: WebView2 Markdown preview unavailable ({stage}): {exception.GetType().Name} 0x{exception.HResult:X8}: {exception.Message}");
+        _dialogs.ShowError(initializationFailure ? "Markdown 預覽無法啟動" : "Markdown 報告載入失敗",
+            $"{stage}失敗，已改用純文字預覽。\n{exception.Message}");
     }
 
     private SourceDocument ApplyLanguageOverride(SourceDocument source)
@@ -350,6 +352,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
             FilePath = source.FilePath,
             FileName = source.FileName,
             Content = source.Content,
+            EncodingName = source.EncodingName,
+            ByteSha256 = source.ByteSha256,
+            ByteLength = source.ByteLength,
             Language = SelectedLanguageOption.Language
         };
     }
