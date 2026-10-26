@@ -1,4 +1,5 @@
 using System.Text;
+using System.Security.Cryptography;
 using ProgramMigrationAnalyzer.Core;
 
 namespace ProgramMigrationAnalyzer.Infrastructure;
@@ -33,19 +34,22 @@ public sealed class SourceFileService : ISourceFileService
         }
 
         var bytes = await File.ReadAllBytesAsync(path, cancellationToken);
-        var content = Decode(bytes);
+        var (content, encodingName) = Decode(bytes);
         return new SourceDocument
         {
             FilePath = Path.GetFullPath(path),
             FileName = Path.GetFileName(path),
             Content = content,
+            EncodingName = encodingName,
+            ByteSha256 = Convert.ToHexString(SHA256.HashData(bytes)).ToLowerInvariant(),
+            ByteLength = bytes.LongLength,
             Language = languageOverride == SourceLanguage.Unknown
                 ? DetectLanguage(path)
                 : languageOverride
         };
     }
 
-    public async Task<IReadOnlyList<SourceDocument>> LoadFolderAsync(
+    public async Task<IReadOnlyList<SourceDocument>> ScanFolderAsync(
         string path,
         SourceLanguage languageOverride = SourceLanguage.Unknown,
         CancellationToken cancellationToken = default)
@@ -57,13 +61,25 @@ public sealed class SourceFileService : ISourceFileService
 
         var files = await Task.Run(() => EnumerateSourceFiles(path, cancellationToken), cancellationToken);
 
-        var documents = new List<SourceDocument>(files.Count);
-        foreach (var file in files)
+        return files.Select(file => new SourceDocument
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            documents.Add(await LoadFileAsync(file, languageOverride, cancellationToken));
-        }
+            FilePath = Path.GetFullPath(file),
+            FileName = Path.GetFileName(file),
+            Content = string.Empty,
+            IsContentLoaded = false,
+            Language = languageOverride == SourceLanguage.Unknown ? DetectLanguage(file) : languageOverride
+        }).ToList();
+    }
 
+    public async Task<IReadOnlyList<SourceDocument>> LoadFolderAsync(
+        string path,
+        SourceLanguage languageOverride = SourceLanguage.Unknown,
+        CancellationToken cancellationToken = default)
+    {
+        var entries = await ScanFolderAsync(path, languageOverride, cancellationToken);
+        var documents = new List<SourceDocument>(entries.Count);
+        foreach (var entry in entries)
+            documents.Add(await LoadFileAsync(entry.FilePath, languageOverride, cancellationToken));
         return documents;
     }
 
@@ -75,27 +91,27 @@ public sealed class SourceFileService : ISourceFileService
             _ => SourceLanguage.Unknown
         };
 
-    private static string Decode(byte[] bytes)
+    private static (string Content, string EncodingName) Decode(byte[] bytes)
     {
         if (bytes.Length == 0)
         {
-            return string.Empty;
+            return (string.Empty, "UTF-8（空檔案）");
         }
 
         try
         {
             var value = new UTF8Encoding(false, true).GetString(bytes);
-            return value.TrimStart('\uFEFF');
+            return (value.Length > 0 && value[0] == '\uFEFF' ? value[1..] : value, bytes.AsSpan().StartsWith(new byte[] { 0xEF, 0xBB, 0xBF }) ? "UTF-8 BOM" : "UTF-8");
         }
         catch (DecoderFallbackException)
         {
             try
             {
-                return Encoding.GetEncoding(950).GetString(bytes);
+                return (Encoding.GetEncoding(950, EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback).GetString(bytes), "CP950 / Big5（UTF-8 驗證失敗後採用）");
             }
-            catch (ArgumentException)
+            catch (ArgumentException exception)
             {
-                return Encoding.Default.GetString(bytes);
+                throw new InvalidDataException("原始碼無法以 UTF-8 或 CP950 / Big5 無損解碼，請確認檔案編碼。", exception);
             }
         }
     }

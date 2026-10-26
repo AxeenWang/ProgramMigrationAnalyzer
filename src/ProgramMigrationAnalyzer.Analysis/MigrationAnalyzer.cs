@@ -43,6 +43,10 @@ public sealed class MigrationAnalyzer : ISourceAnalyzer
         {
             AnalyzeCSharp(result);
         }
+        else if (result.FourGl is not null)
+        {
+            new FourGlEvidenceAnalyzer(result.FourGl, cancellationToken).Analyze();
+        }
 
         AnalyzeSql(result);
         AddBusinessTags(result);

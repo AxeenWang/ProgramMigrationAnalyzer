@@ -20,6 +20,7 @@ try
     await CheckFolderScanAsync();
     await CheckOutputNamesAsync();
     await CheckViewModelFlowAsync();
+    await BatchChecks.RunAsync(scratch);
     Console.WriteLine("Phase 2 checks passed: folder scan, output names, background analysis, document switch, reload, failure state, WebView2 notice, cancellation on disposal.");
 }
 finally

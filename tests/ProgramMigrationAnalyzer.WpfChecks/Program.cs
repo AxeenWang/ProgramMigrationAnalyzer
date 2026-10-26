@@ -16,6 +16,7 @@ using ProgramMigrationAnalyzer.Core;
 using ProgramMigrationAnalyzer.Infrastructure;
 using ProgramMigrationAnalyzer.Parsers;
 using ProgramMigrationAnalyzer.Translation;
+using Markdig;
 
 namespace ProgramMigrationAnalyzer.WpfChecks;
 
@@ -33,6 +34,8 @@ internal static class Program
         }
 
         Directory.CreateDirectory(Scratch);
+        CheckFourGlMarkdownRenderingAsync().GetAwaiter().GetResult();
+        CheckPreviewSessionLifetime();
         var dialogs = new ScriptedDialogs();
         var app = new TestApp(dialogs);
         app.Resources = (ResourceDictionary)Application.LoadComponent(
@@ -57,10 +60,15 @@ internal static class Program
                     "Startup must open the usable main window directly without login or an authorization Key.");
                 Check(!FindVisual<Button>(window).Any(button => Equals(button.Content, "登出")),
                     "The direct-access workspace must not retain an account toolbar.");
+                CheckDefaultOutputDirectory();
                 await CheckUiAsync(window, viewModel, dialogs);
+                viewModel.ReportMarkdownPreviewFailure(new InvalidOperationException("synthetic HTML load failure"), initializationFailure: false);
+                Check(dialogs.Errors.Last().Title == "Markdown 報告載入失敗" && !dialogs.Errors.Last().Message.Contains("啟動失敗", StringComparison.Ordinal), "HTML load failure was mislabeled as WebView2 initialization failure.");
                 if (Environment.GetEnvironmentVariable("PMA_WPF_CAPTURE") == "1") CaptureWindow(window);
                 var oldOutput = viewModel.SelectedDocument!.AnalysisOutputPath;
                 window.Close();
+                var previewRoot = Path.Combine(viewModel.OutputDirectory, ".preview");
+                Check(!Directory.Exists(previewRoot) || !Directory.EnumerateFiles(previewRoot, "*.html", SearchOption.AllDirectories).Any(), "Window close retained owned preview HTML files.");
                 Check(viewModel.Documents.Count == 0 && viewModel.Logs.Count == 0
                     && viewModel.SelectedDocument is null && window.IsDisposed && File.Exists(oldOutput)
                     && !viewModel.OpenFileCommand.CanExecute(null),
@@ -77,6 +85,41 @@ internal static class Program
 
         try { app.Run(); return exitCode; }
         finally { Directory.Delete(Scratch, recursive: true); }
+    }
+
+    private static void CheckDefaultOutputDirectory()
+    {
+        var workingDirectory = Directory.GetCurrentDirectory();
+        try
+        {
+            Directory.SetCurrentDirectory(Scratch);
+            var window = new MainWindowFactory().Create();
+            try
+            {
+                Check(((MainViewModel)window.DataContext).OutputDirectory == Path.Combine(AppContext.BaseDirectory, "output"),
+                    "Default output must be beside the executable, independent of current directory or a parent solution.");
+            }
+            finally { window.Close(); }
+        }
+        finally { Directory.SetCurrentDirectory(workingDirectory); }
+    }
+
+    private static async Task CheckFourGlMarkdownRenderingAsync()
+    {
+        var source = new SourceDocument
+        {
+            FilePath = Path.Combine(Root, "synthetic.4gl"),
+            FileName = "<img src=x onerror=alert(1)>#|.4gl",
+            Content = "MAIN\n DEFINE message CHAR(500)\n LET message = \"<script>alert(1)</script>|'quote' ```\"\n RUN message\n SELECT '<script>alert(1)</script>| ```' FROM harmless\nEND MAIN\n# ``` <img src=x onerror=alert(1)>\n",
+            Language = SourceLanguage.Informix4Gl
+        };
+        var parsed = await new MigrationAnalyzer().AnalyzeAsync(await new Informix4GlParser().ParseAsync(source));
+        var report = new MarkdownReportGenerator().Generate(parsed, MigrationTargetFramework.Net10);
+        var html = Markdig.Markdown.ToHtml(report, new Markdig.MarkdownPipelineBuilder().UseAdvancedExtensions().Build());
+        Check(!html.Contains("<script>", StringComparison.OrdinalIgnoreCase) && !html.Contains("<img ", StringComparison.OrdinalIgnoreCase), "4GL evidence escaped into executable Markdown HTML.");
+        Check(!html.Contains("&\\#39;", StringComparison.Ordinal) && System.Net.WebUtility.HtmlDecode(html).Contains("'quote'", StringComparison.Ordinal), "Escaping broke visible apostrophes.");
+        Check(html.Contains("<pre><code", StringComparison.Ordinal) && html.Contains("alert(1)", StringComparison.Ordinal), "Evidence code blocks were lost.");
+        Console.WriteLine("PASS 4GL report rendering with the production Markdig extensions, HTML payload, apostrophes, pipes and backtick fences.");
     }
 
     private sealed class TestApp(ScriptedDialogs dialogs) : ProgramMigrationAnalyzer.App.App
@@ -100,6 +143,8 @@ internal static class Program
         Check(FindButton(window, "開啟檔案").Command is IAsyncRelayCommand, "Open file button is not bound.");
         Check(FindButton(window, "開啟資料夾").Command is IAsyncRelayCommand, "Open folder button is not bound.");
         Check(FindButton(window, "開始分析").Command is IAsyncRelayCommand, "Analyze button is not bound.");
+        Check(FindButton(window, "分析勾選項目").Command is IAsyncRelayCommand, "Batch analysis button is not bound.");
+        Check(FindButton(window, "設定輸出目錄").Command is IRelayCommand, "Output directory button is not bound.");
         Check(FindButton(window, "開始轉譯").Command is IAsyncRelayCommand, "Translate button is not bound.");
 
         var source4Gl = Path.Combine(Root, "samples", "4gl", "CustomerQuery.4gl");
@@ -129,6 +174,7 @@ internal static class Program
 
         SelectTab(tabs, "Markdown");
         await CheckMarkdownPreviewAsync(tabs, viewModel, dialogs);
+        await CheckLargeMarkdownPreviewAsync(tabs, viewModel, dialogs);
 
         var targetPicker = FindVisual<ComboBox>(window).Single(box => ReferenceEquals(box.ItemsSource, viewModel.TargetOptions));
         targetPicker.SelectedItem = viewModel.TargetOptions.Single(option => option.Name == ".NET 8");
@@ -156,6 +202,49 @@ internal static class Program
         dialogs.Folders.Enqueue(Path.Combine(Root, "samples", "4gl"));
         await ClickAsync(window, "開啟資料夾");
         Check(viewModel.Documents.Count >= 5, "Opening the 4GL folder did not populate the file list.");
+        await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
+        Check(viewModel.CheckedFourGlCount == 5, "Folder did not check every 4GL sample.");
+        var fileList = FindVisual<ListBox>(window).Single(list => ReferenceEquals(list.ItemsSource, viewModel.Documents));
+        fileList.ScrollIntoView(viewModel.Documents.First());
+        await Dispatcher.Yield(DispatcherPriority.ApplicationIdle);
+        var checkbox = FindVisual<CheckBox>(fileList).First();
+        var checkboxOwner = (SourceDocumentViewModel)checkbox.DataContext;
+        checkbox.IsChecked = false;
+        Check(!checkboxOwner.IsChecked && viewModel.CheckedFourGlCount == 4, "File checkbox did not update batch selection.");
+        await ClickAsync(window, "全部取消");
+        Check(!FindButton(window, "分析勾選項目").IsEnabled, "Empty selection did not disable batch analysis.");
+        await ClickAsync(window, "全選 .4gl");
+        await ClickAsync(window, "分析勾選項目");
+        Check(viewModel.BatchSucceeded == 5 && viewModel.BatchFailed == 0 &&
+            viewModel.Documents.All(item => File.Exists(item.AnalysisOutputPath)), "WPF batch did not write each sample report.");
+        Check(viewModel.BatchProcessed == 5 && !FindButton(window, "取消批次").IsEnabled,
+            "Batch progress or cancel button retained a running state.");
+        var batchDocument = viewModel.Documents.Last();
+        viewModel.SelectedDocument = batchDocument;
+        SelectTab(tabs, "Markdown");
+        await CheckMarkdownPreviewAsync(tabs, viewModel, dialogs);
+
+        var oldRoot = viewModel.OutputDirectory;
+        var oldReports = viewModel.Documents.Select(item => item.AnalysisOutputPath).ToArray();
+        var customRoot = Path.Combine(Scratch, "custom-output");
+        dialogs.OutputFolders.Enqueue(customRoot);
+        await ClickAsync(window, "設定輸出目錄");
+        Check(viewModel.OutputDirectory == customRoot && viewModel.CurrentOutputDirectory == Path.Combine(customRoot, "4gl"),
+            "Output settings did not update the root and selected source-folder destination.");
+        await CheckMarkdownPreviewAsync(tabs, viewModel, dialogs);
+        var oldPreview = Path.Combine(oldRoot, ".preview");
+        for (var attempt = 0; attempt < 100 && Directory.Exists(oldPreview) && Directory.GetFiles(oldPreview, "*.html", SearchOption.AllDirectories).Any(); attempt++)
+            await Task.Delay(50);
+        Check(!Directory.Exists(oldPreview) || !Directory.GetFiles(oldPreview, "*.html", SearchOption.AllDirectories).Any(),
+            "Switching output roots retained the old owned preview HTML.");
+        dialogs.OutputFolders.Enqueue(null);
+        await ClickAsync(window, "設定輸出目錄");
+        Check(viewModel.OutputDirectory == customRoot, "Canceling output selection changed the root.");
+        await ClickAsync(window, "開始分析");
+        await ClickAsync(window, "開始轉譯");
+        Check(Path.GetDirectoryName(batchDocument.AnalysisOutputPath) == Path.Combine(customRoot, "4gl") &&
+            Path.GetDirectoryName(batchDocument.TranslationOutputPath) == Path.Combine(customRoot, "4gl") && oldReports.All(File.Exists),
+            "Configured root did not apply to analysis/translation or removed existing reports.");
 
         dialogs.Files.Enqueue(Path.Combine(Root, "samples", "csharp-framework", "LegacyApiClient.cs"));
         await ClickAsync(window, "開啟檔案");
@@ -171,6 +260,55 @@ internal static class Program
             "The status or log did not show completion.");
         Check(dialogs.Errors.Count == 0 || dialogs.Errors.All(item => item.Title == "Markdown 預覽無法啟動"),
             "The UI displayed an unexpected error dialog.");
+    }
+
+    private static void CheckPreviewSessionLifetime()
+    {
+        var output = Path.Combine(Scratch, "preview-lifetime");
+        Directory.CreateDirectory(output);
+        var markdown = Path.Combine(output, "retained.md");
+        File.WriteAllText(markdown, "retain report");
+        var session = new MarkdownPreviewSession(output);
+        var first = session.Write("<html>first</html>");
+        var second = session.Write("<html>second</html>");
+        var foreign = Path.Combine(Path.GetDirectoryName(second.LocalPath)!, "foreign.txt");
+        File.WriteAllText(foreign, "not owned by the session");
+        session.Retain(second);
+        Check(!File.Exists(first.LocalPath) && File.Exists(second.LocalPath), "Old preview cleanup removed the current HTML or retained old HTML.");
+        session.Dispose();
+        Check(!File.Exists(second.LocalPath) && File.Exists(markdown) && File.Exists(foreign), "Preview disposal removed a deliverable/foreign file or retained its HTML.");
+        Console.WriteLine("PASS preview file ownership, replacement and cleanup without deleting deliverables.");
+    }
+
+    private static async Task CheckLargeMarkdownPreviewAsync(TabControl tabs, MainViewModel viewModel, ScriptedDialogs dialogs)
+    {
+        var browser = FindVisual<WebView2>(tabs).FirstOrDefault();
+        if (browser?.CoreWebView2 is null) { Console.WriteLine("SKIP large preview: WebView2 Runtime unavailable."); return; }
+        var document = viewModel.SelectedDocument!;
+        var analysis = document.Analysis!;
+        var originalReport = document.Markdown;
+        var originalHtml = document.RenderedMarkdownHtml;
+        var outputPath = document.AnalysisOutputPath;
+        var errorCount = dialogs.Errors.Count;
+        var large = "<html><body>" + new string('x', 2_200_000) + "LARGE_REPORT_END</body></html>";
+        document.ApplyAnalysis(analysis, originalReport, large, outputPath);
+        viewModel.SelectedDocument = null;
+        viewModel.SelectedDocument = document;
+        var loaded = false;
+        for (var i = 0; i < 100; i++)
+        {
+            await Task.Delay(50);
+            if (dialogs.Errors.Count > errorCount) break;
+            if (browser.CoreWebView2.Source.StartsWith("file:", StringComparison.OrdinalIgnoreCase) &&
+                await browser.CoreWebView2.ExecuteScriptAsync("document.body.textContent.endsWith('LARGE_REPORT_END')") == "true") { loaded = true; break; }
+        }
+        Check(loaded && dialogs.Errors.Count == errorCount, "Large HTML preview failed or entered text fallback.");
+        Check(File.Exists(new Uri(browser.CoreWebView2.Source).LocalPath), "Local preview document was not created.");
+        document.ApplyAnalysis(analysis, originalReport, originalHtml, outputPath);
+        viewModel.SelectedDocument = null;
+        viewModel.SelectedDocument = document;
+        await CheckMarkdownPreviewAsync(tabs, viewModel, dialogs);
+        Console.WriteLine("PASS real WebView2 large HTML file navigation and document replacement.");
     }
 
     private static async Task CheckMarkdownPreviewAsync(TabControl tabs, MainViewModel viewModel, ScriptedDialogs dialogs)
@@ -192,7 +330,9 @@ internal static class Program
             if (browser?.CoreWebView2 is not null)
             {
                 var body = await browser.ExecuteScriptAsync("document.body.innerText");
-                if (body.Contains("CustomerQuery", StringComparison.OrdinalIgnoreCase))
+                if (body.Contains(Path.GetFileNameWithoutExtension(viewModel.SelectedDocument!.FileName), StringComparison.OrdinalIgnoreCase) &&
+                    Uri.TryCreate(browser.CoreWebView2.Source, UriKind.Absolute, out var location) && location.IsFile &&
+                    location.LocalPath.StartsWith(Path.Combine(viewModel.OutputDirectory, ".preview") + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
                 {
                     if (Environment.GetEnvironmentVariable("PMA_WPF_CAPTURE") == "1")
                     {
@@ -221,13 +361,14 @@ internal static class Program
 
     private static async Task ClickAsync(Window window, string title)
     {
-        var command = FindButton(window, title).Command as IAsyncRelayCommand;
+        var command = FindButton(window, title).Command;
         if (command is null || !command.CanExecute(null))
         {
             throw new InvalidOperationException($"The {title} button is unavailable.");
         }
 
-        await command.ExecuteAsync(null);
+        if (command is IAsyncRelayCommand asynchronous) await asynchronous.ExecuteAsync(null);
+        else command.Execute(null);
     }
 
     private static Button FindButton(Window window, string title) =>
@@ -278,12 +419,14 @@ internal static class Program
     {
         public Queue<string> Files { get; } = new();
         public Queue<string> Folders { get; } = new();
+        public Queue<string?> OutputFolders { get; } = new();
         public List<(string Title, string Message)> Errors { get; } = [];
         public string? SavePath { get; set; }
 
         public string? SelectSourceFile() => Files.Dequeue();
         public string? SelectSourceFolder() => Folders.Dequeue();
         public string? SelectMarkdownSavePath(string suggestedFileName) => SavePath;
+        public string? SelectOutputFolder(string currentDirectory) => OutputFolders.Dequeue();
         public void ShowError(string title, string message) => Errors.Add((title, message));
     }
 }
