@@ -85,8 +85,7 @@ users.json
 EBWebView/
 
 # Program Migration Analyzer generated reports and translations
-[Oo]utput/*
-![Oo]utput/.gitkeep
+/[Oo]utput/
 
 # Agent-owned temporary directories
 .camp_codex/

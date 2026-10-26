@@ -51,12 +51,12 @@
 
                 <StackPanel Grid.Column="4" Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock Text="Language" Foreground="White" VerticalAlignment="Center" Margin="0,0,7,0" />
-                    <ComboBox Width="95" ItemsSource="{Binding LanguageOptions}" SelectedItem="{Binding SelectedLanguageOption}" />
+                    <ComboBox Width="95" ItemsSource="{Binding LanguageOptions}" SelectedItem="{Binding SelectedLanguageOption}" IsEnabled="{Binding CanChangeBatchSelection}" />
                 </StackPanel>
 
                 <StackPanel Grid.Column="6" Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock Text="Target" Foreground="White" VerticalAlignment="Center" Margin="0,0,7,0" />
-                    <ComboBox Width="105" ItemsSource="{Binding TargetOptions}" SelectedItem="{Binding SelectedTargetOption}" />
+                    <ComboBox Width="105" ItemsSource="{Binding TargetOptions}" SelectedItem="{Binding SelectedTargetOption}" IsEnabled="{Binding CanChangeBatchSelection}" />
                 </StackPanel>
 
                 <StackPanel Grid.Column="8" Orientation="Horizontal" VerticalAlignment="Center">
@@ -67,7 +67,7 @@
                 </StackPanel>
 
                 <StackPanel Grid.Column="10" Width="170" VerticalAlignment="Center">
-                    <TextBlock Text="{Binding StatusMessage}" Foreground="White" TextAlignment="Right" />
+                    <TextBlock Text="{Binding StatusMessage}" Foreground="White" TextAlignment="Right" TextWrapping="Wrap" ToolTip="{Binding StatusMessage}" />
                     <ProgressBar Height="3" Margin="0,6,0,0" IsIndeterminate="{Binding IsBusy}" />
                 </StackPanel>
             </Grid>
@@ -87,30 +87,62 @@
                         <RowDefinition Height="*" />
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
-                    <TextBlock Grid.Row="0" Text="檔案 / 專案" FontWeight="SemiBold" FontSize="15" Margin="14,12" />
+                    <StackPanel Grid.Row="0" Margin="14,12,14,8">
+                        <TextBlock Text="檔案 / 專案" FontWeight="SemiBold" FontSize="15" Margin="0,0,0,8" />
+                        <WrapPanel>
+                            <Button Content="全選 .4gl" Command="{Binding SelectAllFourGlCommand}" Padding="8,4" Margin="0,0,8,6" />
+                            <Button Content="全部取消" Command="{Binding ClearBatchSelectionCommand}" Padding="8,4" Margin="0,0,0,6" />
+                        </WrapPanel>
+                        <TextBlock Text="{Binding BatchSelectionText}" Foreground="{StaticResource MutedTextBrush}" Margin="0,0,0,8" />
+                        <WrapPanel>
+                            <Button Content="分析勾選項目" Command="{Binding AnalyzeCheckedCommand}" Style="{StaticResource PrimaryToolbarButtonStyle}" Padding="10,6" />
+                            <Button Content="取消批次" Command="{Binding CancelBatchCommand}" Padding="8,6" />
+                        </WrapPanel>
+                        <Button Content="設定輸出目錄" Command="{Binding ConfigureOutputDirectoryCommand}" HorizontalAlignment="Left" Padding="8,4" Margin="0,8,0,0" ToolTip="{Binding OutputDirectory}" />
+                        <ProgressBar Height="4" Margin="0,10,0,0" Minimum="0" Maximum="{Binding BatchTotal}" Value="{Binding BatchProcessed}" />
+                    </StackPanel>
                     <ListBox Grid.Row="1" BorderThickness="0" ItemsSource="{Binding Documents}" SelectedItem="{Binding SelectedDocument}">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
                                 <Grid Margin="6,5" Width="235">
                                     <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
                                         <ColumnDefinition Width="*" />
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
-                                    <StackPanel>
+                                    <Border Margin="0,0,7,0" VerticalAlignment="Center" IsEnabled="{Binding DataContext.CanChangeBatchSelection, RelativeSource={RelativeSource AncestorType=ListBox}}">
+                                        <CheckBox IsChecked="{Binding IsChecked, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsBatchEligible}" ToolTip="勾選要批次分析的 .4gl" AutomationProperties.Name="{Binding FileName}" />
+                                    </Border>
+                                    <StackPanel Grid.Column="1" ToolTip="{Binding FilePath}">
                                         <TextBlock Text="{Binding FileName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
                                         <TextBlock Text="{Binding FilePath}" FontSize="10" Foreground="{StaticResource MutedTextBrush}" TextTrimming="CharacterEllipsis" />
                                     </StackPanel>
-                                    <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                                    <StackPanel Grid.Column="2" Margin="8,0,0,0">
                                         <Border Background="#E8F0FB" CornerRadius="3" Padding="5,2">
                                             <TextBlock Text="{Binding LanguageName}" FontSize="10" Foreground="#17365D" />
                                         </Border>
-                                        <TextBlock Text="{Binding StatusText}" FontSize="10" Foreground="{StaticResource MutedTextBrush}" TextAlignment="Center" Margin="0,4,0,0" />
+                                        <TextBlock Text="{Binding StatusText}" ToolTip="{Binding ErrorMessage}" FontSize="10" Foreground="{StaticResource MutedTextBrush}" TextAlignment="Center" Margin="0,4,0,0" />
                                     </StackPanel>
                                 </Grid>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                     </ListBox>
                     <StackPanel Grid.Row="2" Margin="14,10,14,14">
+                        <TextBlock Text="{Binding BatchSummary}" TextWrapping="Wrap" FontWeight="SemiBold" Margin="0,0,0,8" />
+                        <Expander Header="批次失敗明細" Margin="0,0,0,8">
+                            <ScrollViewer MaxHeight="140" VerticalScrollBarVisibility="Auto">
+                                <ItemsControl ItemsSource="{Binding BatchFailures}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Margin="0,4">
+                                                <TextBlock Text="{Binding FilePath}" TextWrapping="Wrap" FontSize="11" />
+                                                <TextBlock Text="{Binding Message}" TextWrapping="Wrap" Foreground="#B91C1C" FontSize="11" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </Expander>
                         <TextBlock Text="Tags" FontWeight="SemiBold" Margin="0,0,0,6" />
                         <ItemsControl ItemsSource="{Binding SelectedDocument.AnalysisView.Tags}">
                             <ItemsControl.ItemsPanel>
@@ -285,7 +317,7 @@
         <StatusBar Grid.Row="4" Background="#E7ECF2">
             <StatusBarItem Content="{Binding StatusMessage}" />
             <Separator />
-            <StatusBarItem Content="{Binding OutputDirectory}" />
+            <StatusBarItem Content="{Binding CurrentOutputDirectory}" ToolTip="{Binding CurrentOutputDirectory}" />
         </StatusBar>
     </Grid>
 </Window>

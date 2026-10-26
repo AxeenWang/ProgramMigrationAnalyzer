@@ -33,6 +33,12 @@ public interface ISourceTranslator
 
 public interface ISourceFileService
 {
+    async Task<IReadOnlyList<SourceDocument>> ScanFolderAsync(
+        string path,
+        SourceLanguage languageOverride = SourceLanguage.Unknown,
+        CancellationToken cancellationToken = default) =>
+        await LoadFolderAsync(path, languageOverride, cancellationToken);
+
     Task<SourceDocument> LoadFileAsync(
         string path,
         SourceLanguage languageOverride = SourceLanguage.Unknown,
@@ -48,12 +54,18 @@ public interface IOutputWriter
 {
     string OutputDirectory { get; }
 
+    void SetOutputDirectory(string path);
+
+    string GetDocumentOutputDirectory(SourceDocument source, string? sourceRootDirectory = null);
+
     Task<string> WriteAnalysisAsync(
         SourceDocument source,
         string markdown,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default,
+        string? sourceRootDirectory = null);
 
     Task<string> WriteTranslationAsync(
         TranslationResult result,
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default,
+        string? sourceRootDirectory = null);
 }

@@ -14,7 +14,8 @@ public partial class MainWindow : Window, IDisposable
     private bool _webViewUnavailable;
     private Task? _webViewInitialization;
     private bool _disposed;
-    private readonly MarkdownPreviewSession _previewSession;
+    private MarkdownPreviewSession _previewSession;
+    private readonly List<MarkdownPreviewSession> _retiredPreviewSessions = [];
     private Uri? _previewUri;
     private ulong _navigationId;
     private bool _previewFailureReported;
@@ -43,8 +44,14 @@ public partial class MainWindow : Window, IDisposable
 
     private async void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs eventArgs)
     {
+        if (eventArgs.PropertyName == nameof(MainViewModel.OutputDirectory))
+        {
+            _retiredPreviewSessions.Add(_previewSession);
+            _previewSession = new MarkdownPreviewSession(_viewModel.OutputDirectory);
+            _previewUri = null;
+        }
         if (IsMarkdownTabSelected() &&
-            eventArgs.PropertyName is (nameof(MainViewModel.MarkdownHtml) or nameof(MainViewModel.SelectedDocument)))
+            eventArgs.PropertyName is (nameof(MainViewModel.MarkdownHtml) or nameof(MainViewModel.SelectedDocument) or nameof(MainViewModel.OutputDirectory)))
         {
             await UpdateMarkdownPreviewAsync();
         }
@@ -104,6 +111,7 @@ public partial class MainWindow : Window, IDisposable
             return;
         }
         _previewSession.Retain(_previewUri);
+        DisposeRetiredPreviews();
         _previewFailureReported = false;
         MarkdownWebView.Visibility = Visibility.Visible;
         MarkdownFallback.Visibility = Visibility.Collapsed;
@@ -126,6 +134,12 @@ public partial class MainWindow : Window, IDisposable
 
     private void OnClosed(object? sender, EventArgs e) => Dispose();
 
+    private void DisposeRetiredPreviews()
+    {
+        foreach (var session in _retiredPreviewSessions) session.Dispose();
+        _retiredPreviewSessions.Clear();
+    }
+
     public void Dispose()
     {
         if (_disposed) return;
@@ -137,6 +151,7 @@ public partial class MainWindow : Window, IDisposable
         MarkdownWebView.NavigationCompleted -= OnNavigationCompleted;
         MarkdownWebView.Dispose();
         _previewSession.Dispose();
+        DisposeRetiredPreviews();
         _viewModel.Dispose();
         DataContext = null;
     }

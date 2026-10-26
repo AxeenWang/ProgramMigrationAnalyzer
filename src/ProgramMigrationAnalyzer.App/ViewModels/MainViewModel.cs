@@ -25,6 +25,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private bool _disposed;
     private readonly MarkdownPipeline _markdownPipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
     private readonly string _emptyMarkdownHtml;
+    private SourceDocumentViewModel? _previewDocument;
+    private string? _previewMarkdown;
+    private string? _previewHtml;
 
     public MainViewModel(
         ISourceFileService fileService,
@@ -86,18 +89,45 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [NotifyCanExecuteChangedFor(nameof(OpenFileCommand))]
     [NotifyCanExecuteChangedFor(nameof(OpenFolderCommand))]
     [NotifyCanExecuteChangedFor(nameof(OpenOutputFolderCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ConfigureOutputDirectoryCommand))]
     private bool isBusy;
 
     [ObservableProperty]
     private string statusMessage = "準備就緒";
 
-    public string MarkdownHtml => string.IsNullOrEmpty(SelectedDocument?.RenderedMarkdownHtml)
-        ? _emptyMarkdownHtml
-        : SelectedDocument.RenderedMarkdownHtml;
+    public string MarkdownHtml
+    {
+        get
+        {
+            var document = SelectedDocument;
+            if (document is null || string.IsNullOrEmpty(document.Markdown)) return _emptyMarkdownHtml;
+            if (!string.IsNullOrEmpty(document.RenderedMarkdownHtml)) return document.RenderedMarkdownHtml;
+            if (!ReferenceEquals(document, _previewDocument) || !ReferenceEquals(document.Markdown, _previewMarkdown))
+            {
+                _previewDocument = document;
+                _previewMarkdown = document.Markdown;
+                _previewHtml = BuildHtml(document.Markdown);
+            }
+            return _previewHtml!;
+        }
+    }
 
     partial void OnSelectedDocumentChanged(SourceDocumentViewModel? value)
     {
+        _previewDocument = null;
+        _previewMarkdown = null;
+        _previewHtml = null;
         OnPropertyChanged(nameof(MarkdownHtml));
+        OnPropertyChanged(nameof(CurrentOutputDirectory));
+        if (!IsBusy && value is not null) _ = LoadPreviewSourceAsync(value);
+    }
+
+    partial void OnIsBusyChanged(bool value)
+    {
+        NotifyBatchCommands();
+        OnPropertyChanged(nameof(CanChangeBatchSelection));
+        if (!value && IsWorkspaceActive && SelectedDocument is not null)
+            _ = LoadPreviewSourceAsync(SelectedDocument);
     }
 
     private bool CanOpen() => IsWorkspaceActive && !IsBusy;
@@ -132,9 +162,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
             EnsureActive();
             if (path is null) return;
             AddLog("Scanning source folder...");
-            var documents = await _fileService.LoadFolderAsync(path, SelectedLanguageOption.Language, token);
+            var documents = await _fileService.ScanFolderAsync(path, SelectedLanguageOption.Language, token);
             EnsureActive();
-            foreach (var document in documents) AddOrSelect(document, select: false);
+            foreach (var document in documents) AddOrSelect(document, select: false, checkFourGl: true, sourceRootDirectory: path);
             SelectedDocument ??= Documents.FirstOrDefault();
             AddLog($"Loaded {documents.Count} supported source file(s).");
             if (documents.Count == 0) StatusMessage = "資料夾內沒有支援的原始碼";
@@ -146,37 +176,11 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         if (!CanAnalyze()) return;
         var viewModel = SelectedDocument!;
+        var language = SelectedLanguageOption.Language;
+        var target = SelectedTargetOption.Framework;
         await RunGuardedAsync("分析", async token =>
         {
-            viewModel.BeginAnalysis();
-            RefreshDocumentCommands(viewModel);
-            AddLog("Detecting language...");
-            var source = ApplyLanguageOverride(viewModel.Model);
-            var target = SelectedTargetOption.Framework;
-            var parser = _parsers.FirstOrDefault(candidate => candidate.CanParse(source))
-                ?? throw new NotSupportedException($"Unsupported source language for {source.FileName}.");
-            EnsureActive();
-            AddLog("Parsing...");
-            var result = await Task.Run(() => parser.ParseAsync(source, token), token);
-            EnsureActive();
-            AddLog("Analyzing SQL...");
-            AddLog("Checking legacy APIs...");
-            result = await Task.Run(() => _analyzer.AnalyzeAsync(result, token), token);
-            EnsureActive();
-            AddLog("Generating Markdown...");
-            var (markdown, html) = await Task.Run(() =>
-            {
-                token.ThrowIfCancellationRequested();
-                var report = _reportGenerator.Generate(result, target);
-                token.ThrowIfCancellationRequested();
-                return (report, BuildHtml(report));
-            }, token);
-            EnsureActive();
-            var outputPath = await _outputWriter.WriteAnalysisAsync(source, markdown, token);
-            EnsureActive();
-            viewModel.ApplyAnalysis(result, markdown, html, outputPath);
-            RefreshDocumentCommands(viewModel);
-            AddLog($"Completed. Report: {outputPath}");
+            await AnalyzeDocumentAsync(viewModel, language, target, token, renderHtml: true);
         }, () => { viewModel.FailAnalysis(); RefreshDocumentCommands(viewModel); });
     }
 
@@ -193,7 +197,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             AddLog($"Translating to {target.Name}...");
             var result = await Task.Run(() => _translator.TranslateAsync(analysis, target.Framework, token), token);
             EnsureActive();
-            var outputPath = await _outputWriter.WriteTranslationAsync(result, token);
+            var outputPath = await _outputWriter.WriteTranslationAsync(result, token, viewModel.SourceRootDirectory);
             EnsureActive();
             viewModel.ApplyTranslation(result, outputPath);
             AddLog($"Translation completed. Output: {outputPath}");
@@ -225,9 +229,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
         try
         {
             EnsureActive();
-            Directory.CreateDirectory(OutputDirectory);
+            var directory = CurrentOutputDirectory;
+            Directory.CreateDirectory(directory);
             EnsureActive();
-            Process.Start(new ProcessStartInfo(OutputDirectory) { UseShellExecute = true });
+            Process.Start(new ProcessStartInfo(directory) { UseShellExecute = true });
         }
         catch (OperationCanceledException) when (!IsWorkspaceActive) { }
         catch (Exception exception)
@@ -270,21 +275,27 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     private void NotifyCommands()
     {
+        NotifyBatchCommands();
         OpenFileCommand.NotifyCanExecuteChanged();
         OpenFolderCommand.NotifyCanExecuteChanged();
         AnalyzeCommand.NotifyCanExecuteChanged();
         TranslateCommand.NotifyCanExecuteChanged();
         SaveMarkdownCommand.NotifyCanExecuteChanged();
         OpenOutputFolderCommand.NotifyCanExecuteChanged();
+        ConfigureOutputDirectoryCommand.NotifyCanExecuteChanged();
     }
 
     private void ClearWorkspace()
     {
+        foreach (var document in Documents) document.PropertyChanged -= OnDocumentSelectionChanged;
         foreach (var document in Documents.ToArray()) document.ClearWorkspace();
         SelectedDocument = null;
         Documents.Clear();
         Logs.Clear();
         IsBusy = false;
+        BatchFailures.Clear();
+        IsBatchRunning = false;
+        _sourceLoads.Clear();
         StatusMessage = "工作區已關閉";
     }
 
@@ -293,16 +304,19 @@ public partial class MainViewModel : ObservableObject, IDisposable
         if (_disposed) return;
         _disposed = true;
         _lifetimeCancellation.Cancel();
+        _batchCancellation?.Cancel();
         ClearWorkspace();
         NotifyCommands();
         _lifetimeCancellation.Dispose();
     }
 
-    private void AddOrSelect(SourceDocument document, bool select = true)
+    private void AddOrSelect(SourceDocument document, bool select = true, bool checkFourGl = false, string? sourceRootDirectory = null)
     {
         var existing = Documents.FirstOrDefault(item =>
             item.FilePath.Equals(document.FilePath, StringComparison.OrdinalIgnoreCase));
-        var replacement = new SourceDocumentViewModel(document);
+        var replacement = new SourceDocumentViewModel(document, sourceRootDirectory ?? existing?.SourceRootDirectory);
+        replacement.IsChecked = checkFourGl && replacement.IsBatchEligible;
+        replacement.PropertyChanged += OnDocumentSelectionChanged;
         if (existing is null)
         {
             Documents.Add(replacement);
@@ -310,6 +324,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
         else
         {
             var wasSelected = ReferenceEquals(SelectedDocument, existing);
+            existing.PropertyChanged -= OnDocumentSelectionChanged;
+            _sourceLoads.TryRemove(existing, out _);
             Documents[Documents.IndexOf(existing)] = replacement;
             select |= wasSelected;
         }
@@ -318,6 +334,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         {
             SelectedDocument = replacement;
         }
+        RefreshBatchSelection();
     }
 
     private void RefreshDocumentCommands(SourceDocumentViewModel document)
@@ -339,10 +356,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
             $"{stage}失敗，已改用純文字預覽。\n{exception.Message}");
     }
 
-    private SourceDocument ApplyLanguageOverride(SourceDocument source)
+    private static SourceDocument ApplyLanguageOverride(SourceDocument source, SourceLanguage language)
     {
-        if (SelectedLanguageOption.Language == SourceLanguage.Unknown ||
-            SelectedLanguageOption.Language == source.Language)
+        if (language == SourceLanguage.Unknown || language == source.Language)
         {
             return source;
         }
@@ -355,7 +371,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             EncodingName = source.EncodingName,
             ByteSha256 = source.ByteSha256,
             ByteLength = source.ByteLength,
-            Language = SelectedLanguageOption.Language
+            Language = language
         };
     }
 

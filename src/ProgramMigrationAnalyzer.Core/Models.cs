@@ -43,6 +43,7 @@ public sealed class SourceDocument
     public required string FilePath { get; init; }
     public required string FileName { get; init; }
     public required string Content { get; init; }
+    public bool IsContentLoaded { get; init; } = true;
     public SourceLanguage Language { get; set; }
     public string EncodingName { get; init; } = "未提供，使用記憶體文字";
     public string? ByteSha256 { get; init; }

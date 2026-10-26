@@ -49,7 +49,7 @@ public sealed class SourceFileService : ISourceFileService
         };
     }
 
-    public async Task<IReadOnlyList<SourceDocument>> LoadFolderAsync(
+    public async Task<IReadOnlyList<SourceDocument>> ScanFolderAsync(
         string path,
         SourceLanguage languageOverride = SourceLanguage.Unknown,
         CancellationToken cancellationToken = default)
@@ -61,13 +61,25 @@ public sealed class SourceFileService : ISourceFileService
 
         var files = await Task.Run(() => EnumerateSourceFiles(path, cancellationToken), cancellationToken);
 
-        var documents = new List<SourceDocument>(files.Count);
-        foreach (var file in files)
+        return files.Select(file => new SourceDocument
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            documents.Add(await LoadFileAsync(file, languageOverride, cancellationToken));
-        }
+            FilePath = Path.GetFullPath(file),
+            FileName = Path.GetFileName(file),
+            Content = string.Empty,
+            IsContentLoaded = false,
+            Language = languageOverride == SourceLanguage.Unknown ? DetectLanguage(file) : languageOverride
+        }).ToList();
+    }
 
+    public async Task<IReadOnlyList<SourceDocument>> LoadFolderAsync(
+        string path,
+        SourceLanguage languageOverride = SourceLanguage.Unknown,
+        CancellationToken cancellationToken = default)
+    {
+        var entries = await ScanFolderAsync(path, languageOverride, cancellationToken);
+        var documents = new List<SourceDocument>(entries.Count);
+        foreach (var entry in entries)
+            documents.Add(await LoadFileAsync(entry.FilePath, languageOverride, cancellationToken));
         return documents;
     }
 

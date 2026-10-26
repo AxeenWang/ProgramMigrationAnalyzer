@@ -7,6 +7,7 @@ public interface IFileDialogService
     string? SelectSourceFile();
     string? SelectSourceFolder();
     string? SelectMarkdownSavePath(string suggestedFileName);
+    string? SelectOutputFolder(string currentDirectory) => null;
     void ShowError(string title, string message);
 }
 
@@ -45,6 +46,17 @@ public sealed class FileDialogService : IFileDialogService
             DefaultExt = ".md"
         };
         return dialog.ShowDialog() == true ? dialog.FileName : null;
+    }
+
+    public string? SelectOutputFolder(string currentDirectory)
+    {
+        var dialog = new OpenFolderDialog
+        {
+            Title = "設定輸出根目錄（報告依來源資料夾分開存放）",
+            InitialDirectory = currentDirectory,
+            Multiselect = false
+        };
+        return dialog.ShowDialog() == true ? dialog.FolderName : null;
     }
 
     public void ShowError(string title, string message) =>

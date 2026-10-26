@@ -1,14 +1,23 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using System.IO;
 using ProgramMigrationAnalyzer.Core;
 
 namespace ProgramMigrationAnalyzer.App.ViewModels;
 
-public partial class SourceDocumentViewModel(SourceDocument model) : ObservableObject
+public partial class SourceDocumentViewModel(SourceDocument model, string? sourceRootDirectory = null) : ObservableObject
 {
     public SourceDocument Model { get; private set; } = model;
+    public string? SourceRootDirectory { get; } = sourceRootDirectory;
     public string FileName => Model.FileName;
     public string FilePath => Model.FilePath;
     public string SourceText => Model.Content;
+    public bool IsBatchEligible => Path.GetExtension(FilePath).Equals(".4gl", StringComparison.OrdinalIgnoreCase);
+
+    [ObservableProperty]
+    private bool isChecked;
+
+    [ObservableProperty]
+    private string errorMessage = string.Empty;
     public string LanguageName => Model.Language switch
     {
         SourceLanguage.CSharp => "C#",
@@ -41,7 +50,7 @@ public partial class SourceDocumentViewModel(SourceDocument model) : ObservableO
 
     public string StatusText => Status switch
     {
-        AnalysisStatus.Loaded => "已載入",
+        AnalysisStatus.Loaded => Model.IsContentLoaded ? "已載入" : "待讀取",
         AnalysisStatus.Analyzing => "分析中",
         AnalysisStatus.Completed => "已完成",
         AnalysisStatus.Failed => "失敗",
@@ -53,13 +62,30 @@ public partial class SourceDocumentViewModel(SourceDocument model) : ObservableO
     public void BeginAnalysis()
     {
         ClearAnalysis();
+        ErrorMessage = string.Empty;
         Status = AnalysisStatus.Analyzing;
     }
 
-    public void FailAnalysis()
+    public void FailAnalysis(string message = "")
     {
         ClearAnalysis();
+        ErrorMessage = message;
         Status = AnalysisStatus.Failed;
+    }
+
+    public void CancelAnalysis()
+    {
+        ClearAnalysis();
+        Status = AnalysisStatus.Loaded;
+    }
+
+    public void ApplySource(SourceDocument source)
+    {
+        Model = source;
+        OnPropertyChanged(nameof(Model));
+        OnPropertyChanged(nameof(SourceText));
+        OnPropertyChanged(nameof(LanguageName));
+        OnPropertyChanged(nameof(StatusText));
     }
 
     private void ClearAnalysis()
