@@ -11,6 +11,7 @@ using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Wpf;
 using ProgramMigrationAnalyzer.Analysis;
 using ProgramMigrationAnalyzer.App;
+using ProgramMigrationAnalyzer.App.Authentication;
 using ProgramMigrationAnalyzer.App.Services;
 using ProgramMigrationAnalyzer.App.ViewModels;
 using ProgramMigrationAnalyzer.Core;
@@ -24,18 +25,22 @@ namespace ProgramMigrationAnalyzer.WpfChecks;
 internal static class Program
 {
     private static readonly string Root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../../"));
-    private static readonly string TaskRoot = Path.Combine(Root, ".camp_codex", "2026-10-26_file-list-layout");
+    private static readonly string TaskRoot = Path.Combine(Root, ".camp_codex", "2026-10-26_embedded-login");
     private static readonly string Scratch = Path.Combine(TaskRoot, "wpf", Guid.NewGuid().ToString("N"));
 
     [STAThread]
     private static int Main()
     {
+        if (LoginStartupChecks.RunChildIfRequested() is int childResult) return childResult;
         if (!File.Exists(Path.Combine(Root, "ProgramMigrationAnalyzer.sln")))
         {
             throw new InvalidOperationException("WPF checks must run from the ProgramMigrationAnalyzer project.");
         }
 
         Directory.CreateDirectory(Scratch);
+        EmbeddedLoginChecks.Run();
+        EmbeddedLoginBuildChecks.Run(Root, Scratch);
+        LoginStartupChecks.RunParent();
         CheckFourGlMarkdownRenderingAsync().GetAwaiter().GetResult();
         CheckPreviewSessionLifetime();
         var dialogs = new ScriptedDialogs();
@@ -55,11 +60,14 @@ internal static class Program
         {
             try
             {
+                Check(app.Windows.Count == 1 && app.Windows.Cast<Window>().Single().GetType().Name == "LoginWindow"
+                    && app.MainCalls == 0, "Unauthenticated startup must show only login and must not create the analysis workspace.");
+                await EmbeddedLoginUiChecks.AuthenticateStartupAsync(app.Windows.OfType<LoginWindow>().Single());
                 var window = app.Windows.OfType<MainWindow>().Single();
                 var viewModel = (MainViewModel)window.DataContext;
                 Check(app.Windows.Count == 1 && app.MainCalls == 1
                     && viewModel.OpenFileCommand.CanExecute(null) && viewModel.OpenFolderCommand.CanExecute(null),
-                    "Startup must open the usable main window directly without login or an authorization Key.");
+                    "Successful login must create exactly one usable analysis workspace.");
                 Check(!FindVisual<Button>(window).Any(button => Equals(button.Content, "登出")),
                     "The direct-access workspace must not retain an account toolbar.");
                 CheckDefaultOutputDirectory();
@@ -76,7 +84,7 @@ internal static class Program
                     && viewModel.SelectedDocument is null && window.IsDisposed && File.Exists(oldOutput)
                     && !viewModel.OpenFileCommand.CanExecute(null),
                     "Closing the main window must release its workspace and retain generated files.");
-                Console.WriteLine("WPF checks passed: direct startup, usable commands, close/disposal, retained output, opening files/folder, source and analysis bindings, Markdown preview, .NET 8/10 translation, diff, save, status and log.");
+                Console.WriteLine("WPF checks passed: embedded login, usable commands, close/disposal, retained output, opening files/folder, source and analysis bindings, Markdown preview, .NET 8/10 translation, diff, save, status and log.");
             }
             catch (Exception exception)
             {
@@ -128,6 +136,7 @@ internal static class Program
     private sealed class TestApp(ScriptedDialogs dialogs) : ProgramMigrationAnalyzer.App.App
     {
         public int MainCalls { get; private set; }
+        protected override ILoginVerifier CreateLoginVerifier() => EmbeddedLoginChecks.CreateVerifier();
         protected override MainWindow CreateMainWindow()
         {
             MainCalls++;

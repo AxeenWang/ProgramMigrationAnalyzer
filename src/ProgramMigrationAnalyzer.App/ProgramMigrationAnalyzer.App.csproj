@@ -21,6 +21,14 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <PmaCredentialFile Condition="'$(PmaCredentialFile)' == ''">$(MSBuildThisFileDirectory)..\..\config\embedded-login.json</PmaCredentialFile>
   </PropertyGroup>
 
+  <ItemGroup Condition="Exists('$(PmaCredentialFile)')">
+    <EmbeddedResource Include="$(PmaCredentialFile)" LogicalName="ProgramMigrationAnalyzer.EmbeddedLogin.json" />
+  </ItemGroup>
+
+  <Target Name="RequireEmbeddedLogin" BeforeTargets="PrepareForBuild" Condition="'$(DesignTimeBuild)' != 'true'">
+    <Error Condition="!Exists('$(PmaCredentialFile)')" Text="Embedded login configuration is missing. Run build/Set-EmbeddedLogin.ps1 before building. There is no default account or login bypass." />
+  </Target>
 </Project>

@@ -79,6 +79,7 @@ config/authorization-public-key.pem
 *.key
 *.pma-key
 users.json
+config/embedded-login.json
 
 # WPF and WebView2 runtime-generated data
 *.exe.WebView2/
