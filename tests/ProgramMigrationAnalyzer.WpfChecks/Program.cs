@@ -22,7 +22,7 @@ namespace ProgramMigrationAnalyzer.WpfChecks;
 internal static class Program
 {
     private static readonly string Root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../../"));
-    private static readonly string Scratch = Path.Combine(Root, ".codex-tmp", "2026-10-01_login-phase-3", "wpf", Guid.NewGuid().ToString("N"));
+    private static readonly string Scratch = Path.Combine(Root, ".camp_codex", "2026-10-01_login-phase-3", "wpf", Guid.NewGuid().ToString("N"));
 
     [STAThread]
     private static int Main()
@@ -247,7 +247,7 @@ internal static class Program
                 {
                     if (Environment.GetEnvironmentVariable("PMA_WPF_CAPTURE") == "1")
                     {
-                        var path = Path.Combine(Root, ".codex-tmp", "2026-10-01_login-phase-3", "markdown.png");
+                        var path = Path.Combine(Root, ".camp_codex", "2026-10-01_login-phase-3", "markdown.png");
                         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
                         await using var stream = File.Create(path);
                         await browser.CoreWebView2.CapturePreviewAsync(CoreWebView2CapturePreviewImageFormat.Png, stream);
@@ -310,7 +310,7 @@ internal static class Program
         bitmap.Render(window);
         var encoder = new PngBitmapEncoder();
         encoder.Frames.Add(BitmapFrame.Create(bitmap));
-        var path = Path.Combine(Root, ".codex-tmp", "2026-10-01_login-phase-3", "window.png");
+        var path = Path.Combine(Root, ".camp_codex", "2026-10-01_login-phase-3", "window.png");
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         using var stream = File.Create(path);
         encoder.Save(stream);

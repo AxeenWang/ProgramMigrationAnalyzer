@@ -51,7 +51,7 @@ PR 內容至少列出本 Phase 目標、完成的 Task ID、實際驗證結果�
 
 正式開始 Phase 1 前，先由使用者決定既有工作的保存／收尾方式，並讓登入規格與計畫成為可追溯的開發基線，再確認工作區乾淨，不得自動 stash、攜帶變更切分支、提交無關內容、改 ignore 規則掩蓋資料或刪除檔案。這是開工前置條件，不另計為實作 Phase。
 
-2026-10-01 開工決議：使用者同意在專案內 `.codex-tmp/2026-10-01_login-phase-1/worktree` 建立隔離 worktree，以該目錄作為 Phase 1 Git root，原工作區內容保留，登入規格與本計畫帶入 P1-T1 作為基線文件。隔離 worktree 完成乾淨狀態檢查後可開始，不要求清理原工作區。
+2026-10-01 開工決議：使用者同意在專案內 `.camp_codex/2026-10-01_login-phase-1/worktree` 建立隔離 worktree，以該目錄作為 Phase 1 Git root，原工作區內容保留，登入規格與本計畫帶入 P1-T1 作為基線文件。隔離 worktree 完成乾淨狀態檢查後可開始，不要求清理原工作區。
 
 此隔離 checkout 的 optional bootstrap 無法透過相對路徑確認 CodeLab anchor，依專案規則採 standalone 模式，使用者指定的原專案範圍與隔離限制仍適用。僅將原工作區的登入規格與計畫作為已授權的外部文件，不擴張至其他目錄。
 
@@ -68,7 +68,7 @@ PR 內容至少列出本 Phase 目標、完成的 Task ID、實際驗證結果�
 - 不提供自助註冊、共用預設密碼、記住密碼、自動登入、角色矩陣或帳號同步。session 只存在程序記憶體，沒有 idle timeout。
 - 帳號停用／重設於下次登入生效，不承諾即時撤銷既有 session。登出清除記憶體工作區，保留 output 檔案。
 - 不安裝新套件、不改全域設定，若既有 SDK reference 無法提供必要 API，先查明最小依賴並依既有授權範圍處理，不藉此升級其他套件。
-- 測試帳號及產物只放在 `.codex-tmp/YYYY-MM-DD_<task-name>/`，自動化不碰真實 ProgramData。外部部署與 ACL 寫入需取得該電腦的部署授權。
+- 測試帳號及產物只放在 `.camp_codex/YYYY-MM-DD_<task-name>/`，自動化不碰真實 ProgramData。外部部署與 ACL 寫入需取得該電腦的部署授權。
 - 實作前重新確認 Git root、分支、upstream 及工作區，目前分支 `codex/operation-guide-slides` 沒有 upstream，且有規格變更與既有未追蹤截圖／簡報。不得自行切換、stash、清理、提交或推送這些內容。
 - 每個 Task 記錄驗證結果及差異，完成後立即 commit／push，每個 Phase 在所有 Task 完成後建立唯一 PR，agent temp 不可提交。
 
@@ -307,7 +307,7 @@ dotnet run --no-build --project tests/ProgramMigrationAnalyzer.WpfChecks
 
 ### Task P4-T2：發佈 EXE 與桌面部署驗證
 
-**Files:** 使用現有 `publish.bat`，只有發佈／桌面驗證揭露問題時才修改登入相關程式或發佈腳本。可控的驗證紀錄先保留在本 Phase 的 `.codex-tmp/`。
+**Files:** 使用現有 `publish.bat`，只有發佈／桌面驗證揭露問題時才修改登入相關程式或發佈腳本。可控的驗證紀錄先保留在本 Phase 的 `.camp_codex/`。
 
 **Interfaces:** 沿用同一 Local provider、正常啟動及管理入口，不新增部署用免登入開關。
 
@@ -369,7 +369,7 @@ dotnet run --no-build --project tests/ProgramMigrationAnalyzer.WpfChecks
 
 Phase 的正常狀態依序為「未開始 → 實作中 → 驗證通過 → 已送審 → 已合併」。Task 全部完成且必要檢查通過，才可標記「驗證通過」，PR URL 與遠端狀態查證成功，才可標記「已送審」。未能送 PR 時仍是未交付，不能略過此狀態。下一 Phase 的開工條件為前一 Phase「已合併」。
 
-2026-10-01 清理紀錄：PR #6 於 `2026-10-01T01:35:27Z` 合併，merge commit 為 `e33e33f7e07dc37aef8c162d368b119da0d8a38e`。依使用者指示，先清理全部主題分支，本機與遠端只保留 `main`。Phase 2～4 分支維持未建立。原工作區的未提交內容保留在相同 commit 的 detached HEAD，尚未合併的 `codex/ignore-references` 提交已保存並驗證專案暫存區的 Git bundle。其後才修正 `.references/` 忽略與分支建立時機，使用者明確授權此維護變更直接提交並推送到 `main`，不開始新的 Phase。
+2026-10-01 清理紀錄：PR #6 於 `2026-10-01T01:35:27Z` 合併，merge commit 為 `e33e33f7e07dc37aef8c162d368b119da0d8a38e`。依使用者指示，先清理全部主題分支，本機與遠端只保留 `main`。Phase 2～4 分支維持未建立。原工作區的未提交內容保留在相同 commit 的 detached HEAD，尚未合併的 `codex/ignore-references` 提交已保存並驗證專案暫存區的 Git bundle。其後才修正當時的使用者參考區忽略規則與分支建立時機，使用者明確授權此維護變更直接提交並推送到 `main`，不開始新的 Phase。
 
 ### Phase 1 執行紀錄
 
@@ -385,7 +385,7 @@ Phase 的正常狀態依序為「未開始 → 實作中 → 驗證通過 → �
 執行調整與成本：
 
 - 手動建立已授權位置的 worktree，因 App API 無法從此 chat 指定該 repo 與路徑，成本為不會自動登錄至 App 的 managed worktree 清單。
-- 暫存進度使用 `.codex-tmp` 人工紀錄，遵守專案暫存規則及 Phase／Task 標題，成本為需人工維護，未使用 skill 的自動 ledger helpers。
+- 暫存進度使用 `.camp_codex` 人工紀錄，遵守專案暫存規則及 Phase／Task 標題，成本為需人工維護，未使用 skill 的自動 ledger helpers。
 - 隔離 checkout 採 standalone bootstrap，原因見開工決議，成本為不自動匯入外部治理 anchor，仍遵守使用者已指定的隔離規則。
 - 使用作者自審，遵守本計畫對代理分工的授權限制，成本為沒有獨立代理的第二次檢查，仍須由 PR 審查確認是否可合併。
 
@@ -406,7 +406,7 @@ Phase 審查修正已提交並推送 40ba222348b7133c6ebe3aff227be88f301cae6b。
 
 設定視窗已以實際 STA 子程序驗證並檢視影像，帳密確認、背景計算、重複送出、模式切換及關閉清理通過。服務保留計畫的 CreateOrResetAsync，另提供 CreateAsync／ResetAsync，讓視窗四種模式拒絕重複建帳及未知帳號重設。一般權限拒絕管理，管理元件不建立工具 session 或分析主視窗。
 
-依使用者限制，由同一實作者順序執行及自審，未使用代理分工，獨立審查留待 PR。暫存進度沿用專案 .codex-tmp，未使用 skill 的其他 scratch 位置。正式 --configure-local-account 入口、登入畫面、啟動門檻與登出均待 Phase 3，此 Phase 不代表產品登入已完成。Phase 3／4 分支未建立。
+依使用者限制，由同一實作者順序執行及自審，未使用代理分工，獨立審查留待 PR。暫存進度沿用專案 .camp_codex，未使用 skill 的其他 scratch 位置。正式 --configure-local-account 入口、登入畫面、啟動門檻與登出均待 Phase 3，此 Phase 不代表產品登入已完成。Phase 3／4 分支未建立。
 
 ## 完成與交接條件
 
@@ -444,7 +444,7 @@ P3-T3 已提交並推送 56fe2eb986fdda6236c9a3e2d5421e58018fb222，確認 upstr
 
 Phase 3 自審：由同一實作者檢查完整分支，未使用代理。針對 Review Focus 的取消後晚到成功、直接命令與 generation、資料 schema／ACL、正式入口及管理模式逐項檢查。新增管理視窗初始化失敗檢查先失敗，修正一般啟動例外會清除 session 與半開視窗，顯示安全錯誤，關閉後退出。另驗證 OpeningMain 時取消會釋放未顯示主視窗，以及假時間 timer 從背景執行時以 UI dispatcher 更新倒數。
 
-Phase 3 最終驗證：Solution build 0 warnings／0 errors。contracts 5／5、crypto 7／7、store 11／11、admin 6／6、login 5／5、startup 11／11、access 6／6，共 51 組通過。Phase2Checks、RegressionChecks、WpfChecks 均通過。登入與主視窗截圖已在隔離暫存區檢查，使用者顯示、登入／登出按鈕及版面可讀。未追蹤 .codex-tmp／.claude-tmp／.references，未包含真實帳號檔、預設密碼或正式 bypass。
+Phase 3 最終驗證：Solution build 0 warnings／0 errors。contracts 5／5、crypto 7／7、store 11／11、admin 6／6、login 5／5、startup 11／11、access 6／6，共 51 組通過。Phase2Checks、RegressionChecks、WpfChecks 均通過。登入與主視窗截圖已在隔離暫存區檢查，使用者顯示、登入／登出按鈕及版面可讀。未追蹤 .camp_codex／.camp_claude 與當時的使用者參考區，未包含真實帳號檔、預設密碼或正式 bypass。
 
 Phase 4 的發布 EXE、不同工作目錄及實際 ProgramData／Windows ACL 部署驗證仍未執行。沒有開始 Phase 4、建立其分支或合併 PR。已授權使用既有 worktree 及建立 ready PR，依使用者指示保留 worktree，未執行 skill 的重新選擇整合方式、暫存刪除或分支清理。
 
@@ -454,7 +454,7 @@ Phase 3 自審修正已提交並推送 ca106d54f2f8477031a96dba10cfa00838fd3d14�
 
 2026-10-01 重新向 GitHub 查證 PR #8 為 MERGED，mergedAt `2026-10-01T04:58:24Z`，merge commit `82474c877e0a5598e971963875033df3c77a2604`。指定續作 worktree 的 Git root、origin、main／origin/main、upstream 均符合接續範圍。fetch 後 ahead／behind 為 0／0，worktree／index 乾淨，遠端預設分支為 main。兩端 Phase 3 分支已不存在，兩端沒有同名 Phase 4 分支衝突，從 origin/main 建立 `codex/login-phase-4-verification`，初始不追蹤 main。未操作原工作區或另建 worktree。
 
-此 checkout 的 `../../AGENTS.md` 不存在，依 optional bootstrap 採 standalone 模式，使用自己的 AGENTS.md。由同一實作者順序執行與自審，未使用代理。Task 的 ledger、完整輸出與 exit code 保存在指定 Git root 的 `.codex-tmp/2026-10-01_login-phase-4/`，不提交暫存及帳號資料。
+此 checkout 的 `../../AGENTS.md` 不存在，依 optional bootstrap 採 standalone 模式，使用自己的 AGENTS.md。由同一實作者順序執行與自審，未使用代理。Task 的 ledger、完整輸出與 exit code 保存在指定 Git root 的 `.camp_codex/2026-10-01_login-phase-4/`，不提交暫存及帳號資料。
 
 P4-T1 基線先完成 restore、Build 0 warnings／0 errors、AuthenticationChecks 51／51 及三組既有回歸。檢查未發現 skipped case。既有 store／admin 使用真實 LocalAuthenticationService、LocalAccountStore、PBKDF2 與隔離帳號，startup／WpfChecks 的 fake authentication 保留作可控非同步與畫面回歸，不能獨自代表真實本機登入成功。
 
@@ -493,7 +493,7 @@ P4-T1 已提交並推送 `9d0e2d231d55038481b53c98655722d6765a09b4`，工作區�
 
 2026-10-01 `05:14:42Z` 以唯讀 PE／resource 檢查，Machine 為 AMD64／`0x8664`，manifest 的 requestedExecutionLevel 為 `asInvoker`。只將 EXE 載入為資料檔，沒有執行入口。對應 runtimeconfig 的 includedFrameworks 包含 Microsoft.NETCore.App 10.0.12 與 Microsoft.WindowsDesktop.App 10.0.12。SHA-256 為 `9352D2ED480D83762BF23C56B29C503F941B9C1B1699D791C12C546A4CB33C9B`。這是發佈與靜態證據，乾淨 VM 上免安裝 .NET 的實測仍待部署驗證。
 
-產物、publish 完整輸出、`publish-inspection.json`、EXE manifest 及 `deployment-verification-checklist.md` 均保留在此 Git root 的 publish／`.codex-tmp/2026-10-01_login-phase-4/`，不提交產物或暫存。部署清單按規格列出 Windows token／ACL、登入、取消、鍵盤、登出、重設／停用、重啟、不同工作目錄、Scenario A／B／C、Markdown HTML／fallback 與退出程序觀察，結果全為未執行。
+產物、publish 完整輸出、`publish-inspection.json`、EXE manifest 及 `deployment-verification-checklist.md` 均保留在此 Git root 的 publish／`.camp_codex/2026-10-01_login-phase-4/`，不提交產物或暫存。部署清單按規格列出 Windows token／ACL、登入、取消、鍵盤、登出、重設／停用、重啟、不同工作目錄、Scenario A／B／C、Markdown HTML／fallback 與退出程序觀察，結果全為未執行。
 
 目前沒有使用者指定的測試電腦／VM 及真實 ProgramData、帳號、Windows ACL 的部署授權。本次未執行發佈 EXE，未讀寫或檢查真實帳號檔，也未更改 Windows ACL。P4-T2 真實部署與桌面驗證未完成，Phase 4 未驗收且不建立 ready PR。依逐 Task 驗證與推送規則，P4-T3 的 README 與 `docs/Login_Verification_and_Delivery.md` 尚未開始，待 P4-T2 完整完成後接續。此準備進度隨同一 Phase 分支保存與推送，不將部分準備記為 Task 完成。
 
@@ -501,7 +501,7 @@ P4-T1 已提交並推送 `9d0e2d231d55038481b53c98655722d6765a09b4`，工作區�
 
 使用者明確指定 SWANG-PC，授權建立及維護 `C:/ProgramData/ProgramMigrationAnalyzer/auth/users.json` 的測試帳號，以及工具目錄、auth 目錄和帳號檔的 Windows ACL。部署前確認該工具目錄及帳號檔不存在。主機為 Windows build 26200、x64，一般啟動程序沒有提升權限。授權不延伸至 ProgramData 祖先 ACL、Windows 帳號或其他作業系統設定。
 
-使用同一發佈 EXE，實際桌面觀察如下。證據位於 `.codex-tmp/2026-10-01_login-phase-4/` 的 launch.json、host.log、desktop-observations.json 及 progress.md，均不提交。
+使用同一發佈 EXE，實際桌面觀察如下。證據位於 `.camp_codex/2026-10-01_login-phase-4/` 的 launch.json、host.log、desktop-observations.json 及 progress.md，均不提交。
 
 - 正常入口只有登入視窗，初始焦點為帳號。缺失帳號設定時，Enter 提交顯示「本機登入尚未正確設定，請聯絡管理者」，PasswordBox 清空，沒有主畫面或自動建帳。Tab 的視覺焦點順序為帳號、密碼、登入、取消。空白 Enter 維持登入提示，Esc、取消按鈕及標題列關閉後均確認視窗與程序退出。工具的部分焦點文字未隨 Tab 更新，焦點順序依畫面觀察記錄。
 - 非法 `--skip-login` 參數顯示安全啟動錯誤，關閉後退出，沒有繞過認證。
@@ -555,7 +555,7 @@ Task 暫存工作目錄及 EXE 目錄兩種入口均成功以同一 ProgramData 
 
 P4-T2 必要發佈、真實部署與桌面流程已通過。未將自動化的替身 ACL 當成部署證據，真實 ACL 由 SWANG-PC 的目錄／檔案檢查、一般 write handle 拒絕及正式 EXE 登入佐證。L1～L14 的完整可控情境由 56 組實際執行的自動化與上述桌面觀察共同佐證，不宣稱所有邊界案例都在 SWANG-PC 手動重做。乾淨 VM、真實帳號的重設／停用與 30 秒節流桌面操作未另執行，相應管理與節流行為的自動化證據及限制須在 P4-T3 如實列出。
 
-本 Task 的 RED／GREEN、publish、host trace、實際 UI 樹、帳號安全 metadata、output 指紋及退出紀錄留在忽略的 `.codex-tmp/2026-10-01_login-phase-4/`。來源修正已推送 `a12b7a4`，本完成紀錄已提交並推送 `6d80a48983f69e296348629bad830528e85c962b`，確認同步 0／0 且工作區乾淨後才開始交付文件 Task。
+本 Task 的 RED／GREEN、publish、host trace、實際 UI 樹、帳號安全 metadata、output 指紋及退出紀錄留在忽略的 `.camp_codex/2026-10-01_login-phase-4/`。來源修正已推送 `a12b7a4`，本完成紀錄已提交並推送 `6d80a48983f69e296348629bad830528e85c962b`，確認同步 0／0 且工作區乾淨後才開始交付文件 Task。
 
 ### P4-T3 交付文件與 Phase 自審
 

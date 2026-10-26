@@ -12,7 +12,7 @@ Active Target：`Projects/ProgramMigrationAnalyzer`。Target Lock：enabled。
 
 既有密碼規則維持 8～128 個 Unicode scalar values，允許 `@`、`!`、`#`、空白與 Unicode，密碼原樣比較。帳號維持 3～64 個 ASCII 英文字母、數字、點、底線與連字號，Trim 後以 invariant 小寫正規化。
 
-續作 Git root 為 `D:/AxeenWorld/CodeLab/Projects/ProgramMigrationAnalyzer/.codex-tmp/2026-10-01_login-phase-1/worktree`，採 standalone 模式與自己的 `AGENTS.md`。開工已 fetch，`main` 與 `origin/main` 為 `751332489dde5190b59a836774565ab1d458c634`，ahead／behind 為 0／0，tracked／untracked 工作區乾淨。
+續作 Git root 為 `D:/AxeenWorld/CodeLab/Projects/ProgramMigrationAnalyzer/.camp_codex/2026-10-01_login-phase-1/worktree`，採 standalone 模式與自己的 `AGENTS.md`。開工已 fetch，`main` 與 `origin/main` 為 `751332489dde5190b59a836774565ab1d458c634`，ahead／behind 為 0／0，tracked／untracked 工作區乾淨。
 
 本機登入 Phase 1～4 與 publish 修正已合併。現行 `LocalAccountAdministrationService` 只檢查 Windows 提升權限，`--configure-local-account` 可以建立或重設帳號。這項行為須由新版本的公司簽章授權取代。
 
@@ -163,7 +163,7 @@ revision 只阻擋正常流程誤匯入舊 Key。客戶管理員可刪除帳號�
 | O11 | 無正式公鑰 publish 失敗，有效公鑰 publish 成功，正式專案根目錄直接建置最新來源，失敗不覆蓋舊 EXE，兩種交付目錄分離 |
 | O12 | Solution build、AuthenticationChecks、Phase2Checks、RegressionChecks、WpfChecks、Scenario A／B／C、登出重登、輸出保留、HTML／純文字及無殘留程序回歸 |
 
-測試只使用即時產生的記憶體測試金鑰與測試專用密碼。隔離帳號／授權檔與 log 位於正式專案根目錄的 `.codex-tmp/YYYY-MM-DD_<task-name>/`，不提交。正式來源及發布依使用者後續指示直接在專案根目錄維護，舊暫存 worktree 僅保留為復原副本。測試不得以 fake authentication 成功代替正式 provider／簽章驗證。ACL 與 UAC 替身的證據須和真實 Windows 部署觀察分開。
+測試只使用即時產生的記憶體測試金鑰與測試專用密碼。隔離帳號／授權檔與 log 位於正式專案根目錄的 `.camp_codex/YYYY-MM-DD_<task-name>/`，不提交。正式來源及發布依使用者後續指示直接在專案根目錄維護，舊暫存 worktree 僅保留為復原副本。測試不得以 fake authentication 成功代替正式 provider／簽章驗證。ACL 與 UAC 替身的證據須和真實 Windows 部署觀察分開。
 
 正式私鑰與實際帳號由使用者互動操作，代理不讀取或記錄值。新版本真實 ProgramData／ACL 及 UAC 部署驗證須先取得指定電腦與可替換資料的授權。未完成真實部署驗證時，不標記全部驗收完成或送 ready PR。
 
@@ -171,7 +171,7 @@ revision 只阻擋正常流程誤匯入舊 Key。客戶管理員可刪除帳號�
 
 使用者已核准此規格與實作計畫，並指示依計畫作業。沿用同一實作者順序執行，不使用代理分工，不另建 worktree。
 
-依 project AGENTS，實際開始當前 Phase 時才從最新遠端預設分支建立該 Phase 分支。審閱稿先保存於忽略的 `.codex-tmp/2026-10-01_offline-authorization-design/`，核准後在第一個實作 Task 移入正式 `docs/superpowers/specs/2026-10-01-offline-signed-authorization-design.md`，並連同計畫及 authoritative spec 更新形成基線。
+依 project AGENTS，實際開始當前 Phase 時才從最新遠端預設分支建立該 Phase 分支。審閱稿先保存於忽略的 `.camp_codex/2026-10-01_offline-authorization-design/`，核准後在第一個實作 Task 移入正式 `docs/superpowers/specs/2026-10-01-offline-signed-authorization-design.md`，並連同計畫及 authoritative spec 更新形成基線。
 
 每個實作 Task 完成後依專案流程驗證、commit／push、確認同步，再開始下一 Task。每個 Phase 全部驗證後建立唯一 PR，不自動 merge，不 force push，不預先建立後續 Phase 分支。原 detached checkout 的既有規格、治理文件、簡報及登入部署全部保留，依使用者後續授權將正式成果移回專案根目錄，發布直接使用該目錄的最新來源。
 

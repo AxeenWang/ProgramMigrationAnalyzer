@@ -185,7 +185,7 @@ internal static class SignedStartupChecks
         var encoder = new System.Windows.Media.Imaging.PngBitmapEncoder(); encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(bitmap));
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
         while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "ProgramMigrationAnalyzer.sln"))) directory = directory.Parent;
-        using var stream = File.Create(Path.Combine(directory!.FullName, ".codex-tmp", "2026-10-01_offline-authorization-phase-5", "activation-window.png"));
+        using var stream = File.Create(Path.Combine(directory!.FullName, ".camp_codex", "2026-10-01_offline-authorization-phase-5", "activation-window.png"));
         encoder.Save(stream);
     }
 

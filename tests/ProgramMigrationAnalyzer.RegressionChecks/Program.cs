@@ -13,7 +13,7 @@ if (!File.Exists(Path.Combine(root, "ProgramMigrationAnalyzer.sln")))
     throw new InvalidOperationException("Regression checks must run from the ProgramMigrationAnalyzer project.");
 }
 
-var scratch = Path.Combine(root, ".codex-tmp", "2026-09-23_phase3-regression", Guid.NewGuid().ToString("N"));
+var scratch = Path.Combine(root, ".camp_codex", "2026-09-23_phase3-regression", Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(scratch);
 
 try

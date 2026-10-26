@@ -4,7 +4,7 @@ CodeLab-Governance: optional
 
 This project supports CodeLab-managed and standalone operation.
 
-When `../../AGENTS.md` contains the exact standalone line `CodeLab-Workspace-Root: v1` and the required anchors are available, use CodeLab-managed mode. Before project work, read `../../AGENTS.md` and `../../governance_eng.md`. Claude Code / Cowork also reads `../../CLAUDE.md`. Read `../../governance_cht.md` only for a Chinese request, bilingual maintenance, or an inconsistency check.
+When `../../AGENTS.md` contains the exact standalone line `CodeLab-Workspace-Root: v1` and the required anchors are available, use CodeLab-managed mode. Before project work, read `../../AGENTS.md` and `../../governance_eng.md`. Claude Code / Cowork also reads `../../CLAUDE.md`. Read `../../governance_cht.md` only for a request for the Chinese rule text, bilingual maintenance, or an inconsistency check.
 
 Otherwise, do not search elsewhere for substitutes. Use standalone mode and project-local rules. Without user authorization, do not read or write outside the project directory. Report the mode and reason in interactive work and non-interactive output.
 
@@ -22,4 +22,4 @@ Change the marker to `CodeLab-Governance: required` when failed managed-mode ver
 
 - Implement, build and publish from the project repository root. Do not use a worktree inside an agent temp directory as the working source.
 - Keep source, tests and final documentation in their normal project directories. Agent temp directories contain only scratch data, test fixtures, logs and recovery copies.
-- The former login worktree under `.codex-tmp/2026-10-01_login-phase-1/worktree` is an inactive recovery copy. Do not use it for ongoing work or publish fallback.
+- The former login worktree under `.camp_codex/2026-10-01_login-phase-1/worktree` is an inactive recovery copy. Do not use it for ongoing work or publish fallback.

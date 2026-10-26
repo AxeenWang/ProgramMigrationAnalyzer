@@ -24,7 +24,7 @@
 - 正式帳號路徑固定 `%ProgramData%/ProgramMigrationAnalyzer/auth/users.json`。Administrators／SYSTEM FullControl，Users 目錄 ReadAndExecute、檔案 Read，不修改 ProgramData 或磁碟根 ACL。
 - 正式 App 只接受無參數或 `--import-authorization <完整路徑>`，舊管理入口與登入 bypass 拒絕。匯入不等於登入，每次登入都重讀驗章。
 - unsigned schema 1 不自動放行或轉換，匯入失敗不損壞舊檔。停用／重設於下次登入生效，既有 session 不即時撤銷，output 保留。
-- 測試私鑰只在記憶體即時產生。測試帳號檔、Key、log 只放 `.codex-tmp/YYYY-MM-DD_<task-name>/`，不提交，不碰真實 ProgramData。
+- 測試私鑰只在記憶體即時產生。測試帳號檔、Key、log 只放 `.camp_codex/YYYY-MM-DD_<task-name>/`，不提交，不碰真實 ProgramData。
 - 發證工具、私鑰與實際 Key 不進入客戶端 publish。沒有有效公司公鑰的 publish 必須失敗，開發 build 必須保持未授權，沒有測試信任根或自動 fallback。
 - 真實部署需取得指定電腦的新版本帳號替換／ACL 授權，正式私鑰與帳密由使用者操作。部署未完成不送 ready PR，不把隔離測試寫成真實部署通過。
 
@@ -228,7 +228,7 @@ P5-T1 已完成並推送 5a791c6。P5-T2 已完成並推送 52fcb92。P5-T3 已�
 
 最終 restore／build、AuthenticationChecks all、Phase2Checks、RegressionChecks、WpfChecks 全部 exit 0。Build 0 warnings／0 errors，Authentication 65 PASS，其中 signature 9 組。受限 restore 的 NU1900 以允許環境強制更新中繼資料後排除，未關閉 NuGet audit。原 store 五個原子替換情境在 sandbox 出現 StorageUnavailable，同一組隔離測試於允許環境全部通過，並未修改真實 ProgramData 或 ACL。
 
-證據保留在忽略的 `.codex-tmp/2026-10-01_offline-authorization-phase-5/`，測試私鑰僅在記憶體，沒有簽發正式 Key。客戶端 composition 尚未切換，P5-T4 及真實部署未開始。
+證據保留在忽略的 `.camp_codex/2026-10-01_offline-authorization-phase-5/`，測試私鑰僅在記憶體，沒有簽發正式 Key。客戶端 composition 尚未切換，P5-T4 及真實部署未開始。
 
 ### P5-T2 執行紀錄
 

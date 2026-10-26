@@ -13,7 +13,7 @@ if (!File.Exists(Path.Combine(root, "ProgramMigrationAnalyzer.sln")))
     throw new InvalidOperationException("Phase 2 checks must run from the ProgramMigrationAnalyzer project.");
 }
 
-var scratch = Path.Combine(root, ".codex-tmp", "2026-09-23_phase2-checks", Guid.NewGuid().ToString("N"));
+var scratch = Path.Combine(root, ".camp_codex", "2026-09-23_phase2-checks", Guid.NewGuid().ToString("N"));
 Directory.CreateDirectory(scratch);
 
 try
@@ -31,14 +31,14 @@ finally
 async Task CheckFolderScanAsync()
 {
     var folder = Path.Combine(scratch, "scan");
-    foreach (var name in new[] { "bin", "obj", "output", "nested", "nested/bin" })
+    foreach (var name in new[] { "bin", "obj", "output", "nested", "nested/bin", ".camp_codex", ".camp_claude", "nested/.camp_codex", "nested/.camp_claude" })
     {
         Directory.CreateDirectory(Path.Combine(folder, name));
     }
 
     File.WriteAllText(Path.Combine(folder, "main.cs"), "class A {}");
     File.WriteAllText(Path.Combine(folder, "nested", "keep.4gl"), "MAIN\nEND MAIN");
-    foreach (var name in new[] { "bin", "obj", "output", "nested/bin" })
+    foreach (var name in new[] { "bin", "obj", "output", "nested/bin", ".camp_codex", ".camp_claude", "nested/.camp_codex", "nested/.camp_claude" })
     {
         File.WriteAllText(Path.Combine(folder, name, "skip.cs"), "class Skip {}");
     }

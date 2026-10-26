@@ -156,7 +156,7 @@ internal sealed class SignedAccountFixture : IDisposable
         var root = new DirectoryInfo(AppContext.BaseDirectory);
         while (root is not null && !File.Exists(Path.Combine(root.FullName, "ProgramMigrationAnalyzer.sln"))) root = root.Parent;
         if (root is null) throw new InvalidOperationException("Test root unavailable.");
-        DirectoryPath = Path.Combine(root.FullName, ".codex-tmp", "2026-10-01_offline-authorization-phase-5", "signed-store", Guid.NewGuid().ToString("N"));
+        DirectoryPath = Path.Combine(root.FullName, ".camp_codex", "2026-10-01_offline-authorization-phase-5", "signed-store", Guid.NewGuid().ToString("N"));
         Store = new(FilePath, Policy, Key.Verifier); Authentication = new(Store, new());
     }
     internal byte[] Issue(int revision = 1, bool enabled = true, string password = "Test@!#1", Guid? id = null)

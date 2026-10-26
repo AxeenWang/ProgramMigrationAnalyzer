@@ -10,7 +10,7 @@ public sealed class SourceFileService : ISourceFileService
 
     private static readonly HashSet<string> IgnoredDirectoryNames =
         new(StringComparer.OrdinalIgnoreCase)
-        { ".git", ".vs", "bin", "obj", "output", ".codex-tmp", ".claude-tmp" };
+        { ".git", ".vs", "bin", "obj", "output", ".camp_codex", ".camp_claude" };
 
     static SourceFileService()
     {

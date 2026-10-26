@@ -223,7 +223,7 @@ internal sealed class AccessFixture : IDisposable
     public AccessFixture(bool authenticated = true)
     {
         Session = new(authenticated);
-        DirectoryPath = Path.Combine(_root, ".codex-tmp", "2026-10-01_login-phase-3", Guid.NewGuid().ToString("N"));
+        DirectoryPath = Path.Combine(_root, ".camp_codex", "2026-10-01_login-phase-3", Guid.NewGuid().ToString("N"));
         Output = Path.Combine(DirectoryPath, "output");
         SavePath = Path.Combine(DirectoryPath, "save.md");
         Dialogs = new() { Path = SavePath };

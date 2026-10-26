@@ -116,4 +116,4 @@ Enter／Tab／Esc、取消、缺失設定及非法參數的早期桌面觀察對
 - 分析、轉譯及 parser 原有限制與視覺設計待確認事項仍見 README 與既有 Phase 3 紀錄。Scenario 通過不代表轉譯完成語意等價移植。
 - 最終 Phase 4 PR 需由使用者審查與合併，建立 ready PR 不代表已合併。
 
-完整原始 log、UI 觀察、host trace、ACL 安全 metadata、輸出指紋與退出紀錄保留在當次 Git root 的 `.codex-tmp/2026-10-01_login-phase-4/`，未追蹤。可追溯的測試原始碼、產物指紋、結果摘要與[計畫紀錄](superpowers/plans/2026-10-01-local-login-implementation-plan.md)隨 PR 保存，重現時以自備測試帳密執行，不複製真實帳號資料。
+完整原始 log、UI 觀察、host trace、ACL 安全 metadata、輸出指紋與退出紀錄保留在當次 Git root 的 `.camp_codex/2026-10-01_login-phase-4/`，未追蹤。可追溯的測試原始碼、產物指紋、結果摘要與[計畫紀錄](superpowers/plans/2026-10-01-local-login-implementation-plan.md)隨 PR 保存，重現時以自備測試帳密執行，不複製真實帳號資料。

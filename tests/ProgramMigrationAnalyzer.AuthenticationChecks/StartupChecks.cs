@@ -129,7 +129,7 @@ internal static class StartupChecks
         var encoder = new System.Windows.Media.Imaging.PngBitmapEncoder();
         encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(bitmap));
         var root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../../"));
-        var directory = Path.Combine(root, ".codex-tmp", "2026-10-01_login-phase-3");
+        var directory = Path.Combine(root, ".camp_codex", "2026-10-01_login-phase-3");
         Directory.CreateDirectory(directory);
         using var stream = File.Create(Path.Combine(directory, "login.png"));
         encoder.Save(stream);

@@ -89,11 +89,11 @@ EBWebView/
 ![Oo]utput/.gitkeep
 
 # Agent-owned temporary directories
-.codex-tmp/
-.claude-tmp/
+.camp_codex/
+.camp_claude/
 
 # Local reference material
-.references/
+.camp_references/
 
 # Operating-system metadata
 Thumbs.db

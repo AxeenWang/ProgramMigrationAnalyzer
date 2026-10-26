@@ -23,7 +23,7 @@ internal static class PublishChecks
             WorkingDirectory = root!.FullName, RedirectStandardOutput = true, RedirectStandardError = true };
         foreach (var arg in new[] { "publish", "src/ProgramMigrationAnalyzer.App/ProgramMigrationAnalyzer.App.csproj",
             "--no-build", "--no-restore", "--configuration", "Debug", "--output",
-            ".codex-tmp/2026-10-01_offline-authorization-phase-5/rejected-nobuild", "-m:1", "-nr:false" }) start.ArgumentList.Add(arg);
+            ".camp_codex/2026-10-01_offline-authorization-phase-5/rejected-nobuild", "-m:1", "-nr:false" }) start.ArgumentList.Add(arg);
         using var process = Process.Start(start)!; var output = process.StandardOutput.ReadToEndAsync(); var error = process.StandardError.ReadToEndAsync();
         Check(process.WaitForExit(30_000), "No-build publication timed out.");
         Check(process.ExitCode != 0 && (output.GetAwaiter().GetResult() + error.GetAwaiter().GetResult()).Contains("PMA_AUTH_NO_BUILD"),
@@ -116,7 +116,7 @@ internal sealed class PublishFixture : IDisposable
     {
         var root = new DirectoryInfo(AppContext.BaseDirectory);
         while (root is not null && !File.Exists(Path.Combine(root.FullName, "ProgramMigrationAnalyzer.sln"))) root = root.Parent;
-        DirectoryPath = Path.Combine(root!.FullName, ".codex-tmp", "2026-10-01_offline-authorization-phase-5", "publish-checks", Guid.NewGuid().ToString("N"));
+        DirectoryPath = Path.Combine(root!.FullName, ".camp_codex", "2026-10-01_offline-authorization-phase-5", "publish-checks", Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(DirectoryPath);
         foreach (var file in new[] { "publish.bat", "publish-issuer.bat" })
             if (File.Exists(Path.Combine(root.FullName, file))) File.Copy(Path.Combine(root.FullName, file), Path.Combine(DirectoryPath, file));
